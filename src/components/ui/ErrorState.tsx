@@ -36,15 +36,15 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
 
   return (
     <div
-      className={`p-8 sm:p-12 text-center bg-white dark:bg-stone-900 rounded-2xl border border-red-200/80 dark:border-red-950/50 ${className}`}
+      className={`p-8 sm:p-12 text-center bg-[#101428] rounded-2xl border border-red-500/40 shadow-[0_0_25px_rgba(239,68,68,0.15)] font-mono ${className}`}
     >
-      <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-4 ring-1 ring-red-500/20">
+      <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/40 flex items-center justify-center mx-auto mb-4 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
         <AlertTriangle className="w-7 h-7" />
       </div>
-      <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+      <h3 className="text-base sm:text-lg font-bold text-white tracking-wide uppercase">
         {title}
       </h3>
-      <p className="mt-2 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-md mx-auto leading-relaxed">
+      <p className="mt-2 text-xs sm:text-sm text-red-300/80 max-w-md mx-auto leading-relaxed">
         {cleanMessage}
       </p>
 
@@ -52,7 +52,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
         {onRetry && (
           <button
             onClick={onRetry}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black text-xs sm:text-sm font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:brightness-110 transition-all cursor-pointer active:scale-95"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Réessayer</span>
@@ -61,7 +61,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
         {onGoHome && (
           <button
             onClick={onGoHome}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#141933] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
           >
             <Home className="w-4 h-4" />
             <span>Retour à l'accueil</span>

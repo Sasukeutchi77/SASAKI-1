@@ -58,19 +58,19 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-4 max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-[#0b0e1a] border border-cyan-500/40 rounded-2xl shadow-[0_0_35px_rgba(0,243,255,0.2)] overflow-hidden flex flex-col my-4 max-h-[85vh] text-slate-100 transition-all">
         {/* Header */}
-        <div className="bg-stone-50 border-b border-stone-200 px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="bg-[#101428] border-b border-cyan-500/30 px-6 py-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <Bell className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-base font-black text-stone-900">Vos Notifications</h2>
+            <Bell className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-base font-black font-mono tracking-wide text-white">Vos Notifications</h2>
           </div>
           <div className="flex items-center gap-2">
             {notifications.some((n) => !n.isRead) && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
+                className="text-xs font-bold font-mono text-cyan-400 hover:text-cyan-200 flex items-center gap-1 cursor-pointer transition-colors"
                 title="Tout marquer comme lu"
               >
                 <CheckCheck className="w-4 h-4" />
@@ -79,7 +79,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-full"
+              className="p-2 text-cyan-400/60 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -89,12 +89,12 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         {/* Content */}
         <div className="p-4 overflow-y-auto flex-1">
           {loading ? (
-            <div className="p-12 text-center text-stone-400">Chargement des alertes...</div>
+            <div className="p-12 text-center text-cyan-400/60 font-mono">Chargement des alertes...</div>
           ) : notifications.length === 0 ? (
-            <div className="p-12 text-center text-stone-400">
-              <Bell className="w-10 h-10 mx-auto mb-2 opacity-30" />
-              <p className="font-semibold text-stone-700">Aucune notification</p>
-              <p className="text-xs text-stone-500 mt-1">Vous êtes à jour dans votre fil d'actualité.</p>
+            <div className="p-12 text-center text-cyan-400/50">
+              <Bell className="w-10 h-10 mx-auto mb-2 opacity-30 text-cyan-400" />
+              <p className="font-semibold text-slate-300">Aucune notification</p>
+              <p className="text-xs text-cyan-400/60 font-mono mt-1">Vous êtes à jour dans votre flux d'actualité.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -109,18 +109,18 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                   }}
                   className={`p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
                     notif.isRead
-                      ? 'bg-white border-stone-200'
-                      : 'bg-emerald-50/50 border-emerald-200 shadow-2xs'
+                      ? 'bg-[#101428] border-cyan-500/20 opacity-80 hover:opacity-100 hover:border-cyan-500/40'
+                      : 'bg-[#101938] border-cyan-500/40 shadow-[0_0_12px_rgba(0,243,255,0.12)]'
                   }`}
                 >
-                  <div className="p-2 rounded-full bg-white border border-stone-200 shrink-0">
+                  <div className="p-2 rounded-full bg-[#141933] border border-cyan-500/30 shrink-0">
                     {getIcon(notif.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-stone-800 leading-snug">
+                    <p className="text-xs sm:text-sm text-slate-100 leading-snug">
                       {notif.message}
                     </p>
-                    <span className="text-[10px] text-stone-400 mt-1 block">
+                    <span className="text-[10px] text-cyan-400/60 font-mono mt-1 block">
                       {new Date(notif.createdAt).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'short',
@@ -130,7 +130,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                     </span>
                   </div>
                   {!notif.isRead && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f3ff] mt-1.5 shrink-0" />
                   )}
                 </div>
               ))}

@@ -33,30 +33,30 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         <button
           id="mobile-floating-create-btn"
           onClick={onOpenCreateArticle}
-          className="md:hidden fixed bottom-20 right-4 z-40 w-13 h-13 rounded-full bg-emerald-700 active:bg-emerald-800 text-white shadow-lg shadow-emerald-900/30 flex items-center justify-center cursor-pointer interactive-pop touch-target"
+          className="md:hidden fixed bottom-20 right-4 z-40 w-13 h-13 rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 active:scale-95 text-black shadow-[0_0_20px_rgba(0,243,255,0.6)] flex items-center justify-center cursor-pointer interactive-pop touch-target border border-white/40"
           aria-label="Rédiger un article"
         >
-          <Plus className="w-6 h-6" />
+          <Plus className="w-6 h-6 stroke-[2.5]" />
         </button>
       )}
 
       {/* Main Ergonomic Bottom Navigation Bar */}
       <nav
         id="mobile-bottom-navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200/80 dark:border-stone-800 safe-area-bottom transition-colors"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0b0e1a]/95 backdrop-blur-lg border-t border-cyan-500/30 shadow-[0_-5px_25px_rgba(0,243,255,0.1)] safe-area-bottom transition-all"
       >
         <div className="grid grid-cols-5 h-15 px-1 items-center">
           {/* 1. Accueil */}
           <button
             id="mobile-nav-home"
             onClick={() => onTabChange('feed')}
-            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-semibold transition-all touch-target cursor-pointer ${
+            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-bold transition-all touch-target cursor-pointer ${
               activeTab === 'feed'
-                ? 'text-emerald-700 dark:text-emerald-400'
-                : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'text-cyan-300 drop-shadow-[0_0_8px_rgba(0,243,255,0.8)]'
+                : 'text-cyan-400/50 hover:text-cyan-200'
             }`}
           >
-            <div className={`p-1 rounded-xl transition-colors ${activeTab === 'feed' ? 'bg-emerald-50 dark:bg-emerald-950/60' : ''}`}>
+            <div className={`p-1 rounded-xl transition-all ${activeTab === 'feed' ? 'bg-cyan-500/20 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,243,255,0.3)]' : ''}`}>
               <Home className="w-5 h-5" />
             </div>
             <span className="leading-tight mt-0.5">Accueil</span>
@@ -72,13 +72,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                 onTabChange('search');
               }
             }}
-            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-semibold transition-all touch-target cursor-pointer ${
+            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-bold transition-all touch-target cursor-pointer ${
               activeTab === 'search' || activeTab === 'trending'
-                ? 'text-emerald-700 dark:text-emerald-400'
-                : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'text-cyan-300 drop-shadow-[0_0_8px_rgba(0,243,255,0.8)]'
+                : 'text-cyan-400/50 hover:text-cyan-200'
             }`}
           >
-            <div className={`p-1 rounded-xl transition-colors ${activeTab === 'search' || activeTab === 'trending' ? 'bg-emerald-50 dark:bg-emerald-950/60' : ''}`}>
+            <div className={`p-1 rounded-xl transition-all ${activeTab === 'search' || activeTab === 'trending' ? 'bg-cyan-500/20 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,243,255,0.3)]' : ''}`}>
               <Compass className="w-5 h-5" />
             </div>
             <span className="leading-tight mt-0.5">Explorer</span>
@@ -88,13 +88,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           <button
             id="mobile-nav-following"
             onClick={() => onTabChange('following')}
-            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-semibold transition-all touch-target cursor-pointer ${
+            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-bold transition-all touch-target cursor-pointer ${
               activeTab === 'following'
-                ? 'text-emerald-700 dark:text-emerald-400'
-                : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'text-cyan-300 drop-shadow-[0_0_8px_rgba(0,243,255,0.8)]'
+                : 'text-cyan-400/50 hover:text-cyan-200'
             }`}
           >
-            <div className={`p-1 rounded-xl transition-colors ${activeTab === 'following' ? 'bg-emerald-50 dark:bg-emerald-950/60' : ''}`}>
+            <div className={`p-1 rounded-xl transition-all ${activeTab === 'following' ? 'bg-cyan-500/20 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,243,255,0.3)]' : ''}`}>
               <Users className="w-5 h-5" />
             </div>
             <span className="leading-tight mt-0.5">Abonnés</span>
@@ -104,16 +104,16 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           <button
             id="mobile-nav-bookmarks"
             onClick={isAuthenticated ? onOpenBookmarks : onOpenAuth}
-            className={`relative flex flex-col items-center justify-center h-full py-1 text-[11px] font-semibold transition-all touch-target cursor-pointer ${
+            className={`relative flex flex-col items-center justify-center h-full py-1 text-[11px] font-bold transition-all touch-target cursor-pointer ${
               activeTab === 'bookmarks'
-                ? 'text-emerald-700 dark:text-emerald-400'
-                : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'text-cyan-300 drop-shadow-[0_0_8px_rgba(0,243,255,0.8)]'
+                : 'text-cyan-400/50 hover:text-cyan-200'
             }`}
           >
             <div className="relative p-1 rounded-xl">
               <Bookmark className="w-5 h-5" />
               {bookmarksCount > 0 && (
-                <span className="absolute -top-0.5 -right-1 px-1 min-w-4 h-4 bg-emerald-700 text-[10px] font-bold text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-stone-900">
+                <span className="absolute -top-0.5 -right-1 px-1 min-w-4 h-4 bg-fuchsia-500 text-[10px] font-bold font-mono text-white rounded-full flex items-center justify-center ring-2 ring-[#0b0e1a] shadow-[0_0_8px_rgba(240,38,211,0.8)]">
                   {bookmarksCount}
                 </span>
               )}
@@ -131,23 +131,23 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                 onOpenAuth();
               }
             }}
-            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-semibold transition-all touch-target cursor-pointer ${
+            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-bold transition-all touch-target cursor-pointer ${
               activeTab === 'profile'
-                ? 'text-emerald-700 dark:text-emerald-400'
-                : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'text-cyan-300 drop-shadow-[0_0_8px_rgba(0,243,255,0.8)]'
+                : 'text-cyan-400/50 hover:text-cyan-200'
             }`}
           >
-            <div className={`p-0.5 rounded-full ${activeTab === 'profile' ? 'ring-2 ring-emerald-700 dark:ring-emerald-400' : ''}`}>
+            <div className={`p-0.5 rounded-full ${activeTab === 'profile' ? 'ring-2 ring-cyan-400 shadow-[0_0_8px_rgba(0,243,255,0.7)]' : ''}`}>
               {user?.avatar ? (
                 <img
                   src={user.avatar}
                   alt={user.name}
                   referrerPolicy="no-referrer"
-                  className="w-5 h-5 rounded-full object-cover"
+                  className="w-5 h-5 rounded-full object-cover border border-cyan-500/40"
                 />
               ) : (
-                <div className="w-5 h-5 rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center">
-                  <User className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />
+                <div className="w-5 h-5 rounded-full bg-slate-800 border border-cyan-500/30 flex items-center justify-center">
+                  <User className="w-3.5 h-3.5 text-cyan-400" />
                 </div>
               )}
             </div>

@@ -4,8 +4,6 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ArticleCard } from '../components/ArticleCard';
 import { ArticleCardSkeleton } from '../components/ui/Skeleton';
-import { DailyQuestsWidget } from '../components/gamification/DailyQuestsWidget';
-import { gamification } from '../services/gamification';
 import {
   Flame,
   Clock,
@@ -22,7 +20,10 @@ import {
   X,
   ChevronDown,
   Loader2,
+  Radio,
 } from 'lucide-react';
+import { BreakingNewsTicker } from '../components/BreakingNewsTicker';
+import { LiveFeedTimeline } from '../components/LiveFeedTimeline';
 
 interface HomeProps {
   onOpenArticle: (article: Article) => void;
@@ -31,7 +32,6 @@ interface HomeProps {
   onOpenCreateArticle: () => void;
   onOpenSearch?: () => void;
   onOpenCategoryPage?: (catSlug: string) => void;
-  onOpenQuestsModal?: () => void;
   searchQuery: string;
   selectedCategory: string | null;
   onSelectCategory: (catSlug: string | null) => void;
@@ -46,7 +46,6 @@ export const Home: React.FC<HomeProps> = ({
   onOpenCreateArticle,
   onOpenSearch,
   onOpenCategoryPage,
-  onOpenQuestsModal,
   searchQuery,
   selectedCategory,
   onSelectCategory,
@@ -54,7 +53,7 @@ export const Home: React.FC<HomeProps> = ({
   onSelectTag: externalSetTag,
 }) => {
   const { user, isAuthenticated } = useAuth();
-  const [feedTab, setFeedTab] = useState<'foryou' | 'trending' | 'latest' | 'following'>('foryou');
+  const [feedTab, setFeedTab] = useState<'foryou' | 'trending' | 'latest' | 'following' | 'live'>('foryou');
   const [internalTag, setInternalTag] = useState<string | null>(null);
 
   const selectedTag = externalTag !== undefined ? externalTag : internalTag;
@@ -196,17 +195,14 @@ export const Home: React.FC<HomeProps> = ({
     : articles;
 
   return (
-    <div className="min-h-screen bg-stone-100/70 dark:bg-stone-950 pb-20 md:pb-12 transition-colors">
+    <div className="min-h-screen bg-[#07080f] text-slate-100 pb-20 md:pb-12 cyber-grid">
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-        {/* Gamified Citizen Daily Quests & Missions */}
-        <DailyQuestsWidget onOpenFullQuests={onOpenQuestsModal || (() => {})} />
-
         {/* Category active banner */}
         {selectedCategory && selectedCategory !== 'all' && (
-          <div className="mb-4 p-3.5 bg-white dark:bg-stone-900 rounded-xl border border-emerald-300 dark:border-emerald-800/80 flex flex-wrap items-center justify-between gap-3 shadow-2xs transition-colors">
+          <div className="mb-4 p-3.5 bg-[#0b0e1a]/90 rounded-xl border border-cyan-500/40 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_15px_rgba(0,243,255,0.15)]">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
-              <span className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,243,255,0.8)] animate-pulse" />
+              <span className="text-xs sm:text-sm font-bold text-cyan-200">
                 Rubrique : {categories.find((c) => c.slug === selectedCategory || c.id === selectedCategory)?.name || selectedCategory}
               </span>
             </div>
@@ -214,14 +210,14 @@ export const Home: React.FC<HomeProps> = ({
               {onOpenCategoryPage && (
                 <button
                   onClick={() => onOpenCategoryPage(selectedCategory)}
-                  className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold rounded-lg border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer"
+                  className="px-3 py-1 bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-300 text-xs font-bold rounded-lg border border-cyan-500/40 shadow-[0_0_10px_rgba(0,243,255,0.2)] transition-all cursor-pointer"
                 >
                   Page complète de la rubrique →
                 </button>
               )}
               <button
                 onClick={() => onSelectCategory(null)}
-                className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-1 cursor-pointer"
+                className="text-cyan-400/60 hover:text-cyan-200 p-1 cursor-pointer"
                 title="Toutes les rubriques"
               >
                 <X className="w-4 h-4" />
@@ -261,16 +257,19 @@ export const Home: React.FC<HomeProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main Feed Column (8 cols on desktop) */}
           <div className="lg:col-span-8 space-y-5">
+            {/* Cyber Breaking News Ticker */}
+            <BreakingNewsTicker articles={articles} onOpenArticle={onOpenArticle} />
+
             {/* Feed Tabs Bar */}
-            <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 p-1.5 flex items-center justify-between shadow-2xs transition-colors">
+            <div className="bg-[#0b0e1a]/90 backdrop-blur-md rounded-2xl border border-cyan-500/30 p-1.5 flex items-center justify-between shadow-[0_0_20px_rgba(0,243,255,0.06)] transition-all">
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth w-full sm:w-auto">
                 <button
                   id="tab-feed-foryou"
                   onClick={() => setFeedTab('foryou')}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     feedTab === 'foryou'
-                      ? 'bg-emerald-700 text-white shadow-xs'
-                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800'
+                      ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_15px_rgba(0,243,255,0.5)]'
+                      : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -280,10 +279,10 @@ export const Home: React.FC<HomeProps> = ({
                 <button
                   id="tab-feed-trending"
                   onClick={() => setFeedTab('trending')}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     feedTab === 'trending'
-                      ? 'bg-emerald-700 text-white shadow-xs'
-                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800'
+                      ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white shadow-[0_0_15px_rgba(240,38,211,0.5)]'
+                      : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
                   }`}
                 >
                   <Flame className="w-3.5 h-3.5" />
@@ -293,14 +292,27 @@ export const Home: React.FC<HomeProps> = ({
                 <button
                   id="tab-feed-latest"
                   onClick={() => setFeedTab('latest')}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     feedTab === 'latest'
-                      ? 'bg-emerald-700 text-white shadow-xs'
-                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800'
+                      ? 'bg-gradient-to-r from-emerald-400 to-cyan-500 text-black shadow-[0_0_15px_rgba(0,255,157,0.5)]'
+                      : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
                   <span>Dernières minutes</span>
+                </button>
+
+                <button
+                  id="tab-feed-live"
+                  onClick={() => setFeedTab('live')}
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    feedTab === 'live'
+                      ? 'bg-gradient-to-r from-red-500 to-fuchsia-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]'
+                      : 'text-red-400/80 hover:text-red-300 hover:bg-red-500/10'
+                  }`}
+                >
+                  <Radio className="w-3.5 h-3.5 animate-pulse text-red-400" />
+                  <span>En direct 🔴</span>
                 </button>
 
                 <button
@@ -312,10 +324,10 @@ export const Home: React.FC<HomeProps> = ({
                       setFeedTab('following');
                     }
                   }}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     feedTab === 'following'
-                      ? 'bg-emerald-700 text-white shadow-xs'
-                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800'
+                      ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_15px_rgba(0,243,255,0.5)]'
+                      : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
                   }`}
                 >
                   <Users className="w-3.5 h-3.5" />
@@ -329,21 +341,21 @@ export const Home: React.FC<HomeProps> = ({
               <div
                 id="featured-article-hero"
                 onClick={() => onOpenArticle(featuredArticle)}
-                className="group relative rounded-2xl overflow-hidden bg-stone-900 text-white shadow-md cursor-pointer aspect-[16/10] sm:aspect-[21/9]"
+                className="group relative rounded-2xl overflow-hidden bg-[#0a0c16] text-white border border-cyan-500/40 shadow-[0_0_25px_rgba(0,243,255,0.15)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,243,255,0.3)] transition-all cursor-pointer aspect-[16/10] sm:aspect-[21/9]"
               >
                 <img
                   src={featuredArticle.coverImage}
                   alt={featuredArticle.title}
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover opacity-55 group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#07080f] via-[#07080f]/50 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 flex flex-col justify-end">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500 text-stone-950">
+                    <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black shadow-[0_0_10px_rgba(0,243,255,0.5)]">
                       À la Une • {featuredArticle.categoryName}
                     </span>
-                    <span className="text-xs text-stone-300 font-medium">
+                    <span className="text-xs text-cyan-300/80 font-mono">
                       {new Date(featuredArticle.createdAt).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'short',
@@ -351,22 +363,22 @@ export const Home: React.FC<HomeProps> = ({
                     </span>
                   </div>
 
-                  <h2 className="text-lg sm:text-2xl font-black leading-tight text-white group-hover:text-emerald-300 transition-colors line-clamp-2">
+                  <h2 className="text-lg sm:text-2xl font-black leading-tight text-white glitch-hover line-clamp-2 drop-shadow-md cursor-pointer">
                     {featuredArticle.title}
                   </h2>
                   {featuredArticle.summary && (
-                    <p className="mt-1.5 text-xs sm:text-sm text-stone-300 line-clamp-2 max-w-2xl leading-relaxed">
+                    <p className="mt-1.5 text-xs sm:text-sm text-slate-300 line-clamp-2 max-w-2xl leading-relaxed">
                       {featuredArticle.summary}
                     </p>
                   )}
 
-                  <div className="mt-3 flex items-center gap-3 text-xs text-stone-300">
-                    <div className="flex items-center gap-1.5">
+                  <div className="mt-3 flex items-center gap-3 text-xs text-cyan-300/80 font-mono">
+                    <div className="flex items-center gap-1.5 font-sans">
                       <span className="font-bold text-white">
                         {featuredArticle.mediaName || featuredArticle.authorName}
                       </span>
                       {featuredArticle.isAuthorVerified && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
                       )}
                     </div>
                     <span>•</span>
@@ -378,8 +390,15 @@ export const Home: React.FC<HomeProps> = ({
               </div>
             )}
 
-            {/* Articles List / Grid */}
-            {loading ? (
+            {/* Articles List / Grid or Live Timeline */}
+            {feedTab === 'live' ? (
+              <LiveFeedTimeline
+                onOpenArticleById={(id) => {
+                  const art = articles.find((a) => a.id === id);
+                  if (art) onOpenArticle(art);
+                }}
+              />
+            ) : loading ? (
               <ArticleCardSkeleton count={4} />
             ) : articles.length === 0 ? (
               <div className="p-10 text-center text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 transition-colors">
@@ -454,6 +473,7 @@ export const Home: React.FC<HomeProps> = ({
                       onOpenAuth={onOpenAuth}
                       onSelectTag={handleSelectTagFilter}
                       onSelectCategory={onSelectCategory}
+                      titleClassName="glitch-hover"
                     />
                   ))}
                 </div>
@@ -489,41 +509,41 @@ export const Home: React.FC<HomeProps> = ({
           <aside className="hidden lg:block lg:col-span-4 space-y-5">
             {/* Journalist Write Callout */}
             {isAuthenticated && (user?.role === 'journalist' || user?.role === 'admin') ? (
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-800 to-stone-900 text-white shadow-sm">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#0a1226] via-[#09152e] to-[#120a26] text-white border border-cyan-500/40 shadow-[0_0_20px_rgba(0,243,255,0.15)]">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 bg-emerald-500/20 rounded-lg">
-                    <PlusCircle className="w-5 h-5 text-emerald-400" />
+                  <div className="p-1.5 bg-cyan-500/20 rounded-lg border border-cyan-500/40">
+                    <PlusCircle className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm">Espace de Publication</h3>
-                    <p className="text-[11px] text-stone-300">Journaliste / Média accrédité</p>
+                    <h3 className="font-black text-sm text-cyan-100">Espace de Publication</h3>
+                    <p className="text-[11px] text-cyan-300/70 font-mono">Journaliste / Média accrédité</p>
                   </div>
                 </div>
-                <p className="text-xs text-stone-200 leading-relaxed mt-2 mb-3">
+                <p className="text-xs text-slate-300 leading-relaxed mt-2 mb-3">
                   Partagez une dépêche urgente, une enquête d'investigation ou une analyse citoyenne.
                 </p>
                 <button
                   id="sidebar-create-article-btn"
                   onClick={onOpenCreateArticle}
-                  className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2.5 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-extrabold text-xs rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" />
                   <span>Rédiger un nouvel article</span>
                 </button>
               </div>
             ) : (
-              <div className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-2xs transition-colors">
-                <h3 className="font-black text-stone-900 dark:text-stone-100 text-sm flex items-center gap-1.5">
+              <div className="p-4 rounded-2xl bg-[#0b0e1a]/90 border border-cyan-500/30 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
+                <h3 className="font-black text-white text-sm flex items-center gap-1.5">
                   <span>Rejoignez l'élite des médias</span>
-                  <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400" />
                 </h3>
-                <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mt-1.5">
+                <p className="text-xs text-slate-300 leading-relaxed mt-1.5">
                   Vous êtes journaliste professionnel ou directeur d'un organe de presse ? Créez votre profil
                   et demandez votre badge officiel.
                 </p>
                 <button
                   onClick={onOpenAuth}
-                  className="mt-3 w-full py-2 bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-white text-white dark:text-stone-900 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  className="mt-3 w-full py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-300 font-bold text-xs rounded-xl shadow-[0_0_10px_rgba(0,243,255,0.2)] transition-all cursor-pointer"
                 >
                   Déclarer un média ou journaliste
                 </button>
@@ -531,15 +551,15 @@ export const Home: React.FC<HomeProps> = ({
             )}
 
             {/* Recommended & Verified Media */}
-            <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 p-4 shadow-2xs transition-colors">
+            <div className="bg-[#0b0e1a]/90 rounded-2xl border border-cyan-500/30 p-4 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-extrabold text-sm text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-cyan-400" />
                   <span>Médias & Journalistes de référence</span>
                 </h3>
               </div>
 
-              <div className="divide-y divide-stone-100 dark:divide-stone-800">
+              <div className="divide-y divide-cyan-500/10">
                 {topJournalists.slice(0, 5).map((j) => (
                   <div key={j.id} className="py-3 flex items-center justify-between gap-3">
                     <button
@@ -550,16 +570,16 @@ export const Home: React.FC<HomeProps> = ({
                         src={j.avatar}
                         alt={j.name}
                         referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-full object-cover border border-stone-200 dark:border-stone-700 group-hover:ring-2 group-hover:ring-emerald-600 shrink-0"
+                        className="w-9 h-9 rounded-full object-cover border border-cyan-500/40 group-hover:border-cyan-400 group-hover:shadow-[0_0_10px_rgba(0,243,255,0.5)] shrink-0 transition-all"
                       />
                       <div className="min-w-0">
-                        <div className="font-bold text-xs text-stone-900 dark:text-stone-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 truncate flex items-center gap-1">
+                        <div className="font-bold text-xs text-white group-hover:text-cyan-300 truncate flex items-center gap-1 transition-colors">
                           <span>{j.mediaName || j.name}</span>
                           {j.isVerified && (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                           )}
                         </div>
-                        <div className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
+                        <div className="text-[11px] text-cyan-400/60 font-mono truncate">
                           {j.followersCount || 0} abonnés
                         </div>
                       </div>
@@ -570,8 +590,8 @@ export const Home: React.FC<HomeProps> = ({
                         onClick={(e) => handleToggleFollow(j.id, e)}
                         className={`p-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
                           j.isFollowing
-                            ? 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
-                            : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                            : 'bg-cyan-950/60 text-cyan-400 hover:bg-cyan-900/60 border border-cyan-500/30'
                         }`}
                         title={j.isFollowing ? 'Abonné' : "S'abonner"}
                       >
@@ -589,16 +609,16 @@ export const Home: React.FC<HomeProps> = ({
 
             {/* Trending Tags & Topics Widget */}
             {popularTags.length > 0 && (
-              <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 p-4 shadow-2xs transition-colors">
+              <div className="bg-[#0b0e1a]/90 rounded-2xl border border-cyan-500/30 p-4 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-extrabold text-sm text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                    <Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                    <Tag className="w-4 h-4 text-cyan-400" />
                     <span>Sujets & Tags populaires</span>
                   </h3>
                   {onOpenSearch && (
                     <button
                       onClick={onOpenSearch}
-                      className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 cursor-pointer"
+                      className="text-[11px] font-bold text-cyan-400 hover:text-cyan-200 cursor-pointer"
                     >
                       Explorer tout
                     </button>
@@ -609,11 +629,11 @@ export const Home: React.FC<HomeProps> = ({
                     <button
                       key={t.tag}
                       onClick={() => handleSelectTagFilter(t.tag)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-100 dark:bg-stone-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 text-stone-700 dark:text-stone-300 hover:text-emerald-800 dark:hover:text-emerald-300 rounded-lg text-xs font-semibold transition-colors group cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#101428] hover:bg-cyan-950/60 text-cyan-200 hover:text-white border border-cyan-500/25 hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(0,243,255,0.25)] rounded-lg text-xs font-semibold transition-all group cursor-pointer"
                     >
-                      <span className="text-emerald-600 dark:text-emerald-400">#</span>
+                      <span className="text-cyan-400">#</span>
                       <span>{t.tag}</span>
-                      <span className="text-[10px] text-stone-400 dark:text-stone-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                      <span className="text-[10px] text-cyan-400/60 group-hover:text-cyan-300 font-mono">
                         {t.count}
                       </span>
                     </button>
@@ -623,31 +643,31 @@ export const Home: React.FC<HomeProps> = ({
             )}
 
             {/* Quick About purge-info */}
-            <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 text-xs text-stone-500 dark:text-stone-400 space-y-2.5 transition-colors">
+            <div className="p-4 rounded-2xl bg-[#0b0e1a]/90 border border-cyan-500/30 text-xs text-slate-400 space-y-2.5 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-stone-800 dark:text-stone-200 uppercase tracking-wider text-[10px]">
-                  Charte d'éthique et de transparence
+                <span className="font-bold text-cyan-200 uppercase tracking-wider text-[10px] font-mono">
+                  Éthique & Transparence
                 </span>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-[0_0_8px_rgba(0,243,255,0.25)]">
                   purge-info
                 </span>
               </div>
-              <p className="leading-relaxed">
+              <p className="leading-relaxed text-slate-300">
                 purge-info est la plateforme moderne d'actualités, de journalisme social et de veille citoyenne.
-                Chaque article est soumis au contrôle déontologique de la rédaction et aux retours des citoyens.
+                Chaque article est vérifié pour assurer une information intègre.
               </p>
-              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-stone-700 dark:text-stone-300">Développeur :</span>
-                <span className="text-xs font-black text-amber-600 dark:text-amber-400 tracking-wide">
+              <div className="p-2.5 rounded-xl bg-fuchsia-950/40 border border-fuchsia-500/40 flex items-center justify-between shadow-[0_0_10px_rgba(240,38,211,0.2)]">
+                <span className="text-[11px] font-bold text-slate-300 font-mono">DÉVELOPPEUR :</span>
+                <span className="text-xs font-black text-fuchsia-400 tracking-wider font-mono drop-shadow-[0_0_6px_rgba(240,38,211,0.6)]">
                   SASAKI COMPAGNIE
                 </span>
               </div>
-              <div className="pt-2 border-t border-stone-200 dark:border-stone-800 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-stone-400 dark:text-stone-500">
+              <div className="pt-2 border-t border-cyan-500/15 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-cyan-400/50 font-mono">
                 <span>© 2026 purge-info</span>
                 <span>•</span>
-                <span>Conditions d'utilisation</span>
+                <span>Conditions</span>
                 <span>•</span>
-                <span>Conseil de Presse</span>
+                <span>Presse</span>
               </div>
             </div>
           </aside>

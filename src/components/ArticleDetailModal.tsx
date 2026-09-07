@@ -17,6 +17,10 @@ import {
   UserPlus,
   UserCheck,
   Video as VideoIcon,
+  Terminal,
+  Type,
+  Minimize2,
+  Maximize2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -24,6 +28,9 @@ import { ShareModal } from './ShareModal';
 import { getCoverUrl } from '../services/cloudinary';
 import { PhotoGallery } from './media/PhotoGallery';
 import { VideoPlayer } from './media/VideoPlayer';
+import { AdminConfirmDialog } from './admin/AdminConfirmDialog';
+import { FactCheckBadge } from './FactCheckBadge';
+import { ArticlePoll } from './ArticlePoll';
 
 interface ArticleDetailModalProps {
   articleId: string;
@@ -77,6 +84,34 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const [commentReportReason, setCommentReportReason] = useState<string>('Contenu haineux ou insultant');
   const [commentReportDetails, setCommentReportDetails] = useState<string>('');
   const [commentReportSuccess, setCommentReportSuccess] = useState<boolean>(false);
+  const [confirmDeleteArticle, setConfirmDeleteArticle] = useState<boolean>(false);
+  const [commentToDeleteId, setCommentToDeleteId] = useState<string | null>(null);
+
+  // Zen Reader Mode states
+  const [isZenMode, setIsZenMode] = useState<boolean>(false);
+  const [zenFontSize, setZenFontSize] = useState<'sm' | 'base' | 'lg' | 'xl'>('lg');
+  const [isMonoFont, setIsMonoFont] = useState<boolean>(false);
+  const [scrollProgress, setScrollProgress] = useState<number>(0);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const total = target.scrollHeight - target.clientHeight;
+    if (total > 0) {
+      setScrollProgress(Math.min(100, Math.max(0, Math.round((target.scrollTop / total) * 100))));
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isZenMode) {
+          setIsZenMode(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZenMode]);
 
   // Fetch article details & comments
   const loadData = async () => {
@@ -319,7 +354,6 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
   // Delete Comment
   const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer ce commentaire ?')) return;
     try {
       const res = await api.deleteComment(articleId, commentId);
       const commRes = await api.getComments(articleId);
@@ -329,6 +363,8 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
       }
     } catch (err) {
       console.error('Delete comment failed:', err);
+    } finally {
+      setCommentToDeleteId(null);
     }
   };
 
@@ -367,40 +403,58 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   };
 
   const handleDeleteArticle = async () => {
-    if (!window.confirm('Êtes-vous certain de vouloir supprimer cet article ? Cette action est irréversible.')) return;
     try {
       await api.deleteArticle(articleId);
       if (onArticleDeleted) onArticleDeleted();
       onClose();
     } catch (err) {
       console.error(err);
+    } finally {
+      setConfirmDeleteArticle(false);
     }
   };
 
   const isAuthorOrAdmin = user && article && (user.id === article.authorId || user.role === 'admin');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white dark:bg-stone-900 min-h-screen sm:min-h-0 sm:rounded-2xl shadow-2xl sm:my-8 overflow-hidden flex flex-col border border-stone-200/80 dark:border-stone-800 transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-[#0b0e1a] text-slate-100 min-h-screen sm:min-h-0 sm:rounded-2xl shadow-[0_0_40px_rgba(0,243,255,0.2)] sm:my-8 overflow-hidden flex flex-col border border-cyan-500/40 transition-all">
         {/* Top Sticky Header */}
-        <div className="sticky top-0 z-20 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 px-4 py-3 flex items-center justify-between transition-colors">
+        <div className="sticky top-0 z-20 bg-[#0b0e1a]/95 backdrop-blur-md border-b border-cyan-500/30 px-4 py-3 flex items-center justify-between transition-all">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
+            <span className="text-xs font-bold font-mono px-2.5 py-1 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 shadow-[0_0_8px_rgba(0,243,255,0.2)]">
               {article?.categoryName || 'Actualité'}
             </span>
             {article?.status === 'draft' && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40">
                 Brouillon
               </span>
             )}
             {article?.status === 'hidden' && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-500/40">
                 Masqué par la modération
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Zen Reader Mode Toggle */}
+            {article && (
+              <button
+                id="toggle-zen-mode-btn"
+                onClick={() => setIsZenMode(!isZenMode)}
+                className={`px-2.5 py-1.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 text-xs font-mono font-bold ${
+                  isZenMode
+                    ? 'bg-cyan-400 text-black shadow-[0_0_12px_#00f3ff]'
+                    : 'text-cyan-300 hover:text-white hover:bg-cyan-500/20 border border-cyan-500/40'
+                }`}
+                title="Basculer en Mode Lecteur Terminal / Zen"
+              >
+                <Terminal className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isZenMode ? 'Mode Normal' : 'Mode Zen'}</span>
+              </button>
+            )}
+
             {isAuthorOrAdmin && article && (
               <>
                 {onOpenEditArticle && (
@@ -410,7 +464,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       onOpenEditArticle(article);
                       onClose();
                     }}
-                    className="p-2 text-stone-600 dark:text-stone-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full cursor-pointer transition-colors"
+                    className="p-2 text-cyan-400 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full cursor-pointer transition-colors"
                     title="Modifier l'article"
                   >
                     <Edit className="w-4 h-4" />
@@ -418,8 +472,8 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 )}
                 <button
                   id="delete-article-btn"
-                  onClick={handleDeleteArticle}
-                  className="p-2 text-stone-600 dark:text-stone-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-full cursor-pointer transition-colors"
+                  onClick={() => setConfirmDeleteArticle(true)}
+                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-full cursor-pointer transition-colors"
                   title="Supprimer l'article"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -430,27 +484,103 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             <button
               id="close-article-detail-modal"
               onClick={onClose}
-              className="p-2 text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors cursor-pointer"
+              className="p-2 text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
+        {/* Reading Progress Bar (always active, highly prominent in Zen mode) */}
+        <div className="w-full bg-[#07080f] h-1 sticky top-[53px] z-30 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-emerald-400 shadow-[0_0_10px_#00f3ff] transition-all duration-150"
+            style={{ width: `${scrollProgress}%` }}
+          />
+        </div>
+
+        {/* Zen Mode Control Bar when active */}
+        {isZenMode && article && (
+          <div className="sticky top-[57px] z-25 bg-[#07080f]/95 backdrop-blur-md border-b border-cyan-500/30 px-4 py-2 flex items-center justify-between gap-3 text-xs font-mono text-cyan-300">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#00ff9d]" />
+              <span className="font-bold text-[11px] uppercase tracking-wider text-emerald-400 hidden sm:inline">
+                CONSOLE DE LECTURE ZEN v2.0
+              </span>
+              <span className="text-cyan-400/60">• Progression : {scrollProgress}%</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Font Size Selector */}
+              <div className="flex items-center bg-[#0b0e1a] rounded-lg border border-cyan-500/30 p-0.5">
+                <button
+                  onClick={() => setZenFontSize('base')}
+                  className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                    zenFontSize === 'base' ? 'bg-cyan-500/30 text-white font-bold' : 'text-cyan-400/60 hover:text-white'
+                  }`}
+                  title="Taille de texte standard"
+                >
+                  A-
+                </button>
+                <button
+                  onClick={() => setZenFontSize('lg')}
+                  className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                    zenFontSize === 'lg' ? 'bg-cyan-500/30 text-white font-bold' : 'text-cyan-400/60 hover:text-white'
+                  }`}
+                  title="Taille de texte grande"
+                >
+                  A
+                </button>
+                <button
+                  onClick={() => setZenFontSize('xl')}
+                  className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                    zenFontSize === 'xl' ? 'bg-cyan-500/30 text-white font-bold' : 'text-cyan-400/60 hover:text-white'
+                  }`}
+                  title="Taille de texte très grande"
+                >
+                  A+
+                </button>
+              </div>
+
+              {/* Typography switcher */}
+              <button
+                onClick={() => setIsMonoFont(!isMonoFont)}
+                className={`px-2 py-1 rounded-lg border text-[11px] transition-all cursor-pointer ${
+                  isMonoFont
+                    ? 'border-cyan-400 bg-cyan-950 text-cyan-200 shadow-[0_0_8px_rgba(0,243,255,0.3)]'
+                    : 'border-cyan-500/30 text-cyan-400/70 hover:text-cyan-200'
+                }`}
+                title="Basculer entre police Monospace et Sans-Serif"
+              >
+                {isMonoFont ? 'Monospace' : 'Sans-Serif'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {loading || !article ? (
-          <div className="p-16 text-center text-stone-500 dark:text-stone-400">
-            <div className="w-8 h-8 border-3 border-emerald-600 dark:border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="font-medium text-sm">Chargement de l'article...</p>
+          <div className="p-16 text-center text-cyan-400">
+            <div className="w-8 h-8 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4 shadow-[0_0_10px_rgba(0,243,255,0.8)]" />
+            <p className="font-mono text-sm">Chargement de l'article...</p>
           </div>
         ) : (
-          <div className="p-4 sm:p-8 flex-1 overflow-y-auto">
+          <div
+            onScroll={handleScroll}
+            className={`flex-1 overflow-y-auto transition-all ${
+              isZenMode ? 'p-5 sm:p-12 max-w-3xl mx-auto w-full' : 'p-4 sm:p-8'
+            }`}
+          >
             {/* Article Title */}
-            <h1 className="font-serif text-2xl sm:text-4xl font-black text-stone-900 dark:text-stone-50 leading-tight tracking-tight">
+            <h1
+              className={`font-black text-white leading-tight tracking-tight ${
+                isZenMode ? 'text-3xl sm:text-5xl font-mono text-cyan-200' : 'text-2xl sm:text-4xl'
+              }`}
+            >
               {article.title}
             </h1>
 
             {/* Author Box */}
-            <div className="mt-5 p-4 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 flex flex-wrap items-center justify-between gap-4 transition-colors">
+            <div className="mt-5 p-4 rounded-xl bg-[#101428] border border-cyan-500/30 flex flex-wrap items-center justify-between gap-4 transition-all shadow-[0_0_15px_rgba(0,243,255,0.06)]">
               <button
                 onClick={() => onOpenProfile(article.authorId)}
                 className="flex items-center gap-3 text-left group cursor-pointer"
@@ -462,16 +592,16 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   }
                   alt={article.authorName}
                   referrerPolicy="no-referrer"
-                  className="w-12 h-12 rounded-full object-cover border border-stone-200 dark:border-stone-700 group-hover:ring-2 group-hover:ring-emerald-600 transition-all"
+                  className="w-12 h-12 rounded-full object-cover border border-cyan-500/40 group-hover:border-cyan-400 group-hover:shadow-[0_0_10px_rgba(0,243,255,0.5)] transition-all"
                 />
                 <div>
-                  <div className="flex items-center gap-1.5 font-bold text-sm sm:text-base text-stone-900 dark:text-stone-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                  <div className="flex items-center gap-1.5 font-bold text-sm sm:text-base text-white group-hover:text-cyan-300 transition-colors">
                     <span>{article.mediaName || article.authorName}</span>
                     {article.isAuthorVerified && (
-                      <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" title="Compte officiel vérifié" />
+                      <CheckCircle2 className="w-4 h-4 text-cyan-400" title="Compte officiel vérifié" />
                     )}
                   </div>
-                  <div className="text-xs text-stone-500 dark:text-stone-400">
+                  <div className="text-xs text-cyan-400/60 font-mono">
                     {article.mediaName && article.authorName !== article.mediaName && (
                       <span>Par {article.authorName} • </span>
                     )}
@@ -484,10 +614,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <button
                   id="follow-author-btn"
                   onClick={handleFollowAuthor}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold font-mono transition-all shadow-xs cursor-pointer ${
                     isFollowingAuthor
-                      ? 'bg-stone-200 dark:bg-stone-750 text-stone-800 dark:text-stone-200 hover:bg-stone-300 dark:hover:bg-stone-700'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                      : 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_12px_rgba(0,243,255,0.4)]'
                   }`}
                 >
                   {isFollowingAuthor ? (
@@ -539,9 +669,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               </div>
             )}
 
+            {/* Fact Check Report & Trust Indicator */}
+            <FactCheckBadge factCheck={article.factCheck} />
+
             {/* Article Summary Quote */}
             {article.summary && (
-              <div className="mt-6 p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border-l-4 border-amber-600 dark:border-amber-500 text-stone-800 dark:text-stone-200 font-medium text-sm sm:text-base leading-relaxed italic transition-colors">
+              <div className="mt-4 p-4 rounded-xl bg-cyan-950/40 border-l-4 border-cyan-400 text-cyan-100 font-medium text-sm sm:text-base leading-relaxed italic shadow-[0_0_15px_rgba(0,243,255,0.06)]">
                 « {article.summary} »
               </div>
             )}
@@ -550,8 +683,8 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             {article.videoUrl && (
               <div className="mt-6">
                 <div className="mb-2 flex items-center gap-2">
-                  <VideoIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <h3 className="font-bold text-sm text-stone-900 dark:text-stone-100">Reportage vidéo exclusif :</h3>
+                  <VideoIcon className="w-4 h-4 text-cyan-400" />
+                  <h3 className="font-bold text-sm text-white">Reportage vidéo exclusif :</h3>
                 </div>
                 <VideoPlayer
                   src={article.videoUrl}
@@ -562,7 +695,19 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             )}
 
             {/* Full Article Content */}
-            <div className="mt-6 text-stone-800 dark:text-stone-200 text-base sm:text-lg leading-relaxed whitespace-pre-line font-serif transition-colors">
+            <div
+              className={`mt-6 leading-relaxed whitespace-pre-line ${
+                isMonoFont ? 'font-mono' : 'font-sans'
+              } ${
+                zenFontSize === 'sm'
+                  ? 'text-sm sm:text-base'
+                  : zenFontSize === 'base'
+                  ? 'text-base sm:text-lg'
+                  : zenFontSize === 'xl'
+                  ? 'text-xl sm:text-2xl leading-loose'
+                  : 'text-lg sm:text-xl'
+              } ${isZenMode ? 'text-slate-100' : 'text-slate-200'}`}
+            >
               {article.content}
             </div>
 
@@ -574,9 +719,16 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               />
             )}
 
+            {/* Interactive Opinion Poll & Barometer */}
+            <ArticlePoll
+              articleId={article.id}
+              poll={article.poll}
+              onOpenAuth={onOpenAuth}
+            />
+
             {/* Tags */}
             {article.tags && article.tags.length > 0 && (
-              <div className="mt-8 flex flex-wrap gap-2 pt-4 border-t border-stone-100 dark:border-stone-800">
+              <div className="mt-8 flex flex-wrap gap-2 pt-4 border-t border-cyan-500/20">
                 {article.tags.map((t, idx) => (
                   <button
                     key={idx}
@@ -587,7 +739,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                         onClose();
                       }
                     }}
-                    className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 transition-colors cursor-pointer"
+                    className="text-xs font-mono font-semibold px-3 py-1 rounded-full bg-[#101428] hover:bg-cyan-950/60 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 transition-all cursor-pointer"
                   >
                     #{t}
                   </button>
@@ -596,31 +748,31 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             )}
 
             {/* Interaction Bar */}
-            <div className="mt-8 p-3 rounded-2xl bg-stone-100 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 flex items-center justify-between transition-colors">
+            <div className="mt-8 p-3 rounded-2xl bg-[#101428] border border-cyan-500/30 flex items-center justify-between shadow-[0_0_20px_rgba(0,243,255,0.06)]">
               <div className="flex items-center gap-3">
                 <button
                   id="modal-like-article-btn"
                   onClick={handleLike}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all cursor-pointer font-mono ${
                     isLiked
-                      ? 'bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-900'
-                      : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-750'
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+                      : 'bg-[#0b0e1a] text-slate-300 hover:text-white border border-cyan-500/25'
                   }`}
                 >
-                  <Heart className={`w-4 h-4 transition-transform active:scale-125 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
+                  <Heart className={`w-4 h-4 transition-transform active:scale-125 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                   <span>{likesCount} likes</span>
                 </button>
 
                 <button
                   id="modal-bookmark-article-btn"
                   onClick={handleBookmark}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all cursor-pointer font-mono ${
                     isBookmarked
-                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-900'
-                      : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-750'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(0,243,255,0.5)]'
+                      : 'bg-[#0b0e1a] text-slate-300 hover:text-white border border-cyan-500/25'
                   }`}
                 >
-                  <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-emerald-700 dark:fill-emerald-400' : ''}`} />
+                  <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-cyan-400 text-cyan-400' : ''}`} />
                   <span className="hidden sm:inline">Enregistrer</span>
                 </button>
               </div>
@@ -629,7 +781,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <button
                   id="modal-share-article-btn"
                   onClick={() => setShowShareModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-750 text-xs font-bold transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#0b0e1a] text-cyan-300 hover:text-white border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer font-mono"
                 >
                   <Share2 className="w-4 h-4" />
                   <span className="hidden sm:inline">Partager</span>
@@ -638,7 +790,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <button
                   id="modal-report-article-btn"
                   onClick={() => (isAuthenticated ? setShowReportModal(true) : onOpenAuth())}
-                  className="p-2 text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-stone-800 rounded-full transition-colors cursor-pointer"
+                  className="p-2 text-cyan-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors cursor-pointer"
                   title="Signaler un problème sur cet article"
                 >
                   <Flag className="w-4 h-4" />
@@ -648,10 +800,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
             {/* Recommended Articles Section ("À lire aussi") */}
             {relatedArticles.length > 0 && (
-              <div className="mt-8 pt-6 border-t border-stone-200 dark:border-stone-800">
-                <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-100 mb-4 flex items-center gap-2">
+              <div className="mt-8 pt-6 border-t border-cyan-500/20">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <span>À lire aussi</span>
-                  <span className="text-xs font-sans font-normal px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
+                  <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-cyan-950/70 text-cyan-300 border border-cyan-500/30">
                     Recommandations
                   </span>
                 </h3>
@@ -664,10 +816,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                           onOpenArticle(rel);
                         }
                       }}
-                      className="group cursor-pointer flex sm:flex-col gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-850 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 border border-stone-200/80 dark:border-stone-800 transition-all"
+                      className="group cursor-pointer flex sm:flex-col gap-3 p-3 rounded-xl bg-[#101428] hover:bg-[#141a35] border border-cyan-500/25 hover:border-cyan-400/60 shadow-[0_0_12px_rgba(0,243,255,0.05)] hover:shadow-[0_0_20px_rgba(0,243,255,0.2)] transition-all"
                     >
                       {rel.coverImage && (
-                        <div className="w-20 h-20 sm:w-full sm:h-28 rounded-lg overflow-hidden shrink-0 bg-stone-200 dark:bg-stone-800">
+                        <div className="w-20 h-20 sm:w-full sm:h-28 rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-cyan-500/20">
                           <img
                             src={getCoverUrl(rel.coverImage, 400, 240)}
                             alt={rel.title}
@@ -677,10 +829,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                         </div>
                       )}
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <h4 className="font-bold text-xs sm:text-sm text-stone-900 dark:text-stone-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 line-clamp-2 leading-snug">
+                        <h4 className="font-bold text-xs sm:text-sm text-slate-100 group-hover:text-cyan-300 line-clamp-2 leading-snug transition-colors">
                           {rel.title}
                         </h4>
-                        <div className="mt-2 text-[11px] text-stone-500 dark:text-stone-400 flex items-center gap-2">
+                        <div className="mt-2 text-[11px] text-cyan-400/60 font-mono flex items-center gap-2">
                           <span>{rel.categoryName || 'Actualité'}</span>
                           <span>•</span>
                           <span>
@@ -698,10 +850,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             )}
 
             {/* Discussion / Comments Section */}
-            <section className="mt-10 pt-6 border-t border-stone-200 dark:border-stone-800">
+            <section className="mt-10 pt-6 border-t border-cyan-500/20">
               <div className="flex items-center gap-2 mb-6">
-                <MessageSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                <h2 className="text-xl font-extrabold text-stone-900 dark:text-stone-100">
+                <MessageSquare className="w-5 h-5 text-cyan-400" />
+                <h2 className="text-xl font-extrabold text-white">
                   Commentaires ({comments.length})
                 </h2>
               </div>
@@ -717,7 +869,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       }
                       alt={user?.name}
                       referrerPolicy="no-referrer"
-                      className="w-9 h-9 rounded-full object-cover border border-stone-200 dark:border-stone-700 shrink-0"
+                      className="w-9 h-9 rounded-full object-cover border border-cyan-500/40 shrink-0"
                     />
                     <div className="flex-1">
                       <textarea
@@ -726,13 +878,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         placeholder="Exprimez votre avis citoyen dans le respect et la courtoisie (au moins 2 caractères)..."
-                        className="w-full p-3 text-sm bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-700 rounded-xl text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-stone-800 transition-all resize-none"
+                        className="w-full p-3 text-sm bg-[#101428] border border-cyan-500/30 rounded-xl text-slate-100 placeholder:text-cyan-400/40 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,243,255,0.3)] transition-all resize-none"
                       />
                       <div className="mt-2 flex justify-end">
                         <button
                           type="submit"
                           disabled={!newComment.trim() || isSubmittingComment}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-full transition-all cursor-pointer"
+                          className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 disabled:opacity-40 text-black text-xs font-bold font-mono rounded-full transition-all cursor-pointer shadow-[0_0_10px_rgba(0,243,255,0.4)]"
                         >
                           <Send className="w-3.5 h-3.5" />
                           <span>{isSubmittingComment ? 'Publication...' : 'Publier'}</span>
@@ -742,13 +894,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   </div>
                 </form>
               ) : (
-                <div className="mb-8 p-4 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-800 text-center transition-colors">
-                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">
+                <div className="mb-8 p-4 rounded-xl bg-[#101428] border border-cyan-500/30 text-center transition-all">
+                  <p className="text-xs sm:text-sm text-cyan-200">
                     Connectez-vous pour réagir et participer aux débats sur cet article.
                   </p>
                   <button
                     onClick={onOpenAuth}
-                    className="mt-2.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-full cursor-pointer"
+                    className="mt-2.5 px-4 py-1.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black text-xs font-bold font-mono rounded-full cursor-pointer shadow-[0_0_10px_rgba(0,243,255,0.4)]"
                   >
                     Se connecter / Créer un compte
                   </button>
@@ -758,7 +910,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               {/* Comments Thread List */}
               <div className="space-y-4">
                 {comments.length === 0 ? (
-                  <p className="text-sm text-stone-400 dark:text-stone-500 italic">Soyez le premier à commenter cet article !</p>
+                  <p className="text-sm text-cyan-400/50 italic font-mono">Soyez le premier à commenter cet article !</p>
                 ) : (
                   comments.map((comm) => {
                     const canModify = user && (user.id === comm.userId || user.role === 'admin');
@@ -768,7 +920,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                     return (
                       <div
                         key={comm.id}
-                        className="p-4 rounded-xl bg-stone-50/80 dark:bg-stone-850/80 border border-stone-200/60 dark:border-stone-800 transition-colors"
+                        className="p-4 rounded-xl bg-[#101428]/80 border border-cyan-500/25 hover:border-cyan-500/40 transition-all shadow-[0_0_12px_rgba(0,243,255,0.03)]"
                       >
                         {/* Comment author info */}
                         <div className="flex items-center justify-between">
@@ -780,13 +932,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                               }
                               alt={comm.userName}
                               referrerPolicy="no-referrer"
-                              className="w-7 h-7 rounded-full object-cover border border-stone-200 dark:border-stone-700"
+                              className="w-7 h-7 rounded-full object-cover border border-cyan-500/30"
                             />
-                            <span className="font-bold text-xs text-stone-900 dark:text-stone-100">{comm.userName}</span>
+                            <span className="font-bold text-xs text-white">{comm.userName}</span>
                             {comm.isUserVerified && (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
                             )}
-                            <span className="text-[11px] text-stone-400 dark:text-stone-500">
+                            <span className="text-[11px] text-cyan-400/50 font-mono">
                               {new Date(comm.createdAt).toLocaleDateString('fr-FR', {
                                 day: 'numeric',
                                 month: 'short',
@@ -795,7 +947,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                               })}
                             </span>
                             {comm.isEdited && (
-                              <span className="text-[10px] text-stone-400 dark:text-stone-500 italic font-medium">
+                              <span className="text-[10px] text-cyan-400/40 italic font-mono">
                                 (modifié)
                               </span>
                             )}
@@ -806,7 +958,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                             {canModify && editingCommentId !== comm.id && (
                               <button
                                 onClick={() => handleStartEditComment(comm)}
-                                className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded-md cursor-pointer"
+                                className="p-1 text-cyan-400/60 hover:text-cyan-300 rounded-md cursor-pointer"
                                 title="Modifier mon commentaire"
                               >
                                 <Edit className="w-3.5 h-3.5" />
@@ -814,8 +966,8 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                             )}
                             {canDelete && (
                               <button
-                                onClick={() => handleDeleteComment(comm.id)}
-                                className="p-1 text-stone-400 hover:text-red-600 dark:hover:text-red-400 rounded-md cursor-pointer"
+                                onClick={() => setCommentToDeleteId(comm.id)}
+                                className="p-1 text-cyan-400/60 hover:text-red-400 rounded-md cursor-pointer"
                                 title="Supprimer le commentaire"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -824,7 +976,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                             {user && user.id !== comm.userId && (
                               <button
                                 onClick={() => setReportingComment(comm)}
-                                className="p-1 text-stone-400 hover:text-red-600 dark:hover:text-red-400 rounded-md cursor-pointer"
+                                className="p-1 text-cyan-400/60 hover:text-red-400 rounded-md cursor-pointer"
                                 title="Signaler ce commentaire"
                               >
                                 <Flag className="w-3.5 h-3.5" />
@@ -840,39 +992,39 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                               rows={2}
                               value={editCommentContent}
                               onChange={(e) => setEditCommentContent(e.target.value)}
-                              className="w-full p-2.5 text-xs bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600"
+                              className="w-full p-2.5 text-xs bg-[#0b0e1a] border border-cyan-500/40 text-slate-100 rounded-lg focus:outline-none focus:border-cyan-400"
                             />
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => setEditingCommentId(null)}
-                                className="px-3 py-1 text-xs text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-md cursor-pointer"
+                                className="px-3 py-1 text-xs text-cyan-400/70 hover:bg-cyan-500/20 rounded-md cursor-pointer"
                               >
                                 Annuler
                               </button>
                               <button
                                 onClick={() => handleSaveEditComment(comm.id)}
-                                className="px-3 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md cursor-pointer"
+                                className="px-3 py-1 text-xs font-bold text-black bg-cyan-400 hover:bg-cyan-300 rounded-md cursor-pointer shadow-[0_0_8px_rgba(0,243,255,0.4)]"
                               >
                                 Enregistrer
                               </button>
                             </div>
                           </div>
                         ) : (
-                          <p className="mt-2 text-xs sm:text-sm text-stone-800 dark:text-stone-200 leading-relaxed whitespace-pre-line">
+                          <p className="mt-2 text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line">
                             {comm.content}
                           </p>
                         )}
 
                         {/* Comment action footer: Likes + Reply */}
-                        <div className="mt-3 flex items-center gap-4 text-xs text-stone-500 dark:text-stone-400">
+                        <div className="mt-3 flex items-center gap-4 text-xs text-cyan-400/60 font-mono">
                           {/* Like on comment */}
                           <button
                             onClick={() => handleToggleCommentLike(comm)}
                             className={`flex items-center gap-1 font-medium cursor-pointer transition-colors ${
-                              comm.isLiked ? 'text-red-600 dark:text-red-400 font-bold' : 'hover:text-red-600 dark:hover:text-red-400'
+                              comm.isLiked ? 'text-red-400 font-bold' : 'hover:text-red-400'
                             }`}
                           >
-                            <Heart className={`w-3.5 h-3.5 ${comm.isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
+                            <Heart className={`w-3.5 h-3.5 ${comm.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                             <span>{comm.likesCount || 0}</span>
                           </button>
 
@@ -882,7 +1034,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                               if (!isAuthenticated) return onOpenAuth();
                               setReplyingToId(replyingToId === comm.id ? null : comm.id);
                             }}
-                            className="flex items-center gap-1 font-semibold hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer"
+                            className="flex items-center gap-1 font-semibold hover:text-cyan-300 cursor-pointer"
                           >
                             <CornerDownRight className="w-3.5 h-3.5" />
                             <span>Répondre</span>
@@ -891,24 +1043,24 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
                         {/* Reply form */}
                         {replyingToId === comm.id && (
-                          <div className="mt-3 pt-3 border-t border-stone-200 dark:border-stone-800">
+                          <div className="mt-3 pt-3 border-t border-cyan-500/20">
                             <div className="flex gap-2">
                               <input
                                 type="text"
                                 value={replyContent}
                                 onChange={(e) => setReplyContent(e.target.value)}
                                 placeholder={`Répondre à ${comm.userName}...`}
-                                className="flex-1 px-3 py-1.5 text-xs bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600"
+                                className="flex-1 px-3 py-1.5 text-xs bg-[#0b0e1a] border border-cyan-500/40 text-slate-100 rounded-lg focus:outline-none focus:border-cyan-400"
                               />
                               <button
                                 onClick={() => handleAddReply(comm.id)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg cursor-pointer"
+                                className="px-3 py-1.5 bg-gradient-to-r from-cyan-400 to-blue-500 text-black text-xs font-bold font-mono rounded-lg cursor-pointer shadow-[0_0_8px_rgba(0,243,255,0.4)]"
                               >
                                 Envoyer
                               </button>
                               <button
                                 onClick={() => setReplyingToId(null)}
-                                className="px-2 py-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 text-xs cursor-pointer"
+                                className="px-2 py-1.5 text-cyan-400/60 hover:text-cyan-300 text-xs cursor-pointer"
                               >
                                 Annuler
                               </button>
@@ -918,7 +1070,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
                         {/* Nested Replies */}
                         {comm.replies && comm.replies.length > 0 && (
-                          <div className="mt-3 pl-4 sm:pl-6 border-l-2 border-stone-200 dark:border-stone-700 space-y-3">
+                          <div className="mt-3 pl-4 sm:pl-6 border-l-2 border-cyan-500/30 space-y-3">
                             {comm.replies.map((reply) => {
                               const canModifyReply = user && (user.id === reply.userId || user.role === 'admin');
                               const canDeleteReply =
@@ -935,20 +1087,20 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                                         }
                                         alt={reply.userName}
                                         referrerPolicy="no-referrer"
-                                        className="w-6 h-6 rounded-full object-cover border border-stone-200 dark:border-stone-700"
+                                        className="w-6 h-6 rounded-full object-cover border border-cyan-500/30"
                                       />
-                                      <span className="font-bold text-xs text-stone-900 dark:text-stone-100">{reply.userName}</span>
+                                      <span className="font-bold text-xs text-white">{reply.userName}</span>
                                       {reply.isUserVerified && (
-                                        <CheckCircle2 className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                        <CheckCircle2 className="w-3 h-3 text-cyan-400" />
                                       )}
-                                      <span className="text-[10px] text-stone-400 dark:text-stone-500">
+                                      <span className="text-[10px] text-cyan-400/50 font-mono">
                                         {new Date(reply.createdAt).toLocaleDateString('fr-FR', {
                                           day: 'numeric',
                                           month: 'short',
                                         })}
                                       </span>
                                       {reply.isEdited && (
-                                        <span className="text-[10px] text-stone-400 dark:text-stone-500 italic">
+                                        <span className="text-[10px] text-cyan-400/40 italic font-mono">
                                           (modifié)
                                         </span>
                                       )}
@@ -957,8 +1109,8 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                                     <div className="flex items-center gap-1">
                                       {canDeleteReply && (
                                         <button
-                                          onClick={() => handleDeleteComment(reply.id)}
-                                          className="p-1 text-stone-400 hover:text-red-600 dark:hover:text-red-400 rounded-md cursor-pointer"
+                                          onClick={() => setCommentToDeleteId(reply.id)}
+                                          className="p-1 text-cyan-400/60 hover:text-red-400 rounded-md cursor-pointer"
                                           title="Supprimer la réponse"
                                         >
                                           <Trash2 className="w-3 h-3" />
@@ -967,7 +1119,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                                       {user && user.id !== reply.userId && (
                                         <button
                                           onClick={() => setReportingComment(reply)}
-                                          className="p-1 text-stone-400 hover:text-red-600 dark:hover:text-red-400 rounded-md cursor-pointer"
+                                          className="p-1 text-cyan-400/60 hover:text-red-400 rounded-md cursor-pointer"
                                           title="Signaler la réponse"
                                         >
                                           <Flag className="w-3 h-3" />
@@ -976,18 +1128,18 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                                     </div>
                                   </div>
 
-                                  <p className="mt-1 text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                                  <p className="mt-1 text-xs text-slate-300 leading-relaxed">
                                     {reply.content}
                                   </p>
 
-                                  <div className="mt-1.5 flex items-center gap-3 text-[11px] text-stone-500 dark:text-stone-400">
+                                  <div className="mt-1.5 flex items-center gap-3 text-[11px] text-cyan-400/60 font-mono">
                                     <button
                                       onClick={() => handleToggleCommentLike(reply)}
                                       className={`flex items-center gap-1 cursor-pointer ${
-                                        reply.isLiked ? 'text-red-600 dark:text-red-400 font-bold' : 'hover:text-red-600 dark:hover:text-red-400'
+                                        reply.isLiked ? 'text-red-400 font-bold' : 'hover:text-red-400'
                                       }`}
                                     >
-                                      <Heart className={`w-3 h-3 ${reply.isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
+                                      <Heart className={`w-3 h-3 ${reply.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                                       <span>{reply.likesCount || 0}</span>
                                     </button>
                                   </div>
@@ -1015,30 +1167,30 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
         {/* Report Article Modal */}
         {showReportModal && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4">
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in-95 transition-colors">
-              <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                <Flag className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+            <div className="bg-[#0b0e1a] border border-cyan-500/40 rounded-2xl max-w-md w-full p-6 shadow-[0_0_30px_rgba(0,243,255,0.2)] animate-in zoom-in-95 transition-all text-slate-100">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Flag className="w-5 h-5 text-red-400" />
                 <span>Signaler cet article</span>
               </h3>
-              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+              <p className="mt-1 text-xs text-cyan-400/60">
                 Aidez l’équipe de modération à préserver la qualité et la véracité de l’information.
               </p>
 
               {reportSuccess ? (
-                <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 rounded-xl text-center font-medium text-sm">
+                <div className="mt-6 p-4 bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 rounded-xl text-center font-medium text-sm">
                   Merci ! Votre signalement a été transmis avec succès.
                 </div>
               ) : (
                 <form onSubmit={handleSendArticleReport} className="mt-4 space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                    <label className="block text-xs font-semibold font-mono text-cyan-300 mb-1">
                       Motif du signalement
                     </label>
                     <select
                       value={reportReason}
                       onChange={(e) => setReportReason(e.target.value)}
-                      className="w-full p-2.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600"
+                      className="w-full p-2.5 text-xs bg-[#101428] border border-cyan-500/40 text-slate-100 rounded-lg focus:outline-none focus:border-cyan-400"
                     >
                       <option value="Désinformation / Fausses nouvelles">Désinformation / Fausses nouvelles</option>
                       <option value="Discours de haine ou discrimination">Discours de haine ou discrimination</option>
@@ -1050,7 +1202,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                    <label className="block text-xs font-semibold font-mono text-cyan-300 mb-1">
                       Précisions complémentaires (facultatif)
                     </label>
                     <textarea
@@ -1058,7 +1210,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       value={reportDetails}
                       onChange={(e) => setReportDetails(e.target.value)}
                       placeholder="Expliquez en quelques mots ce qui pose problème..."
-                      className="w-full p-2.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600 resize-none"
+                      className="w-full p-2.5 text-xs bg-[#101428] border border-cyan-500/40 text-slate-100 placeholder:text-cyan-400/40 rounded-lg focus:outline-none focus:border-cyan-400 resize-none"
                     />
                   </div>
 
@@ -1066,13 +1218,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowReportModal(false)}
-                      className="px-4 py-2 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg cursor-pointer transition-colors"
+                      className="px-4 py-2 text-xs font-medium text-cyan-400 hover:bg-cyan-500/20 rounded-lg cursor-pointer transition-colors"
                     >
                       Annuler
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-xs cursor-pointer transition-colors"
+                      className="px-4 py-2 text-xs font-bold font-mono text-black bg-red-500 hover:bg-red-400 rounded-lg shadow-[0_0_10px_rgba(239,68,68,0.5)] cursor-pointer transition-all"
                     >
                       Confirmer le signalement
                     </button>
@@ -1085,30 +1237,30 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
         {/* Report Comment Modal */}
         {reportingComment && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4">
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in-95 transition-colors">
-              <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                <Flag className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+            <div className="bg-[#0b0e1a] border border-cyan-500/40 rounded-2xl max-w-md w-full p-6 shadow-[0_0_30px_rgba(0,243,255,0.2)] animate-in zoom-in-95 transition-all text-slate-100">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Flag className="w-5 h-5 text-red-400" />
                 <span>Signaler un commentaire</span>
               </h3>
-              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+              <p className="mt-1 text-xs text-cyan-400/60 font-mono">
                 Commentaire de {reportingComment.userName}: "{reportingComment.content.substring(0, 50)}..."
               </p>
 
               {commentReportSuccess ? (
-                <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 rounded-xl text-center font-medium text-sm">
+                <div className="mt-6 p-4 bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 rounded-xl text-center font-medium text-sm">
                   Merci ! Le commentaire a été transmis à l’équipe de modération.
                 </div>
               ) : (
                 <form onSubmit={handleSendCommentReport} className="mt-4 space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                    <label className="block text-xs font-semibold font-mono text-cyan-300 mb-1">
                       Motif du signalement
                     </label>
                     <select
                       value={commentReportReason}
                       onChange={(e) => setCommentReportReason(e.target.value)}
-                      className="w-full p-2.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600"
+                      className="w-full p-2.5 text-xs bg-[#101428] border border-cyan-500/40 text-slate-100 rounded-lg focus:outline-none focus:border-cyan-400"
                     >
                       <option value="Contenu haineux ou insultant">Contenu haineux ou insultant</option>
                       <option value="Harcèlement ou intimidation">Harcèlement ou intimidation</option>
@@ -1119,7 +1271,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                    <label className="block text-xs font-semibold font-mono text-cyan-300 mb-1">
                       Détails (facultatif)
                     </label>
                     <textarea
@@ -1127,7 +1279,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       value={commentReportDetails}
                       onChange={(e) => setCommentReportDetails(e.target.value)}
                       placeholder="Pourquoi ce commentaire enfreint-il les règles de la communauté ?"
-                      className="w-full p-2.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600 resize-none"
+                      className="w-full p-2.5 text-xs bg-[#101428] border border-cyan-500/40 text-slate-100 placeholder:text-cyan-400/40 rounded-lg focus:outline-none focus:border-cyan-400 resize-none"
                     />
                   </div>
 
@@ -1135,13 +1287,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setReportingComment(null)}
-                      className="px-4 py-2 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg cursor-pointer transition-colors"
+                      className="px-4 py-2 text-xs font-medium text-cyan-400 hover:bg-cyan-500/20 rounded-lg cursor-pointer transition-colors"
                     >
                       Annuler
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-xs cursor-pointer transition-colors"
+                      className="px-4 py-2 text-xs font-bold font-mono text-black bg-red-500 hover:bg-red-400 rounded-lg shadow-[0_0_10px_rgba(239,68,68,0.5)] cursor-pointer transition-all"
                     >
                       Signaler ce commentaire
                     </button>
@@ -1151,6 +1303,30 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             </div>
           </div>
         )}
+        {/* Confirm Dialogs */}
+        <AdminConfirmDialog
+          isOpen={confirmDeleteArticle}
+          title="Supprimer cet article"
+          message="Êtes-vous certain de vouloir supprimer cet article ? Cette action est irréversible."
+          confirmLabel="Supprimer définitivement"
+          cancelLabel="Annuler"
+          isDestructive={true}
+          onConfirm={handleDeleteArticle}
+          onCancel={() => setConfirmDeleteArticle(false)}
+        />
+
+        <AdminConfirmDialog
+          isOpen={!!commentToDeleteId}
+          title="Supprimer ce commentaire"
+          message="Voulez-vous vraiment supprimer ce commentaire ?"
+          confirmLabel="Supprimer"
+          cancelLabel="Annuler"
+          isDestructive={true}
+          onConfirm={() => {
+            if (commentToDeleteId) handleDeleteComment(commentToDeleteId);
+          }}
+          onCancel={() => setCommentToDeleteId(null)}
+        />
       </div>
     </div>
   );

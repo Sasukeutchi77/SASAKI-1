@@ -11,19 +11,19 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'purge_info_theme';
+const STORAGE_KEY = 'purge_info_neon_theme';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      const saved = (localStorage.getItem(STORAGE_KEY) || localStorage.getItem('fasoinfo_theme')) as Theme;
+      const saved = localStorage.getItem(STORAGE_KEY) as Theme;
       if (saved === 'light' || saved === 'dark' || saved === 'system') {
         return saved;
       }
     } catch {
       // Ignored
     }
-    return 'light'; // Default to clean, modern light mode
+    return 'dark'; // Default to Futuristic Neon Dark Theme
   });
 
   const [isDark, setIsDark] = useState<boolean>(false);

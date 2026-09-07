@@ -66,23 +66,23 @@ export const ShareModal: React.FC<ShareModalProps> = ({ article, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200">
       <div
         id="share-modal"
-        className="bg-white dark:bg-stone-900 rounded-2xl w-full max-w-md shadow-2xl border border-stone-200/80 dark:border-stone-800 overflow-hidden transition-colors"
+        className="bg-[#0b0e1a] rounded-2xl w-full max-w-md shadow-[0_0_50px_rgba(0,243,255,0.25)] border border-cyan-500/40 overflow-hidden transition-colors font-mono text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between transition-colors">
+        <div className="p-4 sm:p-5 bg-[#101428] border-b border-cyan-500/30 flex items-center justify-between transition-colors">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_10px_rgba(0,243,255,0.3)]">
               <Share2 className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm sm:text-base">Partager cet article</h3>
+            <h3 className="font-bold text-white text-sm sm:text-base">Partager cet article</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full text-cyan-400/60 hover:text-cyan-200 hover:bg-cyan-500/20 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -91,20 +91,20 @@ export const ShareModal: React.FC<ShareModalProps> = ({ article, onClose }) => {
         {/* Content */}
         <div className="p-4 sm:p-5 space-y-4">
           {/* Article preview preview */}
-          <div className="p-3 bg-stone-50 dark:bg-stone-850 rounded-xl border border-stone-200 dark:border-stone-750 flex gap-3 items-center">
+          <div className="p-3 bg-[#101428] rounded-xl border border-cyan-500/30 flex gap-3 items-center">
             {article.coverImage && (
               <img
                 src={article.coverImage}
                 alt=""
                 referrerPolicy="no-referrer"
-                className="w-14 h-14 rounded-lg object-cover shrink-0 border border-stone-200 dark:border-stone-700"
+                className="w-14 h-14 rounded-lg object-cover shrink-0 border border-cyan-500/40"
               />
             )}
             <div className="min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">
                 {article.categoryName}
               </span>
-              <p className="font-bold text-xs sm:text-sm text-stone-900 dark:text-stone-100 line-clamp-2 leading-snug">
+              <p className="font-bold text-xs sm:text-sm text-slate-100 line-clamp-2 leading-snug">
                 {article.title}
               </p>
             </div>
@@ -114,7 +114,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ article, onClose }) => {
           {typeof navigator !== 'undefined' && 'share' in navigator && (
             <button
               onClick={handleNativeShare}
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 hover:brightness-110 text-black font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all cursor-pointer"
             >
               <Share2 className="w-4 h-4" />
               <span>Partager via les applications de mon appareil</span>
@@ -142,7 +142,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ article, onClose }) => {
 
           {/* Copy Link Input Bar */}
           <div>
-            <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1.5">
+            <label className="block text-xs font-semibold text-cyan-400 mb-1.5">
               Lien direct vers l'actualité
             </label>
             <div className="flex items-center gap-2">
@@ -150,15 +150,15 @@ export const ShareModal: React.FC<ShareModalProps> = ({ article, onClose }) => {
                 type="text"
                 readOnly
                 value={shareUrl}
-                className="flex-1 px-3 py-2 text-xs bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-700 rounded-xl text-stone-800 dark:text-stone-200 select-all focus:outline-none"
+                className="flex-1 px-3 py-2 text-xs bg-[#141933] border border-cyan-500/40 rounded-xl text-cyan-200 select-all focus:outline-none shadow-[0_0_10px_rgba(0,243,255,0.1)]"
               />
               <button
                 type="button"
                 onClick={handleCopy}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
                   copied
-                    ? 'bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs'
-                    : 'bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900'
+                    ? 'bg-fuchsia-600 text-white shadow-[0_0_10px_rgba(217,70,239,0.5)]'
+                    : 'bg-cyan-400 hover:bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,243,255,0.3)]'
                 }`}
               >
                 {copied ? (

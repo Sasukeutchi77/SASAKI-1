@@ -107,36 +107,36 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const pendingVerifsCount = verifRequests.filter((r) => r.status === 'pending').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/70 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-xs animate-fadeIn">
       <div
-        className="w-full max-w-7xl h-[94vh] bg-stone-50 dark:bg-stone-900 rounded-2xl md:rounded-3xl shadow-2xl flex flex-col border border-stone-200 dark:border-stone-800 overflow-hidden transition-colors"
+        className="w-full max-w-7xl h-[94vh] bg-[#0b0e1a] rounded-2xl md:rounded-3xl shadow-[0_0_50px_rgba(0,243,255,0.25)] flex flex-col border border-cyan-500/40 overflow-hidden transition-all text-slate-100"
         role="dialog"
         aria-modal="true"
       >
         {/* Flash Notification Toast */}
         {flash && (
-          <div className="absolute top-4 right-4 z-50 px-4 py-2.5 bg-gray-900 dark:bg-stone-800 text-white text-xs font-semibold rounded-xl shadow-lg border border-gray-700 dark:border-stone-700 flex items-center gap-2 animate-slideDown">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="absolute top-4 right-4 z-50 px-4 py-2.5 bg-[#141933] text-cyan-300 text-xs font-mono font-semibold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.3)] border border-cyan-500/40 flex items-center gap-2 animate-slideDown">
+            <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
             <span>{flash}</span>
           </div>
         )}
 
         {/* Modal Top Header */}
-        <div className="px-5 py-3.5 bg-white dark:bg-stone-850 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between shrink-0 transition-colors">
+        <div className="px-5 py-3.5 bg-[#101428] border-b border-cyan-500/30 flex items-center justify-between shrink-0 transition-all">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-[#141933] border border-cyan-500/40 text-cyan-400 flex items-center justify-center shadow-[0_0_12px_rgba(0,243,255,0.25)]">
               <Shield className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-gray-900 dark:text-stone-100 tracking-tight">
+                <h2 className="text-base sm:text-lg font-black font-mono text-white tracking-tight">
                   Administration & Modération
                 </h2>
-                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-300">
+                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider bg-red-950/70 border border-red-500/40 text-red-300">
                   Accès Restreint
                 </span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-stone-400">
+              <p className="text-xs text-cyan-400/60 font-mono">
                 Supervision éditoriale, gestion des accréditations CSC et traçabilité d'audit
               </p>
             </div>
@@ -147,15 +147,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               onClick={handleGlobalRefresh}
               disabled={loading}
               title="Actualiser les données"
-              className="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-750 hover:text-stone-900 dark:hover:text-stone-100 transition flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+              className="p-2 rounded-xl bg-[#141933] border border-cyan-500/30 text-cyan-300 hover:border-cyan-400 hover:text-white transition flex items-center gap-1.5 text-xs font-mono font-medium cursor-pointer"
             >
-              <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-600 dark:text-emerald-400' : ''}`} />
+              <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
               <span className="hidden sm:inline">Actualiser</span>
             </button>
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
+              className="p-2 rounded-xl text-cyan-400/60 hover:text-cyan-200 hover:bg-cyan-500/20 transition cursor-pointer"
               aria-label="Fermer la console d'administration"
             >
               <X className="w-5 h-5" />
@@ -164,13 +164,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         </div>
 
         {/* Navigation Tabs Bar */}
-        <div className="bg-white dark:bg-stone-850 border-b border-stone-200 dark:border-stone-800 px-4 flex items-center gap-1 overflow-x-auto shrink-0 scrollbar-none transition-colors">
+        <div className="bg-[#0e1224] border-b border-cyan-500/30 px-4 flex items-center gap-1 overflow-x-auto shrink-0 scrollbar-none transition-all">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'overview'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
@@ -179,31 +179,31 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
           <button
             onClick={() => setActiveTab('users')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'users'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <Users className="w-4 h-4" />
             Utilisateurs
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-stone-750 text-gray-600 dark:text-stone-300 font-semibold">
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-[#141933] border border-cyan-500/30 text-cyan-300 font-semibold font-mono">
               {usersList.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('journalists')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'journalists'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <FileCheck className="w-4 h-4" />
             Journalistes & Accréditations
             {pendingVerifsCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold animate-pulse">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-amber-950/80 border border-amber-500/40 text-amber-300 font-bold font-mono animate-pulse">
                 {pendingVerifsCount}
               </span>
             )}
@@ -211,25 +211,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
           <button
             onClick={() => setActiveTab('media')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'media'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <Building2 className="w-4 h-4" />
             Médias & Rédactions
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-stone-750 text-gray-600 dark:text-stone-300 font-semibold">
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-[#141933] border border-cyan-500/30 text-cyan-300 font-semibold font-mono">
               {mediaHouses.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('media_assets')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'media_assets'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <ImageIcon className="w-4 h-4" />
@@ -238,25 +238,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
           <button
             onClick={() => setActiveTab('articles')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'articles'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <FileText className="w-4 h-4" />
             Articles
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-stone-750 text-gray-600 dark:text-stone-300 font-semibold">
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-[#141933] border border-cyan-500/30 text-cyan-300 font-semibold font-mono">
               {articles.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('comments')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'comments'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -265,16 +265,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
           <button
             onClick={() => setActiveTab('reports')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'reports'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <AlertTriangle className="w-4 h-4" />
             Signalements
             {pendingReportsCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 font-bold animate-pulse">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-red-950/80 border border-red-500/40 text-red-300 font-bold font-mono animate-pulse">
                 {pendingReportsCount}
               </span>
             )}
@@ -282,25 +282,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
           <button
             onClick={() => setActiveTab('categories')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'categories'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <Layers className="w-4 h-4" />
             Rubriques
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-stone-750 text-gray-600 dark:text-stone-300 font-semibold">
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-[#141933] border border-cyan-500/30 text-cyan-300 font-semibold font-mono">
               {categories.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('logs')}
-            className={`py-3 px-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            className={`py-3 px-3.5 text-xs font-bold font-mono whitespace-nowrap border-b-2 transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'logs'
-                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-stone-400 hover:text-gray-900 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <History className="w-4 h-4" />

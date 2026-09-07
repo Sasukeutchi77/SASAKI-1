@@ -14,16 +14,15 @@ import {
   Layers,
   Sun,
   Moon,
-  Trophy,
   Zap,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { GamifiedHUD } from './gamification/GamifiedHUD';
 
 interface HeaderProps {
   onSearchChange: (search: string) => void;
   searchQuery: string;
+  onGoHome?: () => void;
   onOpenSearchPage?: () => void;
   onOpenAuth: (tab?: 'login' | 'register') => void;
   onOpenCreateArticle: () => void;
@@ -33,12 +32,12 @@ interface HeaderProps {
   onOpenBookmarks: () => void;
   onOpenProfile: (userId: string) => void;
   onOpenMyProfile: () => void;
-  onOpenQuestsModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   searchQuery,
+  onGoHome,
   onOpenSearchPage,
   onOpenAuth,
   onOpenCreateArticle,
@@ -48,7 +47,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenBookmarks,
   onOpenProfile,
   onOpenMyProfile,
-  onOpenQuestsModal,
 }) => {
   const { user, isAuthenticated, logout, unreadNotifs, bookmarksCount, quickSwitch } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -57,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800 transition-colors">
+    <header className="sticky top-0 z-30 bg-[#07080f]/90 backdrop-blur-xl border-b border-cyan-500/25 shadow-[0_4px_25px_rgba(0,243,255,0.08)] transition-all">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-3">
           {/* Logo & Platform Name */}
@@ -66,25 +64,26 @@ export const Header: React.FC<HeaderProps> = ({
               id="brand-logo-btn"
               onClick={() => {
                 onSearchChange('');
+                if (onGoHome) onGoHome();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className="flex items-center gap-2 sm:gap-2.5 text-left group cursor-pointer"
             >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-rose-600 via-amber-500 to-emerald-500 flex items-center justify-center text-stone-950 font-black text-xl shadow-md tracking-tight group-hover:scale-105 group-hover:rotate-3 transition-transform">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-cyan-400 via-fuchsia-500 to-emerald-400 flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(0,243,255,0.5)] tracking-tight group-hover:scale-105 group-hover:shadow-[0_0_22px_rgba(0,243,255,0.8)] transition-all">
                 P
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-lg sm:text-xl tracking-tight text-stone-900 dark:text-stone-100">
-                    purge<span className="text-emerald-600 dark:text-emerald-400">-info</span>
+                  <span className="font-black text-lg sm:text-xl tracking-tight text-white">
+                    purge<span className="text-cyan-400 drop-shadow-[0_0_8px_rgba(0,243,255,0.7)]">-info</span>
                   </span>
-                  <span className="hidden xs:inline text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                    Live
+                  <span className="hidden xs:inline text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-400/40 shadow-[0_0_8px_rgba(0,243,255,0.3)]">
+                    Neon
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] text-stone-500 dark:text-stone-400 font-semibold">
-                  <span>Dev:</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-extrabold tracking-tight">
+                <div className="flex items-center gap-1 text-[10px] text-cyan-400/60 font-semibold font-mono">
+                  <span>DEV:</span>
+                  <span className="text-fuchsia-400 font-extrabold tracking-tight drop-shadow-[0_0_6px_rgba(240,38,211,0.5)]">
                     SASAKI COMPAGNIE
                   </span>
                 </div>
@@ -92,19 +91,14 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Gamified HUD in Top Header */}
-          <div className="flex items-center">
-            <GamifiedHUD onOpenQuestsModal={onOpenQuestsModal || (() => {})} />
-          </div>
-
           {/* Search bar (Desktop) */}
           <div className="hidden md:flex items-center flex-1 max-w-md mx-4 gap-2">
             <div className="relative w-full">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400/60" />
               <input
                 id="search-input-desktop"
                 type="text"
-                placeholder="Rechercher des articles, journalistes, médias, tags..."
+                placeholder="Rechercher articles, journalistes, tags..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 onKeyDown={(e) => {
@@ -112,13 +106,13 @@ export const Header: React.FC<HeaderProps> = ({
                     onOpenSearchPage();
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-800 focus:bg-white dark:focus:bg-stone-900 border border-transparent focus:border-emerald-600 dark:focus:border-emerald-500 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-[#0b0e1a] border border-cyan-500/30 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,243,255,0.25)] rounded-full focus:outline-none transition-all text-cyan-50 placeholder:text-cyan-500/40"
               />
               {searchQuery && (
                 <button
                   id="clear-search-btn"
                   onClick={() => onSearchChange('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400/60 hover:text-cyan-300 p-1 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -129,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-open-discovery-btn"
                 onClick={onOpenSearchPage}
-                className="px-3 py-2 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full shrink-0 transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-bold text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-400/50 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_8px_rgba(0,243,255,0.1)]"
                 title="Ouvrir la recherche avancée & découverte"
               >
                 Explorer
@@ -288,7 +282,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-create-article-btn"
                 onClick={onOpenCreateArticle}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 active:scale-95 rounded-full shadow-xs transition-all cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 active:scale-95 rounded-full shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all cursor-pointer"
               >
                 <PenSquare className="w-3.5 h-3.5" />
                 <span>Rédiger</span>
@@ -300,9 +294,9 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-admin-portal-btn"
                 onClick={onOpenAdmin}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-800 rounded-full transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-fuchsia-300 bg-fuchsia-950/50 hover:bg-fuchsia-900/60 border border-fuchsia-500/40 rounded-full shadow-[0_0_10px_rgba(240,38,211,0.25)] transition-all cursor-pointer"
               >
-                <Shield className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+                <Shield className="w-3.5 h-3.5 text-fuchsia-400" />
                 <span className="hidden sm:inline">Administration</span>
               </button>
             )}
@@ -393,17 +387,6 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
                     )}
 
-                    <button
-                      id="menu-open-quests-btn"
-                      onClick={() => {
-                        if (onOpenQuestsModal) onOpenQuestsModal();
-                        setShowUserMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2.5 font-bold cursor-pointer"
-                    >
-                      <Trophy className="w-4 h-4 text-amber-500" /> Quêtes & Trophées purge-info
-                    </button>
-
                     <div className="border-t border-stone-100 dark:border-stone-800 my-1.5" />
 
                     <div className="px-4 py-1 text-[10px] text-stone-400 dark:text-stone-500 font-semibold">
@@ -428,14 +411,14 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   id="header-login-btn"
                   onClick={() => onOpenAuth('login')}
-                  className="px-3 py-1.5 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-cyan-300 hover:text-white border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_10px_rgba(0,243,255,0.3)] rounded-lg transition-all cursor-pointer"
                 >
                   Connexion
                 </button>
                 <button
                   id="header-register-btn"
                   onClick={() => onOpenAuth('register')}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-xs transition-all cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 rounded-lg shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all cursor-pointer"
                 >
                   S'inscrire
                 </button>

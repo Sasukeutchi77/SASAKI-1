@@ -178,14 +178,14 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       : 'image/jpeg,image/png,image/webp,image/gif';
 
   return (
-    <div className={`w-full space-y-2.5 ${className}`}>
+    <div className={`w-full space-y-2.5 font-mono ${className}`}>
       {label && (
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+          <label className="block text-xs font-bold uppercase tracking-wider text-cyan-400">
             {label}
           </label>
           {description && (
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+            <span className="text-xs text-cyan-400/60">
               {description}
             </span>
           )}
@@ -200,10 +200,10 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         onClick={() => !disabled && !isUploading && fileInputRef.current?.click()}
         className={`relative overflow-hidden rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer ${getAspectClass()} ${
           isDragging
-            ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 ring-4 ring-emerald-500/20'
+            ? 'border-cyan-400 bg-cyan-500/10 shadow-[0_0_20px_rgba(0,243,255,0.4)] ring-4 ring-cyan-500/20'
             : previewUrl
-            ? 'border-neutral-300 dark:border-neutral-700 bg-neutral-900'
-            : 'border-neutral-300 dark:border-neutral-700 hover:border-emerald-600 dark:hover:border-emerald-500 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100/80 dark:hover:bg-neutral-800'
+            ? 'border-cyan-500/40 bg-[#0c1022]'
+            : 'border-cyan-500/30 hover:border-cyan-400 bg-[#101428] hover:bg-[#141933] shadow-[0_0_15px_rgba(0,243,255,0.05)]'
         } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
       >
         <input
@@ -235,14 +235,14 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             )}
 
             {/* Hover overlay with action buttons */}
-            <div className="absolute inset-0 bg-neutral-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
+            <div className="absolute inset-0 bg-[#0b0e1a]/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   fileInputRef.current?.click();
                 }}
-                className="px-3 py-1.5 bg-white/90 dark:bg-neutral-800/90 text-neutral-800 dark:text-white rounded-lg text-xs font-semibold shadow hover:bg-white flex items-center gap-1.5 transition"
+                className="px-3 py-1.5 bg-[#141933] border border-cyan-500/40 text-cyan-300 rounded-lg text-xs font-semibold shadow hover:border-cyan-400 flex items-center gap-1.5 transition cursor-pointer"
                 title="Remplacer le fichier"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -253,7 +253,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 <button
                   type="button"
                   onClick={handleRemove}
-                  className="px-3 py-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg text-xs font-semibold shadow flex items-center gap-1.5 transition"
+                  className="px-3 py-1.5 bg-red-950/80 border border-red-500/40 hover:bg-red-900/80 text-red-300 rounded-lg text-xs font-semibold shadow flex items-center gap-1.5 transition cursor-pointer"
                   title="Supprimer ce média"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -263,14 +263,14 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             </div>
 
             {/* Success badge */}
-            <div className="absolute top-2 left-2 px-2 py-1 bg-emerald-600 text-white text-[11px] font-semibold rounded-md flex items-center gap-1 shadow">
+            <div className="absolute top-2 left-2 px-2 py-1 bg-cyan-500 text-black text-[11px] font-bold rounded-md flex items-center gap-1 shadow-[0_0_10px_rgba(0,243,255,0.4)]">
               <CheckCircle2 className="w-3 h-3" />
               {type === 'video' ? 'Vidéo prête' : 'Image prête'}
             </div>
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-12 h-12 mb-3 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-12 h-12 mb-3 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.2)]">
               {type === 'video' ? (
                 <VideoIcon className="w-6 h-6" />
               ) : (
@@ -278,13 +278,13 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               )}
             </div>
 
-            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-1">
+            <p className="text-sm font-semibold text-slate-200 mb-1">
               Glissez-déposez votre {type === 'video' ? 'vidéo' : 'image'} ici, ou{' '}
-              <span className="text-emerald-600 dark:text-emerald-400 underline">
+              <span className="text-cyan-400 underline">
                 parcourez
               </span>
             </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-cyan-400/60">
               {type === 'video'
                 ? `Formats acceptés : MP4, WebM, MOV (max. ${maxSizeMB} Mo)`
                 : `Formats acceptés : JPG, PNG, WebP, GIF (max. ${maxSizeMB} Mo)`}
@@ -294,14 +294,14 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
         {/* Uploading progress overlay */}
         {isUploading && (
-          <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-10">
-            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm font-semibold text-white mb-2">
+          <div className="absolute inset-0 bg-[#0b0e1a]/90 backdrop-blur-xs flex flex-col items-center justify-center p-6 z-10">
+            <div className="w-10 h-10 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mb-3 shadow-[0_0_15px_rgba(0,243,255,0.5)]" />
+            <p className="text-sm font-semibold text-cyan-300 mb-2">
               Téléversement vers Cloudinary... {uploadProgress}%
             </p>
-            <div className="w-48 bg-neutral-700 rounded-full h-2 overflow-hidden">
+            <div className="w-48 bg-[#141933] border border-cyan-500/30 rounded-full h-2 overflow-hidden">
               <div
-                className="bg-emerald-500 h-full transition-all duration-200"
+                className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 h-full transition-all duration-200"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
@@ -311,13 +311,13 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-lg text-xs text-red-700 dark:text-red-400">
+        <div className="flex items-start gap-2 p-3 bg-red-950/70 border border-red-500/40 rounded-lg text-xs text-red-300">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <div className="flex-1">{errorMessage}</div>
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="text-red-600 hover:text-red-800 dark:hover:text-red-300"
+            className="text-red-400 hover:text-red-200 cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -328,18 +328,18 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       {showAltInput && previewUrl && (
         <div className="space-y-1 pt-1">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-neutral-500" />
+            <label className="text-xs font-medium text-cyan-400 flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5 text-cyan-400/70" />
               Texte alternatif (accessibilité & SEO)
             </label>
-            <span className="text-[10px] text-neutral-400">Recommandé</span>
+            <span className="text-[10px] text-cyan-400/50">Recommandé</span>
           </div>
           <input
             type="text"
             value={altText}
             onChange={(e) => onAltChange && onAltChange(e.target.value)}
             placeholder="Décrivez brièvement le contenu de l'image..."
-            className="w-full px-3 py-1.5 text-xs bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-1.5 text-xs bg-[#141933] border border-cyan-500/40 rounded-lg text-white placeholder-cyan-500/40 focus:outline-none focus:border-cyan-400"
           />
         </div>
       )}
@@ -347,8 +347,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       {/* Caption Field (for galleries) */}
       {showCaptionInput && previewUrl && (
         <div className="space-y-1 pt-1">
-          <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5 text-neutral-500" />
+          <label className="text-xs font-medium text-cyan-400 flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5 text-cyan-400/70" />
             Légende / Crédits photo
           </label>
           <input
@@ -356,7 +356,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             value={caption}
             onChange={(e) => onCaptionChange && onCaptionChange(e.target.value)}
             placeholder="Ex : Photo d'archives purge-info - Ouagadougou 2026"
-            className="w-full px-3 py-1.5 text-xs bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-1.5 text-xs bg-[#141933] border border-cyan-500/40 rounded-lg text-white placeholder-cyan-500/40 focus:outline-none focus:border-cyan-400"
           />
         </div>
       )}

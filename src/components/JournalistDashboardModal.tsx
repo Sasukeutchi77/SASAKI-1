@@ -154,25 +154,25 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
   const totalComments = articles.reduce((sum, a) => sum + (a.commentsCount || 0), 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-4 max-h-[92vh] transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-[#0b0e1a] border border-cyan-500/40 rounded-2xl shadow-[0_0_50px_rgba(0,243,255,0.25)] overflow-hidden flex flex-col my-4 max-h-[92vh] text-slate-100 transition-all">
         {/* Top Header */}
-        <div className="bg-stone-50 dark:bg-stone-850 border-b border-stone-200 dark:border-stone-800 px-6 py-4 flex items-center justify-between shrink-0 transition-colors">
+        <div className="bg-[#101428] border-b border-cyan-500/30 px-6 py-4 flex items-center justify-between shrink-0 transition-all">
           <div className="flex items-center gap-2.5">
             <img
               src={user?.avatar}
               alt={user?.name}
               referrerPolicy="no-referrer"
-              className="w-10 h-10 rounded-full object-cover border border-stone-200 dark:border-stone-700"
+              className="w-10 h-10 rounded-full object-cover border-2 border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.3)]"
             />
             <div>
-              <h2 className="text-base font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+              <h2 className="text-base font-black font-mono text-white flex items-center gap-1.5">
                 <span>Espace Journaliste & Rédaction</span>
                 {user?.isVerified && (
-                  <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" title="Compte officiel vérifié" />
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400" title="Compte officiel vérifié" />
                 )}
               </h2>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
+              <p className="text-xs text-cyan-400/70 font-mono">
                 {user?.mediaName ? `${user.mediaName} • ` : ''}
                 {user?.name}
               </p>
@@ -185,14 +185,14 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                 onOpenCreateArticle();
                 onClose();
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black rounded-lg text-xs font-bold font-mono shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:brightness-110 transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Nouvel article</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-stone-800 rounded-full transition cursor-pointer"
+              className="p-2 text-cyan-400/60 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -200,31 +200,31 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
         </div>
 
         {/* Stats Grid */}
-        <div className="p-6 bg-stone-100/60 dark:bg-stone-950/40 border-b border-stone-200 dark:border-stone-800 shrink-0 transition-colors">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-xl bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-800 shadow-2xs">
-              <div className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400 text-xs font-semibold">
-                <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Articles
+        <div className="p-6 bg-[#0e1224] border-b border-cyan-500/30 shrink-0 transition-all">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+            <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
+              <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
+                <FileText className="w-3.5 h-3.5 text-cyan-400" /> Articles
               </div>
-              <div className="mt-1 text-xl font-black text-stone-900 dark:text-stone-100">{articles.length}</div>
+              <div className="mt-1 text-xl font-black text-white">{articles.length}</div>
             </div>
-            <div className="p-3.5 rounded-xl bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-800 shadow-2xs">
-              <div className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400 text-xs font-semibold">
-                <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Lectures
+            <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
+              <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
+                <Eye className="w-3.5 h-3.5 text-cyan-400" /> Lectures
               </div>
-              <div className="mt-1 text-xl font-black text-stone-900 dark:text-stone-100">{totalViews.toLocaleString()}</div>
+              <div className="mt-1 text-xl font-black text-white">{totalViews.toLocaleString()}</div>
             </div>
-            <div className="p-3.5 rounded-xl bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-800 shadow-2xs">
-              <div className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400 text-xs font-semibold">
-                <Heart className="w-3.5 h-3.5 text-red-600 dark:text-red-400" /> Likes reçus
+            <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
+              <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
+                <Heart className="w-3.5 h-3.5 text-fuchsia-400" /> Likes reçus
               </div>
-              <div className="mt-1 text-xl font-black text-stone-900 dark:text-stone-100">{totalLikes}</div>
+              <div className="mt-1 text-xl font-black text-white">{totalLikes}</div>
             </div>
-            <div className="p-3.5 rounded-xl bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-800 shadow-2xs">
-              <div className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400 text-xs font-semibold">
-                <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Abonnés
+            <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
+              <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
+                <Users className="w-3.5 h-3.5 text-cyan-400" /> Abonnés
               </div>
-              <div className="mt-1 text-xl font-black text-stone-900 dark:text-stone-100">
+              <div className="mt-1 text-xl font-black text-white">
                 {(user?.followersCount || 0).toLocaleString()}
               </div>
             </div>
@@ -232,23 +232,23 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-stone-200 dark:border-stone-800 px-6 bg-white dark:bg-stone-900 shrink-0 transition-colors">
+        <div className="flex border-b border-cyan-500/30 px-6 bg-[#101428] shrink-0 font-mono transition-all">
           <button
             onClick={() => setActiveTab('articles')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
               activeTab === 'articles'
-                ? 'border-emerald-600 text-emerald-900 dark:text-emerald-400'
-                : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             Mes Articles ({articles.length})
           </button>
           <button
             onClick={() => setActiveTab('verification')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'verification'
-                ? 'border-emerald-600 text-emerald-900 dark:text-emerald-400'
-                : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -257,10 +257,10 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
 
           <button
             onClick={() => setActiveTab('media')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'media'
-                ? 'border-emerald-600 text-emerald-900 dark:text-emerald-400'
-                : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
             }`}
           >
             <ImageIcon className="w-3.5 h-3.5" />
@@ -272,17 +272,17 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
         <div className="p-6 overflow-y-auto flex-1">
           {activeTab === 'articles' ? (
             loading ? (
-              <div className="p-12 text-center text-stone-400 dark:text-stone-500">Chargement de vos publications...</div>
+              <div className="p-12 text-center text-cyan-400/60 font-mono">Chargement de vos publications...</div>
             ) : articles.length === 0 ? (
-              <div className="p-12 text-center text-stone-400 dark:text-stone-500">
-                <FileText className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <div className="p-12 text-center text-cyan-400/60 font-mono">
+                <FileText className="w-10 h-10 mx-auto mb-2 opacity-40 text-cyan-400" />
                 <p>Vous n'avez pas encore rédigé d'articles.</p>
                 <button
                   onClick={() => {
                     onOpenCreateArticle();
                     onClose();
                   }}
-                  className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 cursor-pointer"
+                  className="mt-3 px-4 py-2 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black rounded-lg text-xs font-bold font-mono hover:brightness-110 shadow-[0_0_15px_rgba(0,243,255,0.3)] cursor-pointer"
                 >
                   Rédiger mon premier article
                 </button>
@@ -292,25 +292,25 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                 {articles.map((art) => (
                   <div
                     key={art.id}
-                    className="p-4 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors"
+                    className="p-4 rounded-xl bg-[#101428] border border-cyan-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:border-cyan-400/60"
                   >
                     <div className="flex items-start gap-3 min-w-0">
                       <img
                         src={art.coverImage}
                         alt={art.title}
                         referrerPolicy="no-referrer"
-                        className="w-16 h-16 rounded-lg object-cover border border-stone-200 dark:border-stone-700 shrink-0"
+                        className="w-16 h-16 rounded-lg object-cover border border-cyan-500/30 shrink-0"
                       />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-200 dark:bg-stone-750 text-stone-700 dark:text-stone-300">
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#141933] border border-cyan-500/30 text-cyan-300">
                             {art.categoryName}
                           </span>
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
                               art.status === 'published'
-                                ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300'
-                                : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300'
+                                ? 'bg-cyan-950/70 border border-cyan-500/40 text-cyan-300'
+                                : 'bg-amber-950/70 border border-amber-500/40 text-amber-300'
                             }`}
                           >
                             {art.status === 'published' ? 'En ligne' : 'Brouillon'}
@@ -321,16 +321,16 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                             onOpenArticle(art);
                             onClose();
                           }}
-                          className="mt-1 font-bold text-sm text-stone-900 dark:text-stone-100 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer truncate"
+                          className="mt-1 font-bold text-sm text-white hover:text-cyan-300 cursor-pointer truncate"
                         >
                           {art.title}
                         </h4>
-                        <div className="mt-1 flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 font-medium">
+                        <div className="mt-1 flex items-center gap-3 text-xs text-cyan-400/60 font-mono">
                           <span className="flex items-center gap-1">
                             <Eye className="w-3.5 h-3.5" /> {art.viewsCount}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Heart className="w-3.5 h-3.5" /> {art.likesCount}
+                            <Heart className="w-3.5 h-3.5 text-fuchsia-400" /> {art.likesCount}
                           </span>
                           <span className="flex items-center gap-1">
                             <MessageSquare className="w-3.5 h-3.5" /> {art.commentsCount}
@@ -347,14 +347,14 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                           onOpenEditArticle(art);
                           onClose();
                         }}
-                        className="p-2 text-stone-600 dark:text-stone-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-stone-200/60 dark:hover:bg-stone-750 rounded-lg cursor-pointer"
+                        className="p-2 text-cyan-400 hover:text-cyan-200 hover:bg-[#141933] border border-cyan-500/30 rounded-lg cursor-pointer transition"
                         title="Modifier"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteArticle(art.id)}
-                        className="p-2 text-stone-600 dark:text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg cursor-pointer"
+                        className="p-2 text-red-400 hover:text-red-200 hover:bg-red-950/40 border border-red-500/30 rounded-lg cursor-pointer transition"
                         title="Supprimer"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -368,44 +368,44 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
             /* TAB: VERIFICATION */
             <div className="max-w-xl space-y-6">
               {user?.isVerified ? (
-                <div className="p-6 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-blue-900 dark:text-blue-200">
-                  <div className="flex items-center gap-2 font-black text-lg">
-                    <CheckCircle2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <div className="p-6 rounded-2xl bg-[#101428] border border-cyan-500/40 text-cyan-300 shadow-[0_0_20px_rgba(0,243,255,0.15)]">
+                  <div className="flex items-center gap-2 font-black font-mono text-lg text-white">
+                    <CheckCircle2 className="w-6 h-6 text-cyan-400" />
                     <span>Compte Journaliste / Média Certifié</span>
                   </div>
-                  <p className="mt-2 text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                  <p className="mt-2 text-xs text-slate-300 leading-relaxed font-mono">
                     Votre statut professionnel est vérifié par le Conseil Supérieur de la Communication (CSC) et
                     l'administration de purge-info. Le badge bleu officiel est actif à côté de votre nom sur tous vos articles.
                   </p>
                 </div>
               ) : user?.verificationStatus === 'pending' ? (
-                <div className="p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200">
-                  <div className="flex items-center gap-2 font-bold text-base">
-                    <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <div className="p-6 rounded-2xl bg-[#101428] border border-amber-500/40 text-amber-300">
+                  <div className="flex items-center gap-2 font-bold font-mono text-base text-white">
+                    <Clock className="w-5 h-5 text-amber-400" />
                     <span>Demande de vérification en cours d’examen</span>
                   </div>
-                  <p className="mt-2 text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                  <p className="mt-2 text-xs text-slate-300 leading-relaxed font-mono">
                     Vos documents ont été transmis à l’équipe de modération. Vous recevrez une notification dès que
                     l'administration aura validé votre carte de presse.
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSendVerification} className="space-y-4">
+                <form onSubmit={handleSendVerification} className="space-y-4 font-mono">
                   <div>
-                    <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">Demander le badge de vérification officielle</h3>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
+                    <h3 className="text-sm font-bold text-white">Demander le badge de vérification officielle</h3>
+                    <p className="text-xs text-cyan-400/60 mt-1">
                       Réservé aux journalistes détenteurs d'une carte de presse valide ou aux maisons de presse déclarées.
                     </p>
                   </div>
 
                   {verifMessage && (
-                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
+                    <div className="p-3 rounded-xl bg-[#141933] border border-cyan-500/40 text-cyan-300 text-xs font-semibold">
                       {verifMessage}
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">
                       Nom du Média ou Organe de Presse
                     </label>
                     <input
@@ -413,12 +413,12 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                       value={mediaNameInput}
                       onChange={(e) => setMediaNameInput(e.target.value)}
                       placeholder="Ex: L'Observateur du Sahel"
-                      className="w-full px-3 py-2 text-xs bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-stone-800"
+                      className="w-full px-3 py-2 text-xs bg-[#141933] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.1)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">
                       Numéro de carte de presse ou récépissé légal *
                     </label>
                     <input
@@ -427,12 +427,12 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                       value={pressCardNumber}
                       onChange={(e) => setPressCardNumber(e.target.value)}
                       placeholder="Ex: BF-PRESS-2026-XXXX"
-                      className="w-full px-3 py-2 text-xs bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-stone-800 font-mono"
+                      className="w-full px-3 py-2 text-xs bg-[#141933] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 font-mono shadow-[0_0_10px_rgba(0,243,255,0.1)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">
                       Motivation & Parcours journalistique *
                     </label>
                     <textarea
@@ -441,14 +441,14 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                       value={motivation}
                       onChange={(e) => setMotivation(e.target.value)}
                       placeholder="Indiquez vos spécialités, vos collaborations antérieures et vos engagements déontologiques..."
-                      className="w-full px-3 py-2 text-xs bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-stone-800 resize-none"
+                      className="w-full px-3 py-2 text-xs bg-[#141933] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 resize-none shadow-[0_0_10px_rgba(0,243,255,0.1)]"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={submittingVerif}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-2.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black hover:brightness-110 disabled:opacity-50 rounded-xl text-xs font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>{submittingVerif ? 'Envoi en cours...' : 'Soumettre ma demande à l’administration'}</span>
@@ -460,22 +460,22 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
             /* Media Library Tab for Journalist */
             <div className="space-y-4">
               {mediaFeedback && (
-                <div className="p-3 bg-stone-900 dark:bg-stone-800 text-white text-xs font-semibold rounded-xl flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div className="p-3 bg-[#141933] text-cyan-300 text-xs font-mono font-semibold rounded-xl flex items-center gap-2 border border-cyan-500/40">
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
                   <span>{mediaFeedback}</span>
                 </div>
               )}
 
               {/* Action and Filter Header */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-stone-50 dark:bg-stone-850 p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 transition-colors">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#101428] p-3.5 rounded-xl border border-cyan-500/30 transition-all font-mono">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setMediaFilter('all')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                       mediaFilter === 'all'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-750'
+                        ? 'bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black'
+                        : 'bg-[#141933] text-cyan-300 border border-cyan-500/30 hover:border-cyan-400'
                     }`}
                   >
                     Tous ({mediaList.length})
@@ -485,8 +485,8 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                     onClick={() => setMediaFilter('image')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                       mediaFilter === 'image'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-750'
+                        ? 'bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black'
+                        : 'bg-[#141933] text-cyan-300 border border-cyan-500/30 hover:border-cyan-400'
                     }`}
                   >
                     <ImageIcon className="w-3 h-3" />
@@ -497,8 +497,8 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                     onClick={() => setMediaFilter('video')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                       mediaFilter === 'video'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-750'
+                        ? 'bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black'
+                        : 'bg-[#141933] text-cyan-300 border border-cyan-500/30 hover:border-cyan-400'
                     }`}
                   >
                     <VideoIcon className="w-3 h-3" />
@@ -509,7 +509,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                 <button
                   type="button"
                   onClick={() => setShowMediaUploader(!showMediaUploader)}
-                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black hover:brightness-110 rounded-lg text-xs font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)] flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
                   <UploadCloud className="w-4 h-4" />
                   <span>{showMediaUploader ? 'Fermer l’outil d’envoi' : 'Téléverser un média Cloud'}</span>
@@ -518,8 +518,8 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
 
               {/* Uploader section */}
               {showMediaUploader && (
-                <div className="p-4 bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-800 rounded-xl shadow-xs space-y-2">
-                  <h4 className="text-xs font-bold text-stone-800 dark:text-stone-200 uppercase tracking-wider">
+                <div className="p-4 bg-[#101428] border border-cyan-500/40 rounded-xl shadow-xs space-y-2">
+                  <h4 className="text-xs font-bold font-mono text-cyan-300 uppercase tracking-wider">
                     Nouveau téléversement Cloudinary sécurisé
                   </h4>
                   <MediaUploader
@@ -539,14 +539,14 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
 
               {/* Media items grid */}
               {loadingMedia ? (
-                <div className="py-12 text-center text-stone-400 dark:text-stone-500 text-xs">
+                <div className="py-12 text-center text-cyan-400/60 font-mono text-xs">
                   Chargement de vos ressources multimédias...
                 </div>
               ) : mediaList.length === 0 ? (
-                <div className="py-12 text-center bg-stone-50 dark:bg-stone-850 rounded-xl border border-stone-200 dark:border-stone-800 p-6">
-                  <ImageIcon className="w-8 h-8 text-stone-300 dark:text-stone-600 mx-auto mb-2" />
-                  <p className="text-xs font-bold text-stone-700 dark:text-stone-300">Aucun média dans votre bibliothèque</p>
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+                <div className="py-12 text-center bg-[#101428] rounded-xl border border-cyan-500/30 p-6 font-mono">
+                  <ImageIcon className="w-8 h-8 text-cyan-500/40 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-cyan-300">Aucun média dans votre bibliothèque</p>
+                  <p className="text-[11px] text-cyan-400/60 mt-0.5">
                     Téléversez vos photos et vidéos de reportage pour les intégrer à vos articles.
                   </p>
                 </div>
@@ -555,12 +555,12 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                   {mediaList.map((item) => (
                     <div
                       key={item.id}
-                      className="bg-white dark:bg-stone-850 rounded-xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-2xs group flex flex-col justify-between"
+                      className="bg-[#101428] rounded-xl border border-cyan-500/30 overflow-hidden shadow-2xs group flex flex-col justify-between hover:border-cyan-400/60 transition-all"
                     >
-                      <div className="relative aspect-video bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                      <div className="relative aspect-video bg-[#0e1224] overflow-hidden">
                         {item.resourceType === 'video' ? (
-                          <div className="w-full h-full bg-stone-900 flex items-center justify-center">
-                            <VideoIcon className="w-6 h-6 text-white/70" />
+                          <div className="w-full h-full bg-[#0b0e1a] flex items-center justify-center">
+                            <VideoIcon className="w-6 h-6 text-cyan-400/70" />
                           </div>
                         ) : (
                           <img
@@ -571,27 +571,27 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                           />
                         )}
 
-                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/70 text-white backdrop-blur-xs">
+                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/80 text-cyan-300 font-mono border border-cyan-500/40 backdrop-blur-xs">
                           {item.format ? item.format.toUpperCase() : item.resourceType.toUpperCase()}
                         </span>
                       </div>
 
                       <div className="p-2.5 space-y-1.5">
-                        <p className="text-[11px] font-bold text-stone-800 dark:text-stone-200 truncate" title={item.altText || item.publicId}>
+                        <p className="text-[11px] font-bold text-slate-200 truncate font-mono" title={item.altText || item.publicId}>
                           {item.altText || item.publicId}
                         </p>
 
-                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-stone-100 dark:border-stone-800">
+                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-cyan-500/20">
                           <button
                             type="button"
                             onClick={() => handleCopyUrl(item.url)}
                             title="Copier le lien Cloudinary"
-                            className="p-1 text-stone-500 dark:text-stone-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-stone-100 dark:hover:bg-stone-750 rounded transition flex items-center gap-1 text-[10px] font-medium cursor-pointer"
+                            className="p-1 text-cyan-400 hover:text-cyan-200 hover:bg-[#141933] rounded transition flex items-center gap-1 text-[10px] font-mono cursor-pointer"
                           >
                             {copiedUrl === item.url ? (
                               <>
-                                <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copié</span>
+                                <Check className="w-3 h-3 text-cyan-400" />
+                                <span className="text-cyan-400 font-bold">Copié</span>
                               </>
                             ) : (
                               <>
@@ -606,7 +606,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                               href={item.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded transition"
+                              className="p-1 text-cyan-400/60 hover:text-cyan-200 rounded transition"
                               title="Ouvrir dans un nouvel onglet"
                             >
                               <ExternalLink className="w-3 h-3" />
@@ -615,7 +615,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                             <button
                               type="button"
                               onClick={() => handleDeleteMedia(item)}
-                              className="p-1 text-stone-400 hover:text-red-600 dark:hover:text-red-400 rounded transition cursor-pointer"
+                              className="p-1 text-red-400/70 hover:text-red-300 rounded transition cursor-pointer"
                               title="Supprimer ce média"
                             >
                               <Trash2 className="w-3 h-3" />

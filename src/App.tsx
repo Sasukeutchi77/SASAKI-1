@@ -16,8 +16,6 @@ import { BookmarksModal } from './components/BookmarksModal';
 import { NotificationsModal } from './components/NotificationsModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
-import { QuestsAndBadgesModal } from './components/gamification/QuestsAndBadgesModal';
-import { XPFloatingToast } from './components/gamification/XPFloatingToast';
 import { Article, Category } from './types';
 import { api } from './services/api';
 
@@ -43,7 +41,6 @@ export function AppContent() {
   const [showUserProfileModal, setShowUserProfileModal] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
-  const [showQuestsModal, setShowQuestsModal] = useState<boolean>(false);
 
   // Key to force refresh feed when an article is created or updated
   const [feedRefreshKey, setFeedRefreshKey] = useState<number>(0);
@@ -120,10 +117,15 @@ export function AppContent() {
     setShowAuthModal(true);
   };
 
-  const handleOpenArticle = (art: Article) => {
-    setActiveArticle(art);
-    setActiveArticleId(art.id);
-    window.location.hash = `article-${art.id}`;
+  const handleOpenArticle = (art: Article | string) => {
+    if (typeof art === 'string') {
+      setActiveArticleId(art);
+      window.location.hash = `article-${art}`;
+    } else {
+      setActiveArticle(art);
+      setActiveArticleId(art.id);
+      window.location.hash = `article-${art.id}`;
+    }
   };
 
   const handleCloseArticle = () => {
@@ -141,13 +143,14 @@ export function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-100 flex flex-col font-sans antialiased text-stone-900 selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen bg-[#07080f] text-slate-100 flex flex-col font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* Top Header with brand, search bar, demo switcher, notifications */}
       <Header
         searchQuery={searchQuery}
         onSearchChange={(q) => {
           setSearchQuery(q);
         }}
+        onGoHome={navigateToHome}
         onOpenSearchPage={() => navigateToSearch()}
         onOpenAuth={handleOpenAuth}
         onOpenCreateArticle={() => {
@@ -160,7 +163,6 @@ export function AppContent() {
         onOpenBookmarks={() => setShowBookmarksModal(true)}
         onOpenProfile={(userId) => setProfileUserId(userId)}
         onOpenMyProfile={() => setShowUserProfileModal(true)}
-        onOpenQuestsModal={() => setShowQuestsModal(true)}
       />
 
       {/* Security Alert Banner for Suspended Accounts */}
@@ -232,7 +234,6 @@ export function AppContent() {
             }}
             onOpenSearch={() => navigateToSearch()}
             onOpenCategoryPage={navigateToCategory}
-            onOpenQuestsModal={() => setShowQuestsModal(true)}
           />
         )}
       </div>
@@ -279,7 +280,7 @@ export function AppContent() {
             setProfileUserId(uid);
           }}
           onOpenAuth={() => handleOpenAuth('login')}
-          onOpenArticle={(art) => handleOpenArticle(art.id)}
+          onOpenArticle={handleOpenArticle}
           onSelectTag={(tag) => {
             handleCloseArticle();
             setSelectedTag(tag.replace(/^#/, ''));
@@ -362,7 +363,8 @@ export function AppContent() {
         <NotificationsModal
           onClose={() => setShowNotificationsModal(false)}
           onOpenArticleId={(artId) => {
-            setActiveArticleId(artId);
+            setShowNotificationsModal(false);
+            handleOpenArticle(artId);
           }}
         />
       )}
@@ -382,14 +384,6 @@ export function AppContent() {
           onOpenAuth={() => handleOpenAuth('login')}
         />
       )}
-
-      {/* 10. Gamification: Quests, Ranks & Badges Dashboard Modal */}
-      {showQuestsModal && (
-        <QuestsAndBadgesModal onClose={() => setShowQuestsModal(false)} />
-      )}
-
-      {/* Gamified Floating XP Toast Notifications */}
-      <XPFloatingToast />
     </div>
   );
 }

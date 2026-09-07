@@ -137,6 +137,51 @@ export interface Category {
   createdAt?: string;
 }
 
+export interface FactCheckSource {
+  title: string;
+  url?: string;
+  publisher: string;
+}
+
+export interface FactCheckReport {
+  rating: 'verified' | 'mostly_true' | 'unverified' | 'investigating';
+  score: number; // 0 - 100
+  verifiedSourcesCount: number;
+  sources: FactCheckSource[];
+  summary: string;
+  checkedBy?: string;
+  lastCheckedAt?: string;
+}
+
+export interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+export interface Poll {
+  id: string;
+  articleId: string;
+  question: string;
+  options: PollOption[];
+  totalVotes: number;
+  userVotedOptionId?: string;
+  expiresAt?: string;
+}
+
+export interface LiveUpdate {
+  id: string;
+  articleId?: string;
+  title: string;
+  content: string;
+  authorName: string;
+  authorRole: UserRole;
+  isUrgent?: boolean;
+  isOfficial?: boolean;
+  timestamp: string;
+  category?: string;
+}
+
 export interface Article {
   id: string;
   title: string;
@@ -169,6 +214,8 @@ export interface Article {
   updatedAt: string;
   isLiked?: boolean;
   isBookmarked?: boolean;
+  factCheck?: FactCheckReport;
+  poll?: Poll;
 }
 
 export interface Comment {

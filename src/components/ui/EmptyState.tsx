@@ -24,15 +24,15 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <div
-      className={`p-8 sm:p-12 text-center bg-white dark:bg-stone-900/80 rounded-2xl border border-stone-200/80 dark:border-stone-800 transition-all ${className}`}
+      className={`p-8 sm:p-12 text-center bg-[#101428] rounded-2xl border border-cyan-500/30 shadow-[0_0_20px_rgba(0,243,255,0.08)] font-mono transition-all ${className}`}
     >
-      <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4 ring-1 ring-emerald-500/20">
+      <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/40 flex items-center justify-center mx-auto mb-4 shadow-[0_0_15px_rgba(0,243,255,0.2)]">
         <Icon className="w-7 h-7" />
       </div>
-      <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+      <h3 className="text-base sm:text-lg font-bold text-white tracking-wide uppercase">
         {title}
       </h3>
-      <p className="mt-2 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-md mx-auto leading-relaxed">
+      <p className="mt-2 text-xs sm:text-sm text-cyan-400/70 max-w-md mx-auto leading-relaxed">
         {description}
       </p>
 
@@ -41,7 +41,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {actionLabel && onAction && (
             <button
               onClick={onAction}
-              className="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black text-xs sm:text-sm font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:brightness-110 transition-all cursor-pointer active:scale-95"
             >
               {actionLabel}
             </button>
@@ -49,7 +49,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {secondaryActionLabel && onSecondaryAction && (
             <button
               onClick={onSecondaryAction}
-              className="px-4 py-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-[#141933] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
             >
               {secondaryActionLabel}
             </button>

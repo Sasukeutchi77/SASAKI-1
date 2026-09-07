@@ -71,30 +71,30 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
   const mediaCategories = Array.from(new Set(articles.map((a) => a.categoryName)));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 min-h-screen sm:min-h-0 sm:rounded-2xl shadow-2xl sm:my-8 overflow-hidden flex flex-col max-h-[95vh] transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-[#0b0e1a] border border-cyan-500/40 min-h-screen sm:min-h-0 sm:rounded-2xl shadow-[0_0_40px_rgba(0,243,255,0.2)] sm:my-8 overflow-hidden flex flex-col max-h-[95vh] text-slate-100 transition-all">
         {/* Modal close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 text-white bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-xs cursor-pointer"
+          className="absolute top-4 right-4 z-20 p-2 text-cyan-400 bg-[#0b0e1a]/80 hover:bg-[#141933] hover:text-cyan-200 border border-cyan-500/40 rounded-full transition-all backdrop-blur-xs cursor-pointer shadow-[0_0_12px_rgba(0,243,255,0.2)]"
         >
           <X className="w-5 h-5" />
         </button>
 
         {loading || !profileUser ? (
-          <div className="p-16 text-center text-stone-500 dark:text-stone-400">
-            <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div className="p-16 text-center text-cyan-400/70 font-mono">
+            <div className="w-8 h-8 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-3 shadow-[0_0_12px_#00f3ff]" />
             <p>Chargement du profil...</p>
           </div>
         ) : (
           <div className="overflow-y-auto flex-1">
             {/* Banner Cover */}
-            <div className="h-36 sm:h-48 w-full bg-gradient-to-r from-emerald-800 via-stone-800 to-amber-700 relative">
-              <div className="absolute inset-0 bg-black/20" />
+            <div className="h-36 sm:h-48 w-full bg-gradient-to-r from-cyan-950 via-[#0d1226] to-fuchsia-950/80 border-b border-cyan-500/30 relative">
+              <div className="absolute inset-0 bg-[radial-gradient(#00f3ff_1px,transparent_1px)] [background-size:16px_16px] opacity-20" />
             </div>
 
             {/* Profile Info Header */}
-            <div className="px-4 sm:px-8 pb-6 border-b border-stone-200 dark:border-stone-800 relative">
+            <div className="px-4 sm:px-8 pb-6 border-b border-cyan-500/30 relative">
               <div className="flex flex-wrap items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-4">
                 <div className="flex items-end gap-4">
                   <img
@@ -104,19 +104,19 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
                     }
                     alt={profileUser.name}
                     referrerPolicy="no-referrer"
-                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-white dark:border-stone-900 shadow-md bg-white dark:bg-stone-800"
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-[#0b0e1a] shadow-[0_0_20px_rgba(0,243,255,0.3)] bg-[#101428]"
                   />
                   <div className="mb-1">
-                    <h1 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                    <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
                       <span>{profileUser.mediaName || profileUser.name}</span>
                       {profileUser.isVerified && (
-                        <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" title="Média / Journaliste certifié" />
+                        <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0" title="Média / Journaliste certifié" />
                       )}
                     </h1>
                     {profileUser.mediaName && profileUser.name !== profileUser.mediaName && (
-                      <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Représenté par {profileUser.name}</p>
+                      <p className="text-xs text-cyan-400/70 font-mono">Représenté par {profileUser.name}</p>
                     )}
-                    <span className="mt-1 inline-block text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                    <span className="mt-1 inline-block text-[11px] font-bold font-mono uppercase tracking-wider text-cyan-300 bg-cyan-950/70 px-2.5 py-0.5 rounded border border-cyan-500/40 shadow-[0_0_8px_rgba(0,243,255,0.2)]">
                       {profileUser.role === 'admin'
                         ? 'Administration'
                         : profileUser.role === 'journalist'
@@ -131,10 +131,10 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
                   <button
                     id="profile-follow-toggle-btn"
                     onClick={handleToggleFollow}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all cursor-pointer ${
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold font-mono text-sm transition-all cursor-pointer ${
                       isFollowing
-                        ? 'bg-stone-200 dark:bg-stone-750 hover:bg-stone-300 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        ? 'bg-[#141933] hover:bg-[#1a2245] text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(0,243,255,0.15)]'
+                        : 'bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:brightness-110'
                     }`}
                   >
                     {isFollowing ? (
@@ -154,24 +154,24 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
 
               {/* Bio */}
               {profileUser.bio && (
-                <p className="text-stone-700 dark:text-stone-300 text-sm sm:text-base leading-relaxed max-w-2xl mt-2">
+                <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mt-2">
                   {profileUser.bio}
                 </p>
               )}
 
               {/* Key Stats Bar */}
-              <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-stone-600 dark:text-stone-400 font-medium">
+              <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-cyan-400/80 font-mono">
                 <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-extrabold text-stone-900 dark:text-stone-100">{followersCount.toLocaleString()}</span>
+                  <Users className="w-4 h-4 text-cyan-400" />
+                  <span className="font-black text-white">{followersCount.toLocaleString()}</span>
                   <span>abonnés</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-extrabold text-stone-900 dark:text-stone-100">{articles.length}</span>
+                  <FileText className="w-4 h-4 text-cyan-400" />
+                  <span className="font-black text-white">{articles.length}</span>
                   <span>articles publiés</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+                <div className="flex items-center gap-1.5 text-xs text-cyan-400/60">
                   <Calendar className="w-3.5 h-3.5" />
                   <span>
                     Membre depuis {new Date(profileUser.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
@@ -182,9 +182,9 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
               {/* Media Categories Pills */}
               {mediaCategories.length > 0 && (
                 <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">Rubriques couvertes :</span>
+                  <span className="text-xs text-cyan-400/60 font-mono">Rubriques :</span>
                   {mediaCategories.map((c, i) => (
-                    <span key={i} className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-750">
+                    <span key={i} className="text-xs font-semibold font-mono px-2.5 py-0.5 rounded-full bg-[#101428] text-cyan-300 border border-cyan-500/30">
                       {c}
                     </span>
                   ))}
@@ -193,23 +193,23 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
             </div>
 
             {/* Profile Navigation Tabs */}
-            <div className="px-4 sm:px-8 border-b border-stone-200 dark:border-stone-800 flex gap-6 bg-stone-50/50 dark:bg-stone-850/50">
+            <div className="px-4 sm:px-8 border-b border-cyan-500/30 flex gap-6 bg-[#101428]">
               <button
                 onClick={() => setActiveTab('articles')}
-                className={`py-3 text-sm font-bold border-b-2 transition-colors cursor-pointer ${
+                className={`py-3 text-sm font-bold font-mono border-b-2 transition-all cursor-pointer ${
                   activeTab === 'articles'
-                    ? 'border-emerald-600 text-emerald-800 dark:text-emerald-400'
-                    : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
+                    ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                    : 'border-transparent text-cyan-400/50 hover:text-cyan-200'
                 }`}
               >
                 Articles ({articles.length})
               </button>
               <button
                 onClick={() => setActiveTab('about')}
-                className={`py-3 text-sm font-bold border-b-2 transition-colors cursor-pointer ${
+                className={`py-3 text-sm font-bold font-mono border-b-2 transition-all cursor-pointer ${
                   activeTab === 'about'
-                    ? 'border-emerald-600 text-emerald-800 dark:text-emerald-400'
-                    : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
+                    ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                    : 'border-transparent text-cyan-400/50 hover:text-cyan-200'
                 }`}
               >
                 À propos
@@ -220,8 +220,8 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
             <div className="p-4 sm:p-8">
               {activeTab === 'articles' ? (
                 articles.length === 0 ? (
-                  <div className="p-12 text-center text-stone-400 dark:text-stone-500">
-                    <FileText className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                  <div className="p-12 text-center text-cyan-400/50 font-mono">
+                    <FileText className="w-10 h-10 mx-auto mb-2 opacity-40 text-cyan-400" />
                     <p>Aucun article publié pour le moment.</p>
                   </div>
                 ) : (
@@ -241,31 +241,31 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
                   </div>
                 )
               ) : (
-                <div className="space-y-4 max-w-xl text-sm text-stone-700 dark:text-stone-300">
-                  <div className="p-4 bg-stone-50 dark:bg-stone-850 rounded-xl border border-stone-200 dark:border-stone-800">
-                    <h3 className="font-bold text-stone-900 dark:text-stone-100 mb-2">Description éditoriale</h3>
-                    <p className="leading-relaxed">
+                <div className="space-y-4 max-w-xl text-sm text-slate-200">
+                  <div className="p-4 bg-[#101428] rounded-xl border border-cyan-500/30">
+                    <h3 className="font-bold font-mono text-cyan-300 mb-2">Description éditoriale</h3>
+                    <p className="leading-relaxed text-slate-300">
                       {profileUser.bio || 'Aucune description fournie.'}
                     </p>
                   </div>
 
-                  <div className="p-4 bg-stone-50 dark:bg-stone-850 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2">
-                    <h3 className="font-bold text-stone-900 dark:text-stone-100 mb-2">Informations de contact & légitimité</h3>
-                    <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400">
-                      <Mail className="w-4 h-4 text-stone-400" />
+                  <div className="p-4 bg-[#101428] rounded-xl border border-cyan-500/30 space-y-2 font-mono text-xs">
+                    <h3 className="font-bold text-sm text-cyan-300 mb-2">Informations de contact & légitimité</h3>
+                    <div className="flex items-center gap-2 text-cyan-400/80">
+                      <Mail className="w-4 h-4 text-cyan-400" />
                       <span>{profileUser.email}</span>
                     </div>
                     {profileUser.phone && (
-                      <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400">
-                        <Phone className="w-4 h-4 text-stone-400" />
+                      <div className="flex items-center gap-2 text-cyan-400/80">
+                        <Phone className="w-4 h-4 text-cyan-400" />
                         <span>{profileUser.phone}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-stone-600 dark:text-stone-400 pt-1">
-                      <CheckCircle2 className={`w-4 h-4 ${profileUser.isVerified ? 'text-blue-600 dark:text-blue-400' : 'text-stone-400'}`} />
+                    <div className="flex items-center gap-2 text-cyan-400/80 pt-1">
+                      <CheckCircle2 className={`w-4 h-4 ${profileUser.isVerified ? 'text-cyan-400' : 'text-stone-500'}`} />
                       <span>
                         Statut d'accréditation :{' '}
-                        <strong>
+                        <strong className="text-white">
                           {profileUser.isVerified
                             ? 'Vérifié officiel (Conseil de Presse)'
                             : 'Enregistrement standard'}

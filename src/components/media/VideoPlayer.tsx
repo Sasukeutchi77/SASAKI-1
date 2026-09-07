@@ -161,11 +161,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {!isPlaying && (
         <div
           onClick={togglePlay}
-          className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer transition-opacity"
+          className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer transition-opacity"
         >
           <button
             type="button"
-            className="w-16 h-16 rounded-full bg-emerald-600/90 text-white flex items-center justify-center shadow-lg hover:bg-emerald-500 hover:scale-110 transition duration-200"
+            className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black flex items-center justify-center shadow-[0_0_25px_rgba(0,243,255,0.5)] hover:scale-110 hover:brightness-110 transition duration-200 cursor-pointer"
             aria-label="Lire la vidéo"
           >
             <Play className="w-8 h-8 fill-current ml-1" />
@@ -175,21 +175,21 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Buffering Loader */}
       {isLoading && isPlaying && (
-        <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
-          <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+          <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
         </div>
       )}
 
       {/* Video Title Header Overlay */}
       {title && showControls && (
-        <div className="absolute top-0 inset-x-0 p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent text-white text-xs font-medium truncate pointer-events-none">
+        <div className="absolute top-0 inset-x-0 p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent text-cyan-300 font-mono text-xs font-medium truncate pointer-events-none">
           {title}
         </div>
       )}
 
       {/* Controls Bar */}
       <div
-        className={`absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 ${
+        className={`absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 font-mono ${
           showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -202,7 +202,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             step={0.1}
             value={currentTime}
             onChange={handleSeek}
-            className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:h-2 transition-all"
+            className="w-full h-1.5 bg-cyan-950/60 rounded-lg appearance-none cursor-pointer accent-cyan-400 hover:h-2 transition-all"
             aria-label="Progression de la vidéo"
           />
         </div>
@@ -213,7 +213,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               type="button"
               onClick={togglePlay}
-              className="p-1 hover:text-emerald-400 transition"
+              className="p-1 hover:text-cyan-400 transition cursor-pointer"
               aria-label={isPlaying ? 'Mettre en pause' : 'Lire'}
             >
               {isPlaying ? (
@@ -226,7 +226,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               type="button"
               onClick={toggleMute}
-              className="p-1 hover:text-emerald-400 transition"
+              className="p-1 hover:text-cyan-400 transition cursor-pointer"
               aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
             >
               {isMuted ? (
@@ -236,7 +236,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               )}
             </button>
 
-            <span className="font-mono text-[11px] text-neutral-300">
+            <span className="font-mono text-[11px] text-cyan-300/80">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
@@ -250,7 +250,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   videoRef.current.play();
                 }
               }}
-              className="p-1 hover:text-emerald-400 transition"
+              className="p-1 hover:text-cyan-400 transition cursor-pointer"
               title="Recommencer"
             >
               <RotateCcw className="w-4 h-4" />
@@ -259,7 +259,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="p-1 hover:text-emerald-400 transition"
+              className="p-1 hover:text-cyan-400 transition cursor-pointer"
               aria-label="Plein écran"
             >
               {isFullscreen ? (
