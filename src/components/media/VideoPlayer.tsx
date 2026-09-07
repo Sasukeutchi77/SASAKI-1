@@ -1,0 +1,276 @@
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
+  RotateCcw,
+  Loader2,
+} from 'lucide-react';
+import { getVideoThumbnailUrl } from '../../services/cloudinary';
+
+export interface VideoPlayerProps {
+  src: string;
+  poster?: string;
+  title?: string;
+  className?: string;
+  autoPlay?: boolean;
+}
+
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  src,
+  poster,
+  title,
+  className = '',
+  autoPlay = false,
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const effectivePoster = poster || getVideoThumbnailUrl(src);
+
+  // Toggle play/pause
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play().catch((e) => console.warn('AutoPlay blocked:', e));
+    }
+  };
+
+  // Toggle mute
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  };
+
+  // Seek timeline
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!videoRef.current) return;
+    const seekTime = Number(e.target.value);
+    videoRef.current.currentTime = seekTime;
+    setCurrentTime(seekTime);
+  };
+
+  // Toggle fullscreen
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen?.().catch((err) => {
+        console.warn('Erreur plein écran:', err);
+      });
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch((err) => {
+        console.warn('Erreur sortie plein écran:', err);
+      });
+      setIsFullscreen(false);
+    }
+  };
+
+  // Format seconds to mm:ss
+  const formatTime = (secs: number) => {
+    if (isNaN(secs) || secs < 0) return '00:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Hide controls after inactivity
+  const handleMouseMove = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 2500);
+    }
+  };
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onWaiting = () => setIsLoading(true);
+    const onPlaying = () => setIsLoading(false);
+    const onTimeUpdate = () => setCurrentTime(video.currentTime);
+    const onLoadedMetadata = () => {
+      setDuration(video.duration);
+      setIsLoading(false);
+    };
+    const onEnded = () => {
+      setIsPlaying(false);
+      setShowControls(true);
+    };
+
+    video.addEventListener('play', onPlay);
+    video.addEventListener('pause', onPause);
+    video.addEventListener('waiting', onWaiting);
+    video.addEventListener('playing', onPlaying);
+    video.addEventListener('timeupdate', onTimeUpdate);
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+    video.addEventListener('ended', onEnded);
+
+    return () => {
+      video.removeEventListener('play', onPlay);
+      video.removeEventListener('pause', onPause);
+      video.removeEventListener('waiting', onWaiting);
+      video.removeEventListener('playing', onPlaying);
+      video.removeEventListener('timeupdate', onTimeUpdate);
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
+      video.removeEventListener('ended', onEnded);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => isPlaying && setShowControls(false)}
+      className={`relative group bg-black rounded-xl overflow-hidden aspect-video shadow-md select-none ${className}`}
+    >
+      <video
+        ref={videoRef}
+        src={src}
+        poster={effectivePoster}
+        autoPlay={autoPlay}
+        playsInline
+        preload="metadata"
+        onClick={togglePlay}
+        className="w-full h-full object-contain cursor-pointer"
+      />
+
+      {/* Center Big Play Button when paused */}
+      {!isPlaying && (
+        <div
+          onClick={togglePlay}
+          className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer transition-opacity"
+        >
+          <button
+            type="button"
+            className="w-16 h-16 rounded-full bg-emerald-600/90 text-white flex items-center justify-center shadow-lg hover:bg-emerald-500 hover:scale-110 transition duration-200"
+            aria-label="Lire la vidéo"
+          >
+            <Play className="w-8 h-8 fill-current ml-1" />
+          </button>
+        </div>
+      )}
+
+      {/* Buffering Loader */}
+      {isLoading && isPlaying && (
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+          <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+        </div>
+      )}
+
+      {/* Video Title Header Overlay */}
+      {title && showControls && (
+        <div className="absolute top-0 inset-x-0 p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent text-white text-xs font-medium truncate pointer-events-none">
+          {title}
+        </div>
+      )}
+
+      {/* Controls Bar */}
+      <div
+        className={`absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 ${
+          showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Timeline Slider */}
+        <div className="flex items-center gap-2 mb-2">
+          <input
+            type="range"
+            min={0}
+            max={duration || 100}
+            step={0.1}
+            value={currentTime}
+            onChange={handleSeek}
+            className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:h-2 transition-all"
+            aria-label="Progression de la vidéo"
+          />
+        </div>
+
+        {/* Action buttons and indicators */}
+        <div className="flex items-center justify-between text-white text-xs">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={togglePlay}
+              className="p-1 hover:text-emerald-400 transition"
+              aria-label={isPlaying ? 'Mettre en pause' : 'Lire'}
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5 fill-current" />
+              ) : (
+                <Play className="w-5 h-5 fill-current" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleMute}
+              className="p-1 hover:text-emerald-400 transition"
+              aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
+            >
+              {isMuted ? (
+                <VolumeX className="w-5 h-5" />
+              ) : (
+                <Volume2 className="w-5 h-5" />
+              )}
+            </button>
+
+            <span className="font-mono text-[11px] text-neutral-300">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (videoRef.current) {
+                  videoRef.current.currentTime = 0;
+                  videoRef.current.play();
+                }
+              }}
+              className="p-1 hover:text-emerald-400 transition"
+              title="Recommencer"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="p-1 hover:text-emerald-400 transition"
+              aria-label="Plein écran"
+            >
+              {isFullscreen ? (
+                <Minimize className="w-4 h-4" />
+              ) : (
+                <Maximize className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

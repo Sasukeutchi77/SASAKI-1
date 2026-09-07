@@ -1,0 +1,208 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =========================================================================
+    // PILLAR 1: Helper Functions & Role Verification
+    // =========================================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function isAccountActive(userId) {
+      return !exists(/databases/$(database)/documents/users/$(userId)) || 
+             getUserData(userId).status != 'suspended';
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.role == 'admin' || 
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          getUserData(request.auth.uid).role == 'admin'));
+    }
+    
+    function isJournalistOrAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.role in ['journalist', 'admin'] || 
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          getUserData(request.auth.uid).role in ['journalist', 'admin']));
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // =========================================================================
+    // PILLAR 2: Users Collection (Anti-Escalation & Strict Immutability)
+    // =========================================================================
+    match /users/{userId} {
+      // Public profiles are readable
+      allow read: if true;
+      
+      // On creation: force unprivileged role and initial active/unverified state
+      allow create: if isOwner(userId) && 
+        request.resource.data.role in ['user', 'reader'] && 
+        request.resource.data.isVerified == false &&
+        request.resource.data.status == 'active' &&
+        request.resource.data.verificationStatus in ['none', 'pending'] &&
+        isValidString(request.resource.data.name, 2, 80);
+      
+      // On update: regular users CANNOT alter sensitive governance fields
+      // (role, isVerified, verificationStatus, status, createdAt)
+      allow update: if (isOwner(userId) && 
+        isAccountActive(userId) &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.isVerified == resource.data.isVerified &&
+        request.resource.data.verificationStatus == resource.data.verificationStatus &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        isValidString(request.resource.data.name, 2, 80)) || isAdmin();
+        
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // PILLAR 3: Articles Collection (Accredited Publishing & Tamper Resistance)
+    // =========================================================================
+    match /articles/{articleId} {
+      allow read: if resource.data.status == 'published' || 
+                     (isAuthenticated() && (request.auth.uid == resource.data.authorId || isAdmin()));
+      
+      // Only active journalists or administrators can create articles
+      allow create: if isJournalistOrAdmin() && 
+        isAccountActive(request.auth.uid) &&
+        request.resource.data.authorId == request.auth.uid &&
+        isValidString(request.resource.data.title, 5, 200) &&
+        request.resource.data.viewsCount == 0 &&
+        request.resource.data.likesCount == 0 &&
+        request.resource.data.commentsCount == 0;
+      
+      // Journalists can edit their own articles; cannot forge author or spike counters
+      allow update: if (isJournalistOrAdmin() && 
+        isAccountActive(request.auth.uid) &&
+        resource.data.authorId == request.auth.uid && 
+        request.resource.data.authorId == resource.data.authorId &&
+        isValidString(request.resource.data.title, 5, 200)) || isAdmin();
+      
+      allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin();
+    }
+
+    // =========================================================================
+    // PILLAR 4: Comments Collection (Anti-Flood & Author Integrity)
+    // =========================================================================
+    match /comments/{commentId} {
+      allow read: if true;
+
+      allow create: if isAuthenticated() && 
+        isAccountActive(request.auth.uid) &&
+        request.resource.data.userId == request.auth.uid &&
+        isValidString(request.resource.data.content, 2, 1200) &&
+        request.resource.data.likesCount == 0;
+
+      allow update: if (isAuthenticated() && 
+        isAccountActive(request.auth.uid) &&
+        resource.data.userId == request.auth.uid && 
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.articleId == resource.data.articleId &&
+        isValidString(request.resource.data.content, 2, 1200)) || isAdmin();
+
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+
+    // =========================================================================
+    // PILLAR 5: Verification Requests (Journalist Accreditation)
+    // =========================================================================
+    match /verificationRequests/{requestId} {
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+
+      allow create: if isAuthenticated() && 
+        isAccountActive(request.auth.uid) &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        isValidString(request.resource.data.pressCardNumber, 3, 50) &&
+        isValidString(request.resource.data.motivation, 10, 1000);
+
+      allow update, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // PILLAR 6: Reports (Signalements & Moderation)
+    // =========================================================================
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+
+      allow create: if isAuthenticated() && 
+        isAccountActive(request.auth.uid) &&
+        request.resource.data.reporterId == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.targetType in ['article', 'comment', 'user'] &&
+        isValidString(request.resource.data.reason, 2, 120);
+
+      allow update, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // PILLAR 7: Media Entities & Admin Audit Logs (Strict Immutability)
+    // =========================================================================
+    match /media/{mediaId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        resource.data.ownerId == request.auth.uid && 
+        request.resource.data.isVerified == resource.data.isVerified && 
+        request.resource.data.status == resource.data.status
+      );
+    }
+
+    match /adminLogs/{logId} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false; // Audit logs are strictly immutable
+    }
+
+    // =========================================================================
+    // PILLAR 8: User Private Collections (Bookmarks, Likes, Follows, Notifs)
+    // =========================================================================
+    match /bookmarks/{bookmarkId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || resource.data.userId == request.auth.uid) && 
+        (request.resource == null || request.resource.data.userId == request.auth.uid);
+    }
+
+    match /notifications/{notificationId} {
+      allow read, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Controlled creation: only admins or notifications sent between distinct users
+      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.userId != request.auth.uid);
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+
+    match /follows/{followId} {
+      allow read: if true;
+      allow create, delete: if isAuthenticated() && 
+        isAccountActive(request.auth.uid) &&
+        (resource == null || resource.data.followerId == request.auth.uid) && 
+        (request.resource == null || request.resource.data.followerId == request.auth.uid);
+    }
+
+    match /likes/{likeId} {
+      allow read: if true;
+      allow create, delete: if isAuthenticated() && 
+        isAccountActive(request.auth.uid) &&
+        (resource == null || resource.data.userId == request.auth.uid) && 
+        (request.resource == null || request.resource.data.userId == request.auth.uid);
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

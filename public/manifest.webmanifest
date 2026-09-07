@@ -1,0 +1,18 @@
+{
+  "name": "FasoInfo - Plateforme d'Actualités & Journalisme Social",
+  "short_name": "FasoInfo",
+  "description": "Plateforme web moderne d'actualités et de journalisme social pour le Burkina Faso et l'Afrique.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1917",
+  "theme_color": "#059669",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
