@@ -16,6 +16,7 @@ import { BookmarksModal } from './components/BookmarksModal';
 import { NotificationsModal } from './components/NotificationsModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
+import { MediaHousesModal } from './components/MediaHousesModal';
 import { Article, Category } from './types';
 import { api } from './services/api';
 
@@ -39,6 +40,7 @@ export function AppContent() {
   const [showBookmarksModal, setShowBookmarksModal] = useState<boolean>(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
   const [showUserProfileModal, setShowUserProfileModal] = useState<boolean>(false);
+  const [showMediaHousesModal, setShowMediaHousesModal] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
@@ -234,6 +236,7 @@ export function AppContent() {
             }}
             onOpenSearch={() => navigateToSearch()}
             onOpenCategoryPage={navigateToCategory}
+            onOpenMediaHouses={() => setShowMediaHousesModal(true)}
           />
         )}
       </div>
@@ -264,6 +267,7 @@ export function AppContent() {
           if (userId) setProfileUserId(userId);
         }}
         onOpenMyProfile={() => setShowUserProfileModal(true)}
+        onOpenMediaHouses={() => setShowMediaHousesModal(true)}
         onOpenAuth={() => handleOpenAuth('login')}
         onOpenAdmin={() => setShowAdminModal(true)}
       />
@@ -347,6 +351,10 @@ export function AppContent() {
             setShowCreateArticle(true);
           }}
           onOpenArticle={handleOpenArticle}
+          onOpenMediaHouses={() => {
+            setShowJournalistModal(false);
+            setShowMediaHousesModal(true);
+          }}
         />
       )}
 
@@ -382,6 +390,21 @@ export function AppContent() {
         <UserProfileModal
           onClose={() => setShowUserProfileModal(false)}
           onOpenAuth={() => handleOpenAuth('login')}
+        />
+      )}
+
+      {/* 10. Media Houses Modal (Maisons de Presse - max 5 journalistes) */}
+      {showMediaHousesModal && (
+        <MediaHousesModal
+          onClose={() => setShowMediaHousesModal(false)}
+          onOpenProfile={() => {
+            setShowMediaHousesModal(false);
+            setShowUserProfileModal(true);
+          }}
+          onOpenArticle={(art) => {
+            setShowMediaHousesModal(false);
+            handleOpenArticle(art);
+          }}
         />
       )}
     </div>

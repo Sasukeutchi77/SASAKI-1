@@ -15,6 +15,8 @@ import {
 } from '../services/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { uploadMediaToCloudinary } from '../services/cloudinary';
+import { realtime } from '../services/realtime';
+import { sfx } from '../services/soundEffects';
 
 interface AuthContextType {
   user: User | null;
@@ -107,6 +109,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       refreshUser();
     }
   }, [isFirebaseActive]);
+
+  // Real-time synchronization for personal notifications (articles published by followed houses, replies, likes)
+  useEffect(() => {
+    const unsubNotif = realtime.on('notification:new', (notifItem) => {
+      setUnreadNotifs((prev) => prev + 1);
+      sfx.playNotificationDing();
+    });
+
+    return () => {
+      unsubNotif();
+    };
+  }, []);
 
   // 1. Email + Password Login
   const loginWithEmail = async (email: string, pass: string) => {

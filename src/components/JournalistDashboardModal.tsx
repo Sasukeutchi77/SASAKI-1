@@ -19,8 +19,9 @@ import {
   Copy,
   Check,
   ExternalLink,
+  Building2,
 } from 'lucide-react';
-import { Article, User, MediaRecord } from '../types';
+import { Article, User, MediaRecord, MediaHouse } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { MediaUploader } from './media/MediaUploader';
@@ -31,6 +32,7 @@ interface JournalistDashboardModalProps {
   onOpenCreateArticle: () => void;
   onOpenEditArticle: (article: Article) => void;
   onOpenArticle: (article: Article) => void;
+  onOpenMediaHouses?: () => void;
 }
 
 export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> = ({
@@ -38,11 +40,13 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
   onOpenCreateArticle,
   onOpenEditArticle,
   onOpenArticle,
+  onOpenMediaHouses,
 }) => {
   const { user, refreshUser } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'articles' | 'verification' | 'media'>('articles');
+  const [myHouse, setMyHouse] = useState<MediaHouse | null>(null);
 
   // Media library state
   const [mediaList, setMediaList] = useState<MediaRecord[]>([]);
@@ -71,6 +75,14 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    api.getMyMediaHouse()
+      .then((res) => {
+        if (res.house) setMyHouse(res.house);
+      })
+      .catch(() => {});
+  }, [user]);
 
   const loadMediaList = async () => {
     if (!user) return;
@@ -200,7 +212,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
         </div>
 
         {/* Stats Grid */}
-        <div className="p-6 bg-[#0e1224] border-b border-cyan-500/30 shrink-0 transition-all">
+        <div className="p-6 bg-[#0e1224] border-b border-cyan-500/30 shrink-0 transition-all space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
             <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
               <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
@@ -228,6 +240,52 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                 {(user?.followersCount || 0).toLocaleString()}
               </div>
             </div>
+          </div>
+
+          {/* Media House Affiliation Bar */}
+          <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4 text-cyan-400" />
+              </div>
+              <div>
+                <div className="text-[11px] text-cyan-400/70 uppercase font-bold tracking-wider">
+                  Maison de Journalistes (Quota max 5)
+                </div>
+                {myHouse ? (
+                  <div className="font-bold text-white flex items-center gap-1.5">
+                    <span>{myHouse.name}</span>
+                    <span className="text-cyan-400 text-xs font-normal">
+                      ({myHouse.members?.length || 1}/5 journalistes)
+                    </span>
+                    {myHouse.ownerId === user?.id ? (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/40">
+                        Chef de Rédaction
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                        Membre
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-slate-300 text-xs">
+                    Non affilié — Vous publiez actuellement en tant que journaliste indépendant
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {onOpenMediaHouses && (
+              <button
+                type="button"
+                onClick={onOpenMediaHouses}
+                className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 rounded-lg text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>{myHouse ? 'Gérer ma Maison' : 'Fonder / Rejoindre une Maison'}</span>
+              </button>
+            )}
           </div>
         </div>
 

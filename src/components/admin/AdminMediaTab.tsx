@@ -13,6 +13,7 @@ import {
   MapPin,
   Users,
   FileText,
+  Trash2,
 } from 'lucide-react';
 import { MediaHouse } from '../../types';
 import { api } from '../../services/api';
@@ -51,6 +52,11 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
   const [targetMedia, setTargetMedia] = useState<MediaHouse | null>(null);
   const [suspendReason, setSuspendReason] = useState('');
   const [loadingAction, setLoadingAction] = useState(false);
+
+  // Deletion of media house
+  const [mediaToDelete, setMediaToDelete] = useState<MediaHouse | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
   const filteredMedia = mediaHouses.filter((m) => {
     if (search.trim()) {
@@ -161,6 +167,22 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
       onFlash(`Erreur: ${err.message}`);
     } finally {
       setLoadingAction(false);
+    }
+  };
+
+  const handleConfirmDeleteMedia = async () => {
+    if (!mediaToDelete) return;
+    setLoadingDelete(true);
+    try {
+      await api.deleteAdminMedia(mediaToDelete.id, deleteReason);
+      onFlash(`La maison de journalistes "${mediaToDelete.name}" a été définitivement supprimée.`);
+      setMediaToDelete(null);
+      setDeleteReason('');
+      onRefresh();
+    } catch (err: any) {
+      onFlash(`Erreur: ${err.message}`);
+    } finally {
+      setLoadingDelete(false);
     }
   };
 
@@ -308,10 +330,21 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
                   className={`p-1.5 rounded-lg border transition ${
                     isSuspended
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                      : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                      : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'
                   }`}
                 >
                   {isSuspended ? <RotateCcw className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setMediaToDelete(m);
+                    setDeleteReason('Suppression administrative par le compte principal.');
+                  }}
+                  title="Supprimer définitivement la maison de journalistes"
+                  className="p-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -512,6 +545,33 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
             />
           </div>
         )}
+      </AdminConfirmDialog>
+
+      {/* Deletion Confirmation Dialog */}
+      <AdminConfirmDialog
+        isOpen={!!mediaToDelete}
+        title={`Supprimer la maison de journalistes "${mediaToDelete?.name}" ?`}
+        message={`Cette action est irréversible : la maison de presse sera immédiatement détruite et supprimée de l'annuaire. Tous ses journalistes membres (${mediaToDelete?.journalistsCount || 0} membres) seront détachés et recevront une notification officielle.`}
+        confirmLabel={loadingDelete ? 'Suppression...' : 'Confirmer la suppression définitive'}
+        isDestructive={true}
+        onConfirm={handleConfirmDeleteMedia}
+        onCancel={() => {
+          setMediaToDelete(null);
+          setDeleteReason('');
+        }}
+      >
+        <div className="pt-2">
+          <label className="block text-xs font-bold text-gray-700 mb-1">
+            Motif de la suppression (notifié aux membres et consigné dans l'audit) :
+          </label>
+          <input
+            type="text"
+            placeholder="Ex: Dissolution administrative pour non-conformité éditoriale..."
+            value={deleteReason}
+            onChange={(e) => setDeleteReason(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-red-500 focus:outline-none"
+          />
+        </div>
       </AdminConfirmDialog>
     </div>
   );

@@ -4,6 +4,7 @@ import { AuthenticatedRequest, requireAuth } from '../auth';
 import { UserRole } from '../../src/types';
 import { authRateLimiter } from '../security/rateLimiter';
 import { sanitizeText, isValidEmail, isValidUrl } from '../security/sanitizer';
+import { isMasterAdmin } from '../config/masterAccounts';
 
 export const authRouter = Router();
 
@@ -43,13 +44,15 @@ authRouter.post('/register', authRateLimiter, (req, res) => {
     return res.status(400).json({ error: 'Un compte avec cette adresse email existe déjà.' });
   }
 
-  // Security: Prevent self-assignment of 'admin' or 'journalist' role
-  // All public registrations are strictly assigned the 'reader' role.
-  const role: UserRole = 'reader';
+  // Strict policy: Only the 2 designated master admin accounts receive 'admin'.
+  // All other created accounts are strictly assigned the 'user' (simple citizen) role.
+  // Only the 2 master admin accounts can promote a user to 'journalist'.
+  const isMaster = isMasterAdmin(cleanEmail);
+  const role: UserRole = isMaster ? 'admin' : 'user';
   const { hash, salt } = hashPassword(password);
   const now = new Date().toISOString();
 
-  const cleanBio = bio ? sanitizeText(bio, { maxLength: 500 }) : 'Lecteur sur purge-info';
+  const cleanBio = bio ? sanitizeText(bio, { maxLength: 500 }) : (isMaster ? 'Compte Principal PURGE-INFO' : 'Lecteur citoyen sur PURGE-INFO');
   const cleanPhone = phone ? sanitizeText(phone, { maxLength: 30, allowNewlines: false }) : undefined;
   const cleanMediaName = mediaName ? sanitizeText(mediaName, { maxLength: 100, allowNewlines: false }) : undefined;
 
@@ -64,8 +67,8 @@ authRouter.post('/register', authRateLimiter, (req, res) => {
     bio: cleanBio,
     mediaName: cleanMediaName,
     phone: cleanPhone,
-    isVerified: false,
-    verificationStatus: accountType === 'journalist' ? 'pending' : 'none',
+    isVerified: isMaster,
+    verificationStatus: isMaster ? 'approved' : 'none',
     status: 'active',
     followersCount: 0,
     followingCount: 0,
@@ -126,6 +129,12 @@ authRouter.post('/login', authRateLimiter, (req, res) => {
   const valid = verifyPassword(password, user.passwordHash, user.passwordSalt);
   if (!valid) {
     return res.status(401).json({ error: 'Identifiants invalides (email ou mot de passe incorrect).' });
+  }
+
+  if (isMasterAdmin(user.email) && user.role !== 'admin') {
+    user.role = 'admin';
+    user.isVerified = true;
+    db.save();
   }
 
   const token = generateToken({

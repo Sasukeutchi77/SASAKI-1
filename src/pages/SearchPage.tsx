@@ -882,9 +882,6 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                   >
                     Effacer tous les critères
                   </button>
-                  <p className="text-xs text-stone-400 mt-2">
-                    Sujets suggérés : Burkina Faso, Économie, FESPACO, Étalons, Culture
-                  </p>
                 </div>
               </div>
             )}
@@ -1400,8 +1397,8 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Espace Découverte & Exploration</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                  Explorez l'actualité vérifiée du Burkina Faso et de l'Afrique
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase">
+                  EXPLORE L'ACTUALITÉ VÉRIFIÉE DE LA PURGE DANS TOUT CES ASPECTS
                 </h2>
                 <p className="text-stone-300 text-xs sm:text-sm leading-relaxed">
                   Accédez aux analyses des rédactions professionnelles, suivez vos journalistes favoris et naviguez au cœur des grands débats de société.
@@ -1410,14 +1407,14 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             </div>
 
             {/* 1. Trending Popular Tags */}
-            {discoveryData && discoveryData.popularTags.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-emerald-600" />
-                    <span>Sujets & Tendances du moment</span>
-                  </h3>
-                </div>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-emerald-600" />
+                  <span>Sujets & Tendances du moment</span>
+                </h3>
+              </div>
+              {discoveryData && discoveryData.popularTags && discoveryData.popularTags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {discoveryData.popularTags.map((t) => (
                     <button
@@ -1435,8 +1432,13 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="p-4 rounded-2xl bg-white border border-dashed border-stone-200 text-stone-500 text-xs sm:text-sm flex items-center gap-2.5">
+                  <Hash className="w-4 h-4 text-emerald-600/70 shrink-0" />
+                  <span>Les sujets et tendances du moment s'afficheront ici automatiquement au fil des publications des journalistes.</span>
+                </div>
+              )}
+            </div>
 
             {/* 2. Popular Articles */}
             {discoveryData && discoveryData.popularArticles.length > 0 && (
@@ -1560,41 +1562,6 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                           {j.isFollowing ? 'Abonné' : 'Suivre'}
                         </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 4. Popular Categories Grid */}
-            {discoveryData && discoveryData.popularCategories.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-emerald-600" />
-                    <span>Rubriques principales</span>
-                  </h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                  {discoveryData.popularCategories.map((c) => (
-                    <div
-                      key={c.id}
-                      id={`discovery-cat-card-${c.slug}`}
-                      onClick={() => {
-                        onSelectCategory(c.slug);
-                        if (onClose) onClose();
-                      }}
-                      className="bg-white rounded-2xl border border-stone-200 p-4 hover:border-emerald-600 hover:shadow-xs cursor-pointer transition-all group"
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <h4 className="text-sm font-bold text-stone-900 group-hover:text-emerald-700 transition-colors">
-                          {c.name}
-                        </h4>
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
-                          {c.articleCount}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-stone-500 line-clamp-1">{c.description}</p>
                     </div>
                   ))}
                 </div>

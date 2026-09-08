@@ -54,6 +54,75 @@ export const sfx = {
     }
   },
 
+  // Cyber tactile mechanical terminal click
+  playMechanicalClick() {
+    if (!this.isEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      // Click snap (high freq burst)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(2400, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.025);
+
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.025);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.03);
+    } catch {}
+  },
+
+  // Cyber terminal prompt beep (monochrome CRT style)
+  playTerminalBeep(freq: number = 880) {
+    if (!this.isEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.035, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.055);
+    } catch {}
+  },
+
+  // Urgent Flash / Alert Pulse
+  playUrgentAlert() {
+    if (!this.isEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(950, ctx.currentTime);
+      osc.frequency.setValueAtTime(1250, ctx.currentTime + 0.05);
+
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.13);
+    } catch {}
+  },
+
   // Cyber toggle blip
   playToggle() {
     if (!this.isEnabled()) return;
@@ -153,6 +222,37 @@ export const sfx = {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.15);
+    } catch {}
+  },
+
+  // Elegant two-tone bell chime for real-time notifications & breaking news
+  playNotificationDing() {
+    if (!this.isEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const notes = [
+        { freq: 880, start: 0, duration: 0.12 },
+        { freq: 1318.51, start: 0.08, duration: 0.25 },
+      ];
+
+      notes.forEach(({ freq, start, duration }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+
+        gain.gain.setValueAtTime(0.06, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + duration + 0.02);
+      });
     } catch {}
   },
 };

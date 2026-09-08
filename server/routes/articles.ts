@@ -10,6 +10,8 @@ import {
   checkDuplicateComment,
 } from '../security/rateLimiter';
 import { sanitizeText, isValidUrl, isRepetitiveSpam } from '../security/sanitizer';
+import { isMasterAdmin } from '../config/masterAccounts';
+import { realtimeHub } from '../realtime';
 
 export const articlesRouter = Router();
 
@@ -241,6 +243,7 @@ articlesRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
       viewedAt: new Date().toISOString(),
     });
     db.save();
+    realtimeHub.broadcast('article:viewed', { articleId: article.id, viewsCount: article.viewsCount });
   }
 
   const isLiked = req.user ? data.likes.some((l) => l.userId === req.user!.id && l.articleId === article.id) : false;
@@ -283,6 +286,7 @@ articlesRouter.post('/:id/view', (req: AuthenticatedRequest, res: Response) => {
       viewedAt: new Date().toISOString(),
     });
     db.save();
+    realtimeHub.broadcast('article:viewed', { articleId: article.id, viewsCount: article.viewsCount });
   }
 
   return res.json({ viewsCount: article.viewsCount });
@@ -353,6 +357,25 @@ articlesRouter.post('/', requireJournalistOrAdmin, articleCreationLimiter, (req:
         .slice(0, 10)
     : [];
 
+  // Enforce Media House requirement:
+  // Journalists publish exclusively through their accredited Maison de Journalistes (never as isolated accounts)
+  const isSuperAdmin = user.role === 'admin' || isMasterAdmin(user.email);
+  let house = (data.mediaHouses || []).find(
+    (m) =>
+      m.ownerId === user.id ||
+      (m.members && Array.isArray(m.members) && m.members.includes(user.id)) ||
+      (user.mediaId && m.id === user.mediaId)
+  );
+
+  if (user.role === 'journalist' && !isSuperAdmin) {
+    if (!house) {
+      return res.status(403).json({
+        error: 'Publication refusée : vous devez créer une maison de journalistes ou être rattaché à une maison de journalistes pour publier. Les publications se font obligatoirement au nom d’une maison de journalistes.',
+        requiresHouse: true,
+      });
+    }
+  }
+
   const now = new Date().toISOString();
   const newArticle: Article = {
     id: `art_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -364,8 +387,8 @@ articlesRouter.post('/', requireJournalistOrAdmin, articleCreationLimiter, (req:
     authorAvatar: user.avatar,
     authorRole: user.role,
     isAuthorVerified: !!user.isVerified,
-    mediaId: user.mediaId,
-    mediaName: user.mediaName,
+    mediaId: house ? house.id : user.mediaId,
+    mediaName: house ? house.name : (user.mediaName || 'PURGE-INFO'),
     coverImage: validCover,
     coverImageAlt: coverImageAlt ? sanitizeText(coverImageAlt, { maxLength: 150, allowNewlines: false }) : undefined,
     coverMedia: coverMedia || undefined,
@@ -407,20 +430,33 @@ articlesRouter.post('/', requireJournalistOrAdmin, articleCreationLimiter, (req:
   if (newArticle.status === 'published') {
     const followers = data.follows.filter((f) => f.targetId === user.id || (user.mediaId && f.targetId === user.mediaId));
     for (const f of followers) {
-      data.notifications.unshift({
+      const notifItem = {
         id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         userId: f.followerId,
-        type: 'article',
+        type: 'article' as const,
         title: `${user.mediaName || user.name} vient de publier un nouvel article`,
         message: newArticle.title,
         link: `/article/${newArticle.id}`,
         read: false,
         createdAt: now,
-      });
+      };
+      data.notifications.unshift(notifItem);
+      realtimeHub.broadcastToUser(f.followerId, 'notification:new', notifItem);
     }
   }
 
+  if (house) {
+    house.articlesCount = (house.articlesCount || 0) + 1;
+    realtimeHub.broadcast('mediaHouse:updated', house);
+  }
+
   db.save();
+
+  // Real-time broadcast to all connected readers & media houses
+  if (newArticle.status === 'published') {
+    realtimeHub.broadcast('article:created', newArticle);
+  }
+
   return res.status(201).json({ message: 'Article créé avec succès !', article: newArticle });
 });
 
@@ -496,6 +532,7 @@ articlesRouter.put('/:id', requireJournalistOrAdmin, (req: AuthenticatedRequest,
   }
 
   db.save();
+  realtimeHub.broadcast('article:updated', article);
   return res.json({ message: 'Article mis à jour avec succès.', article });
 });
 
@@ -522,6 +559,7 @@ articlesRouter.delete('/:id', requireJournalistOrAdmin, (req: AuthenticatedReque
   data.comments = data.comments.filter((c) => c.articleId !== article.id);
 
   db.save();
+  realtimeHub.broadcast('article:deleted', { articleId: req.params.id });
   return res.json({ message: 'Article supprimé avec succès.' });
 });
 
@@ -554,20 +592,23 @@ articlesRouter.post('/:id/like', requireAuth, likesRateLimiter, (req: Authentica
 
     // Send notification to author if not self
     if (article.authorId !== user.id) {
-      data.notifications.unshift({
+      const likeNotif = {
         id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         userId: article.authorId,
-        type: 'like',
+        type: 'like' as const,
         title: 'Nouveau like',
         message: `${user.name} a aimé votre article : "${article.title.substring(0, 45)}..."`,
         link: `/article/${article.id}`,
         read: false,
         createdAt: new Date().toISOString(),
-      });
+      };
+      data.notifications.unshift(likeNotif);
+      realtimeHub.broadcastToUser(article.authorId, 'notification:new', likeNotif);
     }
   }
 
   db.save();
+  realtimeHub.broadcast('article:liked', { articleId: article.id, likesCount: article.likesCount });
   return res.json({ liked, likesCount: article.likesCount });
 });
 
@@ -692,31 +733,42 @@ articlesRouter.post('/:id/comments', requireAuth, commentsRateLimiter, (req: Aut
   if (parentId) {
     const parentComment = data.comments.find((c) => c.id === parentId);
     if (parentComment && parentComment.userId !== user.id) {
-      data.notifications.unshift({
+      const replyNotif = {
         id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         userId: parentComment.userId,
-        type: 'comment',
+        type: 'comment' as const,
         title: 'Réponse à votre commentaire',
         message: `${user.name} a répondu à votre commentaire.`,
         link: `/article/${article.id}`,
         read: false,
         createdAt: now,
-      });
+      };
+      data.notifications.unshift(replyNotif);
+      realtimeHub.broadcastToUser(parentComment.userId, 'notification:new', replyNotif);
     }
   } else if (article.authorId !== user.id) {
-    data.notifications.unshift({
+    const commentNotif = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: article.authorId,
-      type: 'comment',
+      type: 'comment' as const,
       title: 'Nouveau commentaire',
       message: `${user.name} a commenté votre article "${article.title.substring(0, 45)}...".`,
       link: `/article/${article.id}`,
       read: false,
       createdAt: now,
-    });
+    };
+    data.notifications.unshift(commentNotif);
+    realtimeHub.broadcastToUser(article.authorId, 'notification:new', commentNotif);
   }
 
   db.save();
+  // Real-time broadcast of new comment and updated count
+  realtimeHub.broadcast('comment:created', {
+    articleId: article.id,
+    comment: newComment,
+    commentsCount: article.commentsCount,
+  });
+  realtimeHub.broadcast('article:updated', { ...article });
   return res.status(201).json({ message: 'Commentaire publié avec succès', comment: newComment });
 });
 
@@ -753,6 +805,7 @@ articlesRouter.put('/:id/comments/:commentId', requireAuth, (req: AuthenticatedR
   comment.updatedAt = new Date().toISOString();
 
   db.save();
+  realtimeHub.broadcast('comment:updated', { articleId: req.params.id, comment });
   return res.json({ message: 'Commentaire mis à jour.', comment });
 });
 
@@ -797,6 +850,11 @@ articlesRouter.delete('/:id/comments/:commentId', requireAuth, (req: Authenticat
   }
 
   db.save();
+  realtimeHub.broadcast('comment:deleted', {
+    articleId: req.params.id,
+    commentId: targetComment.id,
+    commentsCount: article ? article.commentsCount : 0,
+  });
   return res.json({
     message: 'Commentaire supprimé.',
     commentsCount: article ? article.commentsCount : 0,
@@ -834,6 +892,11 @@ articlesRouter.post('/:id/comments/:commentId/like', requireAuth, (req: Authenti
   }
 
   db.save();
+  realtimeHub.broadcast('comment:liked', {
+    articleId: req.params.id,
+    commentId: comment.id,
+    likesCount: comment.likesCount,
+  });
   return res.json({ liked, likesCount: comment.likesCount });
 });
 

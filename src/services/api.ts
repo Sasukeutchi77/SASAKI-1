@@ -623,6 +623,20 @@ export const api = {
     });
   },
 
+  async deleteAdminMedia(id: string, reason?: string) {
+    return request<{ message: string }>(`/api/admin/media/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  async revokeJournalistRole(userId: string, reason?: string) {
+    return request<{ message: string; user: User }>(`/api/admin/users/${userId}/revoke-journalist`, {
+      method: 'PUT',
+      body: JSON.stringify({ reason }),
+    });
+  },
+
   async getAdminLogs(params?: { targetType?: string; action?: string; q?: string; page?: number; limit?: number }) {
     const query = new URLSearchParams();
     if (params?.targetType) query.set('targetType', params.targetType);
@@ -649,5 +663,79 @@ export const api = {
     return request<{ success: boolean; message: string }>(`/api/media/${encodeURIComponent(publicId)}`, {
       method: 'DELETE',
     });
+  },
+
+  // Media Houses (Maisons de Journalistes - Max 5 journalists)
+  async getMediaHouses(q?: string) {
+    const query = q ? `?q=${encodeURIComponent(q)}` : '';
+    return request<{ mediaHouses: MediaHouse[] }>(`/api/media-houses${query}`);
+  },
+
+  async getMyMediaHouse() {
+    return request<{
+      house: MediaHouse | null;
+      isChef?: boolean;
+      maxJournalists?: number;
+      canAddMembers?: boolean;
+    }>('/api/media-houses/my-house');
+  },
+
+  async getAvailableJournalists() {
+    return request<{ journalists: (User & { currentHouseId?: string; currentHouseName?: string; isAvailable: boolean })[] }>(
+      '/api/media-houses/available-journalists'
+    );
+  },
+
+  async getMediaHouseById(id: string) {
+    return request<{ house: MediaHouse; articles: Article[] }>(`/api/media-houses/${id}`);
+  },
+
+  async createMediaHouse(data: Partial<MediaHouse>) {
+    return request<{ message: string; house: MediaHouse }>('/api/media-houses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateMediaHouse(id: string, data: Partial<MediaHouse>) {
+    return request<{ message: string; house: MediaHouse }>(`/api/media-houses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async addMediaHouseMember(houseId: string, journalistId: string) {
+    return request<{ message: string; house: MediaHouse }>(`/api/media-houses/${houseId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ journalistId }),
+    });
+  },
+
+  async removeMediaHouseMember(houseId: string, memberId: string) {
+    return request<{ message: string; house: MediaHouse }>(`/api/media-houses/${houseId}/members/${memberId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async deleteMediaHouse(houseId: string, reason?: string) {
+    return request<{ message: string }>(`/api/media-houses/${houseId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  async getMasterAccounts() {
+    return request<{
+      masterAccounts: {
+        email: string;
+        isRegistered: boolean;
+        name: string;
+        id?: string;
+        role: string;
+        avatar?: string;
+        lastLoginAt?: string;
+      }[];
+      maxAccounts: number;
+    }>('/api/admin/master-accounts');
   },
 };

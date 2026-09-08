@@ -9,6 +9,17 @@ import {
   Images,
   Video as VideoIcon,
   HelpCircle,
+  Eye,
+  Edit3,
+  Clock,
+  BookOpen,
+  Quote,
+  List,
+  Heading2,
+  Bold,
+  Italic,
+  CheckCircle2,
+  Building2,
 } from 'lucide-react';
 import { Category, Article, CloudinaryMedia, ArticleMediaItem } from '../types';
 import { api } from '../services/api';
@@ -92,6 +103,17 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+
+  const wordsCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const readingTime = Math.max(1, Math.ceil(wordsCount / 200));
+
+  const insertFormatting = (prefix: string, suffix: string = '') => {
+    setContent((prev) => {
+      const insertion = `\n${prefix}Texte ici${suffix}\n`;
+      return prev + insertion;
+    });
+  };
 
   useEffect(() => {
     if (!categoryId && categories.length > 0) {
@@ -184,21 +206,60 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
       <div className="relative w-full max-w-4xl bg-[#0b0e1a] rounded-2xl shadow-[0_0_50px_rgba(0,243,255,0.25)] overflow-hidden flex flex-col my-4 max-h-[92vh] border border-cyan-500/40 text-slate-100 transition-all font-mono">
         {/* Header */}
-        <div className="bg-[#101428] border-b border-cyan-500/30 px-6 py-4 flex items-center justify-between shrink-0 font-mono">
+        <div className="bg-[#101428] border-b border-cyan-500/30 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 font-mono">
           <div>
-            <h2 className="text-lg font-black text-white">
-              {articleToEdit ? 'Modifier l’article' : 'Rédiger et publier un article'}
-            </h2>
-            <p className="text-xs text-cyan-400/70">
-              Système de rédaction professionnel — {user?.mediaName || user?.name}
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black text-white">
+                {articleToEdit ? 'Modifier l’article' : 'Rédiger et publier un article'}
+              </h2>
+              {user?.mediaName && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center gap-1">
+                  <Building2 className="w-3 h-3" />
+                  {user.mediaName}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-cyan-400/70 mt-0.5">
+              Système de publication professionnel — {user?.name} (Journaliste Accrédité)
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-cyan-400/60 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {/* Tab switch: Edit / Preview */}
+            <div className="flex items-center bg-[#070911] p-1 rounded-xl border border-cyan-500/30">
+              <button
+                type="button"
+                onClick={() => setActiveTab('edit')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'edit'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+                    : 'text-stone-400 hover:text-white'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Édition</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('preview')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'preview'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+                    : 'text-stone-400 hover:text-white'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Aperçu Lecteur</span>
+              </button>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-2 text-cyan-400/60 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Form Body */}
@@ -209,7 +270,9 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
             </div>
           )}
 
-          {/* Title */}
+          {activeTab === 'edit' ? (
+            <div className="space-y-6">
+              {/* Title */}
           <div>
             <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1.5">
               Titre de l’article *
@@ -272,19 +335,73 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
             />
           </div>
 
-          {/* Main Content */}
+          {/* Main Content with Formatting Toolbar & Word Count */}
           <div>
-            <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1.5">
-              Corps du texte / Contenu de l’article *
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+              <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                Corps du texte / Contenu de l’article *
+              </label>
+
+              {/* Formatting Toolbar */}
+              <div className="flex items-center gap-1 bg-[#0b0e1a] px-2 py-1 rounded-lg border border-cyan-500/30">
+                <button
+                  type="button"
+                  onClick={() => insertFormatting('**', '**')}
+                  className="p-1 hover:text-cyan-300 text-stone-400 rounded transition cursor-pointer"
+                  title="Texte en gras (**texte**)"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertFormatting('*', '*')}
+                  className="p-1 hover:text-cyan-300 text-stone-400 rounded transition cursor-pointer"
+                  title="Texte en italique (*texte*)"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertFormatting('## ')}
+                  className="p-1 hover:text-cyan-300 text-stone-400 rounded transition cursor-pointer"
+                  title="Intertitre (## Titre)"
+                >
+                  <Heading2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertFormatting('> ')}
+                  className="p-1 hover:text-cyan-300 text-stone-400 rounded transition cursor-pointer"
+                  title="Citation (> texte)"
+                >
+                  <Quote className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertFormatting('- ')}
+                  className="p-1 hover:text-cyan-300 text-stone-400 rounded transition cursor-pointer"
+                  title="Liste à puces (- élément)"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
             <textarea
-              rows={7}
+              rows={8}
               required
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Rédigez ici votre reportage, enquête ou analyse détaillée..."
               className="w-full px-4 py-3 text-sm bg-[#141933] border border-cyan-500/40 rounded-xl focus:outline-none focus:border-cyan-400 leading-relaxed text-white shadow-[0_0_10px_rgba(0,243,255,0.1)] font-sans"
             />
+
+            <div className="flex items-center justify-between text-[11px] text-cyan-400/60 mt-1 font-mono">
+              <span>Astuce : Utilisez les balises Markdown pour mettre en valeur vos paragraphes.</span>
+              <span className="px-2 py-0.5 rounded bg-[#101428] border border-cyan-500/30 text-cyan-300 font-bold">
+                {wordsCount} mots • ~{readingTime} min de lecture
+              </span>
+            </div>
           </div>
 
           {/* SECTION 1: COVER IMAGE VIA MEDIA UPLOADER */}
@@ -508,6 +625,124 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
               className="w-full px-4 py-2 text-xs bg-[#141933] border border-cyan-500/40 rounded-xl focus:outline-none focus:border-cyan-400 text-white shadow-[0_0_10px_rgba(0,243,255,0.1)]"
             />
           </div>
+        </div>
+      ) : (
+        /* LIVE READER PREVIEW */
+        <div className="space-y-6 bg-[#070911] p-6 rounded-2xl border border-cyan-500/30 font-sans">
+          <div className="flex items-center justify-between text-xs text-cyan-400/80 font-mono border-b border-cyan-500/20 pb-3">
+            <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 font-bold uppercase text-[10px]">
+              {categories.find((c) => c.id === categoryId)?.name || 'Actualité'}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-cyan-400" />
+              ~{readingTime} min de lecture • {wordsCount} mots
+            </span>
+          </div>
+
+          {/* Article Title */}
+          <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
+            {title || 'Titre de l’article non renseigné'}
+          </h1>
+
+          {/* Journalist & Media House info */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[#101428] border border-cyan-500/20 text-xs font-mono">
+            <div className="w-9 h-9 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center font-bold text-cyan-300 shrink-0">
+              {user?.name?.[0] || 'J'}
+            </div>
+            <div className="min-w-0">
+              <div className="font-bold text-white flex items-center gap-1.5">
+                {user?.name || 'Journaliste'}
+                <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+              </div>
+              <div className="text-stone-400 text-[11px] truncate">
+                {user?.mediaName ? `Maison de presse : ${user.mediaName}` : 'Journaliste accrédité'}
+              </div>
+            </div>
+          </div>
+
+          {/* Cover Image Preview */}
+          {coverImage && (
+            <div className="rounded-xl overflow-hidden border border-cyan-500/30 shadow-lg">
+              <img
+                src={coverImage}
+                alt={coverImageAlt || title}
+                className="w-full h-64 sm:h-80 object-cover"
+              />
+              {coverImageAlt && (
+                <div className="p-2 bg-[#0b0e1a] text-[11px] text-stone-400 italic text-center font-mono border-t border-cyan-500/20">
+                  {coverImageAlt}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Chapeau */}
+          {summary && (
+            <div className="p-4 rounded-xl bg-cyan-950/30 border-l-4 border-cyan-400 text-stone-200 text-sm italic leading-relaxed">
+              {summary}
+            </div>
+          )}
+
+          {/* Content text */}
+          <div className="text-stone-100 text-sm sm:text-base leading-relaxed whitespace-pre-line font-serif space-y-4">
+            {content || 'Rédigez le contenu de votre article dans l’onglet "Édition" pour voir le rendu ici.'}
+          </div>
+
+          {/* Gallery Preview */}
+          {gallery.length > 0 && (
+            <div className="space-y-3 pt-4 border-t border-cyan-500/20">
+              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                <Images className="w-4 h-4" /> Galerie de clichés ({gallery.length})
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {gallery.map((g) => (
+                  <div key={g.id} className="rounded-xl overflow-hidden border border-cyan-500/30 bg-[#101428]">
+                    <img src={g.url} alt={g.altText || ''} className="w-full h-32 object-cover" />
+                    {g.caption && (
+                      <div className="p-2 text-[10px] text-stone-300 font-mono truncate">
+                        {g.caption}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Video Preview */}
+          {videoUrl && (
+            <div className="space-y-2 pt-4 border-t border-cyan-500/20">
+              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                <VideoIcon className="w-4 h-4" /> Reportage vidéo
+              </h4>
+              <VideoPlayer src={videoUrl} poster={videoThumbnail || coverImage} />
+            </div>
+          )}
+
+          {/* Tags */}
+          {tagsInput && (
+            <div className="flex flex-wrap gap-1.5 pt-3 border-t border-cyan-500/20 font-mono">
+              {tagsInput.split(',').map((t, idx) => {
+                const tag = t.trim();
+                if (!tag) return null;
+                return (
+                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-[#141933] border border-cyan-500/30 text-cyan-300 text-xs font-semibold">
+                    #{tag}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Ethics & Fact-Checking Assurance */}
+      <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 flex items-center gap-3 text-xs font-mono text-cyan-300/80">
+        <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+        <span>
+          En publiant cet article, vous engagez la responsabilité de votre rédaction et certifiez le respect de la charte de déontologie journalistique CSC.
+        </span>
+      </div>
 
           {/* Footer Actions */}
           <div className="pt-4 border-t border-cyan-500/30 flex items-center justify-end gap-3 font-mono">

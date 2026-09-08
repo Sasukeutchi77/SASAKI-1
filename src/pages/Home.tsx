@@ -4,6 +4,8 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ArticleCard } from '../components/ArticleCard';
 import { ArticleCardSkeleton } from '../components/ui/Skeleton';
+import { realtime } from '../services/realtime';
+import { sfx } from '../services/soundEffects';
 import {
   Flame,
   Clock,
@@ -20,10 +22,8 @@ import {
   X,
   ChevronDown,
   Loader2,
-  Radio,
+  Building2,
 } from 'lucide-react';
-import { BreakingNewsTicker } from '../components/BreakingNewsTicker';
-import { LiveFeedTimeline } from '../components/LiveFeedTimeline';
 
 interface HomeProps {
   onOpenArticle: (article: Article) => void;
@@ -32,6 +32,7 @@ interface HomeProps {
   onOpenCreateArticle: () => void;
   onOpenSearch?: () => void;
   onOpenCategoryPage?: (catSlug: string) => void;
+  onOpenMediaHouses?: () => void;
   searchQuery: string;
   selectedCategory: string | null;
   onSelectCategory: (catSlug: string | null) => void;
@@ -46,6 +47,7 @@ export const Home: React.FC<HomeProps> = ({
   onOpenCreateArticle,
   onOpenSearch,
   onOpenCategoryPage,
+  onOpenMediaHouses,
   searchQuery,
   selectedCategory,
   onSelectCategory,
@@ -53,7 +55,7 @@ export const Home: React.FC<HomeProps> = ({
   onSelectTag: externalSetTag,
 }) => {
   const { user, isAuthenticated } = useAuth();
-  const [feedTab, setFeedTab] = useState<'foryou' | 'trending' | 'latest' | 'following' | 'live'>('foryou');
+  const [feedTab, setFeedTab] = useState<'foryou' | 'trending' | 'latest' | 'following'>('foryou');
   const [internalTag, setInternalTag] = useState<string | null>(null);
 
   const selectedTag = externalTag !== undefined ? externalTag : internalTag;
@@ -67,6 +69,7 @@ export const Home: React.FC<HomeProps> = ({
   const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null);
   const [topJournalists, setTopJournalists] = useState<User[]>([]);
   const [popularTags, setPopularTags] = useState<{ tag: string; count: number }[]>([]);
+  const [liveFlash, setLiveFlash] = useState<{ article: Article; time: string } | null>(null);
 
   // Pagination states
   const [page, setPage] = useState<number>(1);
@@ -128,6 +131,92 @@ export const Home: React.FC<HomeProps> = ({
   useEffect(() => {
     fetchInitialArticles();
   }, [feedTab, selectedCategory, selectedTag, searchQuery, isAuthenticated]);
+
+  // Real-time synchronization for published articles, updates, likes, views and comments
+  useEffect(() => {
+    // 1. When any journalist or media house posts an article
+    const unsubArticleCreated = realtime.on('article:created', (newArt: Article) => {
+      if (!newArt || !newArt.id) return;
+
+      // Check if it matches active filters
+      const matchesCategory = !selectedCategory || selectedCategory === 'all' || newArt.categoryId === selectedCategory;
+      const matchesTag = !selectedTag || (newArt.tags && newArt.tags.includes(selectedTag));
+      const matchesSearch = !searchQuery || newArt.title.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (matchesCategory && matchesTag && matchesSearch) {
+        setArticles((prev) => {
+          if (prev.some((a) => a.id === newArt.id)) return prev;
+          return [newArt, ...prev];
+        });
+      }
+
+      // Display live flash alert
+      setLiveFlash({
+        article: newArt,
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      });
+
+      // Play soft alert tone
+      sfx.playNotificationDing();
+    });
+
+    // 2. When an article is updated
+    const unsubArticleUpdated = realtime.on('article:updated', (updatedArt: Article) => {
+      if (!updatedArt || !updatedArt.id) return;
+      setArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
+      setFeaturedArticle((prev) => (prev && prev.id === updatedArt.id ? { ...prev, ...updatedArt } : prev));
+    });
+
+    // 3. When an article is deleted
+    const unsubArticleDeleted = realtime.on('article:deleted', ({ articleId }: { articleId: string }) => {
+      setArticles((prev) => prev.filter((a) => a.id !== articleId));
+      setFeaturedArticle((prev) => (prev && prev.id === articleId ? null : prev));
+    });
+
+    // 4. When an article receives a like
+    const unsubArticleLiked = realtime.on('article:liked', ({ articleId, likesCount }: { articleId: string; likesCount: number }) => {
+      setArticles((prev) => prev.map((a) => (a.id === articleId ? { ...a, likesCount } : a)));
+      setFeaturedArticle((prev) => (prev && prev.id === articleId ? { ...prev, likesCount } : prev));
+    });
+
+    // 5. When an article is viewed
+    const unsubArticleViewed = realtime.on('article:viewed', ({ articleId, viewsCount }: { articleId: string; viewsCount: number }) => {
+      setArticles((prev) => prev.map((a) => (a.id === articleId ? { ...a, viewsCount } : a)));
+    });
+
+    // 6. When comments are added or deleted
+    const unsubCommentCreated = realtime.on('comment:created', ({ articleId, commentsCount }: { articleId: string; commentsCount?: number }) => {
+      setArticles((prev) =>
+        prev.map((a) => (a.id === articleId ? { ...a, commentsCount: commentsCount !== undefined ? commentsCount : a.commentsCount + 1 } : a))
+      );
+      setFeaturedArticle((prev) =>
+        prev && prev.id === articleId
+          ? { ...prev, commentsCount: commentsCount !== undefined ? commentsCount : prev.commentsCount + 1 }
+          : prev
+      );
+    });
+
+    const unsubCommentDeleted = realtime.on('comment:deleted', ({ articleId, commentsCount }: { articleId: string; commentsCount?: number }) => {
+      setArticles((prev) =>
+        prev.map((a) => (a.id === articleId ? { ...a, commentsCount: commentsCount !== undefined ? commentsCount : Math.max(0, a.commentsCount - 1) } : a))
+      );
+      setFeaturedArticle((prev) =>
+        prev && prev.id === articleId
+          ? { ...prev, commentsCount: commentsCount !== undefined ? commentsCount : Math.max(0, prev.commentsCount - 1) }
+          : prev
+      );
+    });
+
+    return () => {
+      unsubArticleCreated();
+      unsubArticleUpdated();
+      unsubArticleDeleted();
+      unsubArticleLiked();
+      unsubArticleViewed();
+      unsubCommentCreated();
+      unsubCommentDeleted();
+    };
+  }, [selectedCategory, selectedTag, searchQuery]);
 
   // Load next page
   const handleLoadMore = async () => {
@@ -197,6 +286,54 @@ export const Home: React.FC<HomeProps> = ({
   return (
     <div className="min-h-screen bg-[#07080f] text-slate-100 pb-20 md:pb-12 cyber-grid">
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        {/* Live Real-time Breaking Flash Banner */}
+        {liveFlash && (
+          <div className="mb-5 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-red-950/90 via-[#12071a]/95 to-cyan-950/90 border border-red-500/60 shadow-[0_0_25px_rgba(239,68,68,0.3)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3 duration-300">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span className="relative flex h-3 w-3 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_10px_#ef4444]"></span>
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <span className="px-2 py-0.5 rounded bg-red-500/25 text-red-300 font-extrabold font-mono tracking-wider border border-red-500/50 shadow-[0_0_8px_rgba(239,68,68,0.4)]">
+                    EN DIRECT • {liveFlash.time}
+                  </span>
+                  {liveFlash.article.mediaName && (
+                    <span className="flex items-center gap-1 font-bold text-cyan-300 text-xs bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">
+                      <Building2 className="w-3 h-3 text-cyan-400" />
+                      {liveFlash.article.mediaName}
+                    </span>
+                  )}
+                  <span className="text-slate-300 text-xs">Par {liveFlash.article.authorName}</span>
+                </div>
+                <p className="text-sm font-bold text-white truncate mt-1">
+                  {liveFlash.article.title}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <button
+                onClick={() => {
+                  onOpenArticle(liveFlash.article);
+                  setLiveFlash(null);
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-fuchsia-600 hover:from-red-500 hover:to-fuchsia-500 text-white font-bold text-xs shadow-[0_0_15px_rgba(239,68,68,0.6)] transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>Consulter en direct</span>
+                <span>→</span>
+              </button>
+              <button
+                onClick={() => setLiveFlash(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                title="Ignorer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Category active banner */}
         {selectedCategory && selectedCategory !== 'all' && (
           <div className="mb-4 p-3.5 bg-[#0b0e1a]/90 rounded-xl border border-cyan-500/40 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_15px_rgba(0,243,255,0.15)]">
@@ -257,9 +394,6 @@ export const Home: React.FC<HomeProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main Feed Column (8 cols on desktop) */}
           <div className="lg:col-span-8 space-y-5">
-            {/* Cyber Breaking News Ticker */}
-            <BreakingNewsTicker articles={articles} onOpenArticle={onOpenArticle} />
-
             {/* Feed Tabs Bar */}
             <div className="bg-[#0b0e1a]/90 backdrop-blur-md rounded-2xl border border-cyan-500/30 p-1.5 flex items-center justify-between shadow-[0_0_20px_rgba(0,243,255,0.06)] transition-all">
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth w-full sm:w-auto">
@@ -300,19 +434,6 @@ export const Home: React.FC<HomeProps> = ({
                 >
                   <Clock className="w-3.5 h-3.5" />
                   <span>Dernières minutes</span>
-                </button>
-
-                <button
-                  id="tab-feed-live"
-                  onClick={() => setFeedTab('live')}
-                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    feedTab === 'live'
-                      ? 'bg-gradient-to-r from-red-500 to-fuchsia-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]'
-                      : 'text-red-400/80 hover:text-red-300 hover:bg-red-500/10'
-                  }`}
-                >
-                  <Radio className="w-3.5 h-3.5 animate-pulse text-red-400" />
-                  <span>En direct 🔴</span>
                 </button>
 
                 <button
@@ -390,15 +511,8 @@ export const Home: React.FC<HomeProps> = ({
               </div>
             )}
 
-            {/* Articles List / Grid or Live Timeline */}
-            {feedTab === 'live' ? (
-              <LiveFeedTimeline
-                onOpenArticleById={(id) => {
-                  const art = articles.find((a) => a.id === id);
-                  if (art) onOpenArticle(art);
-                }}
-              />
-            ) : loading ? (
+            {/* Articles List / Grid */}
+            {loading ? (
               <ArticleCardSkeleton count={4} />
             ) : articles.length === 0 ? (
               <div className="p-10 text-center text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 transition-colors">
@@ -547,6 +661,37 @@ export const Home: React.FC<HomeProps> = ({
                 >
                   Déclarer un média ou journaliste
                 </button>
+              </div>
+            )}
+
+            {/* Maisons de Presse & Rédactions Shortcut */}
+            {onOpenMediaHouses && (
+              <div
+                onClick={onOpenMediaHouses}
+                className="group p-4 rounded-2xl bg-gradient-to-br from-[#0c1024] to-[#141b3a] border border-cyan-500/40 shadow-[0_0_20px_rgba(0,243,255,0.1)] hover:border-cyan-400 hover:shadow-[0_0_25px_rgba(0,243,255,0.25)] transition-all cursor-pointer relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-28 h-28 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-cyan-500/20 transition-all" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-xs text-white uppercase tracking-wider">
+                        Maisons de Presse
+                      </h4>
+                      <p className="text-[10px] text-cyan-400/70 font-mono">
+                        Collectifs & Rédactions (max 5)
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                    Explorer
+                  </span>
+                </div>
+                <p className="text-xs text-stone-300 leading-relaxed">
+                  Découvrez les rédactions agréées, rejoignez un collectif ou fondez votre propre maison de journalistes.
+                </p>
               </div>
             )}
 

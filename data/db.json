@@ -170,12 +170,7 @@
       ],
       "categoryId": "cat_economie",
       "categoryName": "Économie",
-      "tags": [
-        "Économie",
-        "Industrie",
-        "Burkina Faso",
-        "Énergie Solaire"
-      ],
+      "tags": [],
       "status": "published",
       "viewsCount": 1420,
       "likesCount": 184,
@@ -200,12 +195,7 @@
       ],
       "categoryId": "cat_culture",
       "categoryName": "Culture",
-      "tags": [
-        "Culture",
-        "FESPACO",
-        "Faso Dan Fani",
-        "Artisanat"
-      ],
+      "tags": [],
       "status": "published",
       "viewsCount": 980,
       "likesCount": 142,
@@ -230,13 +220,7 @@
       ],
       "categoryId": "cat_technologie",
       "categoryName": "Technologie",
-      "tags": [
-        "Agritech",
-        "Sourou",
-        "Agriculture",
-        "Solaire",
-        "Innovation"
-      ],
+      "tags": [],
       "status": "published",
       "viewsCount": 1120,
       "likesCount": 167,
@@ -262,12 +246,7 @@
       ],
       "categoryId": "cat_sport",
       "categoryName": "Sport",
-      "tags": [
-        "Sport",
-        "Étalons",
-        "Football",
-        "Burkina Faso"
-      ],
+      "tags": [],
       "status": "published",
       "viewsCount": 2310,
       "likesCount": 389,
@@ -293,13 +272,7 @@
       ],
       "categoryId": "cat_afrique",
       "categoryName": "Afrique",
-      "tags": [
-        "AES",
-        "Afrique",
-        "Numérique",
-        "Coopération",
-        "Économie"
-      ],
+      "tags": [],
       "status": "published",
       "viewsCount": 1650,
       "likesCount": 245,

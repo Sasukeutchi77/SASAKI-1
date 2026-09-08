@@ -4,6 +4,7 @@ import { AuthenticatedRequest, requireAuth } from '../auth';
 import { VerificationRequest, Report } from '../../src/types';
 import { reportRateLimiter, likesRateLimiter } from '../security/rateLimiter';
 import { sanitizeText, isValidUrl } from '../security/sanitizer';
+import { isMasterAdmin } from '../config/masterAccounts';
 
 export const usersRouter = Router();
 
@@ -131,10 +132,25 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, (re
 
   data.verificationRequests.unshift(newRequest);
   user.verificationStatus = 'pending';
+
+  // Dispatch notification to Master Admin accounts
+  const adminUsers = data.users.filter((u) => isMasterAdmin(u.email) || u.role === 'admin');
+  adminUsers.forEach((adminUser) => {
+    data.notifications.unshift({
+      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: adminUser.id,
+      type: 'system',
+      title: "Nouvelle demande d'accréditation Journaliste",
+      message: `${user.name} (${user.email}) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.`,
+      read: false,
+      createdAt: now,
+    });
+  });
+
   db.save();
 
   return res.status(201).json({
-    message: 'Votre demande de vérification a bien été soumise et sera examinée par l’administration.',
+    message: 'Votre demande d’accréditation a bien été transmise à l’administrateur principal pour examen officiel.',
     request: newRequest,
   });
 });

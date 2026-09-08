@@ -13,6 +13,8 @@ import {
   AlertCircle,
   Building2,
   UserCheck,
+  UserMinus,
+  ShieldAlert,
 } from 'lucide-react';
 import { VerificationRequest, User } from '../../types';
 import { api } from '../../services/api';
@@ -40,6 +42,11 @@ export const AdminJournalistsTab: React.FC<AdminJournalistsTabProps> = ({
   const [actionDecision, setActionDecision] = useState<'approved' | 'rejected' | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [loadingAction, setLoadingAction] = useState(false);
+
+  // Revocation of journalist title
+  const [revokeTarget, setRevokeTarget] = useState<User | null>(null);
+  const [revokeReason, setRevokeReason] = useState('');
+  const [loadingRevoke, setLoadingRevoke] = useState(false);
 
   const filteredRequests = requests.filter((r) => {
     if (statusFilter !== 'all' && r.status !== statusFilter) return false;
@@ -95,6 +102,22 @@ export const AdminJournalistsTab: React.FC<AdminJournalistsTabProps> = ({
       onRefresh();
     } catch (err: any) {
       onFlash(`Erreur: ${err.message}`);
+    }
+  };
+
+  const handleConfirmRevokeJournalist = async () => {
+    if (!revokeTarget) return;
+    setLoadingRevoke(true);
+    try {
+      await api.revokeJournalistRole(revokeTarget.id, revokeReason);
+      onFlash(`Le titre de journaliste a été retiré avec succès à "${revokeTarget.name}".`);
+      setRevokeTarget(null);
+      setRevokeReason('');
+      onRefresh();
+    } catch (err: any) {
+      onFlash(`Erreur: ${err.message}`);
+    } finally {
+      setLoadingRevoke(false);
     }
   };
 
@@ -329,16 +352,29 @@ export const AdminJournalistsTab: React.FC<AdminJournalistsTabProps> = ({
                     </td>
 
                     <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => handleToggleJournalistBadge(j)}
-                        className={`px-3 py-1 text-xs font-semibold rounded-lg border transition ${
-                          j.isVerified
-                            ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                            : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-                        }`}
-                      >
-                        {j.isVerified ? 'Révoquer le badge' : 'Accorder le badge'}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleToggleJournalistBadge(j)}
+                          className={`px-3 py-1 text-xs font-semibold rounded-lg border transition ${
+                            j.isVerified
+                              ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                              : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                          }`}
+                        >
+                          {j.isVerified ? 'Révoquer le badge' : 'Accorder le badge'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRevokeTarget(j);
+                            setRevokeReason('Décision administrative ou non-respect de la charte déontologique.');
+                          }}
+                          title="Retirer le titre de journaliste"
+                          className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 flex items-center gap-1 transition"
+                        >
+                          <UserMinus className="w-3.5 h-3.5" />
+                          <span>Retirer le titre</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -379,6 +415,33 @@ export const AdminJournalistsTab: React.FC<AdminJournalistsTabProps> = ({
             onChange={(e) => setAdminNotes(e.target.value)}
             className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             placeholder="Ex: Numéro CSC authentifié auprès de la commission."
+          />
+        </div>
+      </AdminConfirmDialog>
+
+      {/* Revoke Journalist Title Dialog */}
+      <AdminConfirmDialog
+        isOpen={!!revokeTarget}
+        title={`Retirer le titre de journaliste à ${revokeTarget?.name} ?`}
+        message={`Cette action rétrograde immédiatement l'utilisateur au rang de simple lecteur citoyen. Il perdra le badge de presse officiel, sera retiré de sa maison de journalistes et n'aura plus les permissions de rédiger des articles officiels.`}
+        confirmLabel={loadingRevoke ? 'Révocation...' : 'Confirmer le retrait du titre'}
+        isDestructive={true}
+        onConfirm={handleConfirmRevokeJournalist}
+        onCancel={() => {
+          setRevokeTarget(null);
+          setRevokeReason('');
+        }}
+      >
+        <div className="pt-2">
+          <label className="block text-xs font-bold text-gray-700 mb-1">
+            Motif de la révocation du titre (notifié à l'utilisateur) :
+          </label>
+          <textarea
+            rows={3}
+            value={revokeReason}
+            onChange={(e) => setRevokeReason(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-red-500 focus:outline-none"
+            placeholder="Ex: Non-respect de la charte de vérification des faits..."
           />
         </div>
       </AdminConfirmDialog>

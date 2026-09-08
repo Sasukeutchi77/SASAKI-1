@@ -3,6 +3,7 @@ import { db } from '../db';
 import { AuthenticatedRequest, requireAdmin } from '../auth';
 import { AdminLog, MediaHouse, Category } from '../../src/types';
 import { setFirebaseCustomUserClaims } from '../firebaseAdmin';
+import { isMasterAdmin, MASTER_ADMIN_EMAILS } from '../config/masterAccounts';
 
 export const adminRouter = Router();
 
@@ -227,7 +228,25 @@ adminRouter.put('/users/:id/status', (req: AuthenticatedRequest, res: Response) 
   return res.json({ message: `Compte ${status === 'suspended' ? 'suspendu' : 'réactivé'} avec succès.`, user });
 });
 
-// Change user role
+// 0. Get Principal Accounts (Master Admins with total control)
+adminRouter.get('/master-accounts', (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const accounts = MASTER_ADMIN_EMAILS.map((email) => {
+    const u = data.users.find((user) => user.email.toLowerCase() === email.toLowerCase());
+    return {
+      email,
+      isRegistered: !!u,
+      name: u?.name || 'En attente de connexion',
+      id: u?.id,
+      role: 'admin',
+      avatar: u?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      lastLoginAt: u?.lastLoginAt,
+    };
+  });
+  return res.json({ masterAccounts: accounts, maxAccounts: 2 });
+});
+
+// Change user role (Strict: Only master admins can promote to journalist or demote to user)
 adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = data.users.find((u) => u.id === req.params.id);
@@ -245,8 +264,53 @@ adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) =>
     return res.status(400).json({ error: 'Rôle invalide.' });
   }
 
+  // Strict rule: Admin role is strictly restricted to the 2 principal accounts
+  if (role === 'admin' && !isMasterAdmin(user.email)) {
+    return res.status(400).json({
+      error: 'Attribution refusée : seuls les 2 comptes principaux configurés ont le contrôle total et le statut d’administrateur.',
+    });
+  }
+
   const prevRole = user.role;
-  user.role = role;
+  user.role = role === 'reader' ? 'user' : role;
+
+  if (user.role === 'journalist') {
+    user.isVerified = true;
+    user.verificationStatus = 'approved';
+  } else if (user.role === 'user') {
+    // If demoting from journalist, detach from all media houses
+    for (let i = (data.mediaHouses || []).length - 1; i >= 0; i--) {
+      const m = data.mediaHouses[i];
+      if (m.members && m.members.includes(user.id)) {
+        m.members = m.members.filter((id) => id !== user.id);
+        m.journalistsCount = m.members.length;
+      }
+      if (m.ownerId === user.id) {
+        if (m.members && m.members.length > 0) {
+          const nextChef = data.users.find((u) => u.id === m.members[0]);
+          if (nextChef) {
+            m.ownerId = nextChef.id;
+            m.ownerName = nextChef.name;
+          }
+        } else {
+          data.mediaHouses.splice(i, 1);
+        }
+      }
+    }
+    user.mediaId = undefined;
+    user.mediaName = undefined;
+    user.isVerified = false;
+
+    data.notifications.unshift({
+      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: user.id,
+      type: 'system',
+      title: 'Statut Journaliste révoqué',
+      message: `Votre accréditation de Journaliste a été révoquée par l'administrateur principal. Votre compte est désormais un compte simple lecteur.`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+  }
 
   logAction(
     req,
@@ -254,7 +318,7 @@ adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) =>
     'user',
     user.id,
     user.name,
-    `Rôle modifié de "${prevRole}" vers "${role}"`
+    `Rôle modifié de "${prevRole}" vers "${user.role}" par le compte principal`
   );
 
   db.save();
@@ -266,7 +330,12 @@ adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) =>
     isVerified: user.isVerified,
   }).catch(() => {});
 
-  return res.json({ message: `Rôle mis à jour vers ${role}.`, user });
+  return res.json({
+    message: user.role === 'journalist'
+      ? `L'utilisateur "${user.name}" a été promu avec succès au rang de Journaliste accrédité. Il peut désormais fonder ou intégrer une Maison de Journalistes.`
+      : `Le rôle a été réinitialisé à Compte Simple ("${user.role}").`,
+    user,
+  });
 });
 
 // Toggle verification badge
@@ -308,6 +377,78 @@ adminRouter.put('/users/:id/verify', (req: AuthenticatedRequest, res: Response) 
   }).catch(() => {});
 
   return res.json({ message: `Badge de vérification ${isVerified ? 'attribué' : 'retiré'}.`, user });
+});
+
+// Explicit Revoke Journalist status (Demote to reader 'user' & remove from house)
+adminRouter.put('/users/:id/revoke-journalist', (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const user = data.users.find((u) => u.id === req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ error: 'Utilisateur introuvable.' });
+  }
+
+  if (isMasterAdmin(user.email)) {
+    return res.status(400).json({ error: 'Action interdite : impossible de révoquer un administrateur principal.' });
+  }
+
+  const { reason } = req.body || {};
+  user.role = 'user';
+  user.isVerified = false;
+  user.verificationStatus = 'rejected';
+
+  // Detach from all houses cleanly
+  for (let i = (data.mediaHouses || []).length - 1; i >= 0; i--) {
+    const m = data.mediaHouses[i];
+    if (m.members && m.members.includes(user.id)) {
+      m.members = m.members.filter((id) => id !== user.id);
+      m.journalistsCount = m.members.length;
+    }
+    if (m.ownerId === user.id) {
+      if (m.members && m.members.length > 0) {
+        const nextChef = data.users.find((u) => u.id === m.members[0]);
+        if (nextChef) {
+          m.ownerId = nextChef.id;
+          m.ownerName = nextChef.name;
+        }
+      } else {
+        data.mediaHouses.splice(i, 1);
+      }
+    }
+  }
+
+  user.mediaId = undefined;
+  user.mediaName = undefined;
+
+  data.notifications.unshift({
+    id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    userId: user.id,
+    type: 'system',
+    title: 'Statut de Journaliste révoqué',
+    message: `Votre statut de Journaliste a été officiellement révoqué par l'administrateur principal. Motif : ${reason || 'Non-respect des standards déontologiques ou réorganisation éditoriale'}. Vous êtes désormais simple lecteur citoyen.`,
+    read: false,
+    createdAt: new Date().toISOString(),
+  });
+
+  logAction(
+    req,
+    'revoke_journalist',
+    'journalist',
+    user.id,
+    user.name,
+    `Révocation du statut de journaliste. Motif : ${reason || 'Action administrative'}`
+  );
+
+  db.save();
+
+  // Async sync claims
+  setFirebaseCustomUserClaims(user.id, {
+    role: user.role,
+    status: user.status,
+    isVerified: user.isVerified,
+  }).catch(() => {});
+
+  return res.json({ message: `Le statut de journaliste de "${user.name}" a été révoqué avec succès.`, user });
 });
 
 // -------------------------------------------------------------
@@ -988,6 +1129,54 @@ adminRouter.put('/media/:id/status', (req: AuthenticatedRequest, res: Response) 
 
   db.save();
   return res.json({ message: `Statut du média mis à jour : ${status}`, media });
+});
+
+// Delete Media House (Permanent dissolution by Master Admin)
+adminRouter.delete('/media/:id', (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const houseIndex = (data.mediaHouses || []).findIndex((m) => m.id === req.params.id);
+
+  if (houseIndex === -1) {
+    return res.status(404).json({ error: 'Maison de journalistes introuvable.' });
+  }
+
+  const media = data.mediaHouses[houseIndex];
+  const { reason } = req.body || {};
+
+  // Detach all journalist members cleanly
+  const memberIds = media.members && Array.isArray(media.members) ? media.members : [media.ownerId];
+  data.users.forEach((u) => {
+    if (memberIds.includes(u.id) || u.mediaId === media.id) {
+      u.mediaId = undefined;
+      u.mediaName = undefined;
+
+      // Dispatch system notification
+      data.notifications.unshift({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: u.id,
+        type: 'system',
+        title: 'Maison de journalistes supprimée',
+        message: `La maison de journalistes "${media.name}" a été définitivement supprimée par l'administrateur principal. Motif : ${reason || 'Régulation et respect de la charte de presse'}. Vous conservez votre statut de journaliste et pouvez fonder ou rejoindre une autre maison (max 5 membres).`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+  });
+
+  // Remove house
+  data.mediaHouses.splice(houseIndex, 1);
+
+  logAction(
+    req,
+    'delete_media',
+    'media',
+    media.id,
+    media.name,
+    `Suppression définitive de la maison "${media.name}". Motif : ${reason || 'Régulation administrative'}`
+  );
+
+  db.save();
+  return res.json({ message: `La maison de journalistes "${media.name}" a été supprimée avec succès.` });
 });
 
 // -------------------------------------------------------------

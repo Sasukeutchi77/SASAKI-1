@@ -15,9 +15,13 @@ import {
   Sun,
   Moon,
   Zap,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { SoundToggleButton } from './SoundToggleButton';
+import { sfx } from '../services/soundEffects';
+import { realtime, RealtimeStatus } from '../services/realtime';
 
 interface HeaderProps {
   onSearchChange: (search: string) => void;
@@ -32,6 +36,7 @@ interface HeaderProps {
   onOpenBookmarks: () => void;
   onOpenProfile: (userId: string) => void;
   onOpenMyProfile: () => void;
+  onOpenMediaHouses?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -47,12 +52,18 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenBookmarks,
   onOpenProfile,
   onOpenMyProfile,
+  onOpenMediaHouses,
 }) => {
   const { user, isAuthenticated, logout, unreadNotifs, bookmarksCount, quickSwitch } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showDemoMenu, setShowDemoMenu] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [rtStatus, setRtStatus] = useState<RealtimeStatus>(realtime.getStatus());
+
+  React.useEffect(() => {
+    return realtime.onStatusChange(setRtStatus);
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 bg-[#07080f]/90 backdrop-blur-xl border-b border-cyan-500/25 shadow-[0_4px_25px_rgba(0,243,255,0.08)] transition-all">
@@ -133,6 +144,45 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Action buttons */}
           <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Live Real-Time Synchronizer Status Indicator */}
+            <button
+              id="header-realtime-status-btn"
+              onClick={() => {
+                realtime.catchUp();
+                sfx.playMechanicalClick();
+              }}
+              title={
+                rtStatus === 'connected'
+                  ? 'Synchronisation temps réel active (WebSockets + SSE). Cliquez pour forcer une réactualisation.'
+                  : rtStatus === 'connecting'
+                  ? 'Connexion au serveur temps réel...'
+                  : 'Reconnexion au flux temps réel...'
+              }
+              className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer border ${
+                rtStatus === 'connected'
+                  ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:border-emerald-400 hover:shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                  : rtStatus === 'connecting'
+                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-300'
+                  : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                {rtStatus === 'connected' && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    rtStatus === 'connected'
+                      ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]'
+                      : rtStatus === 'connecting'
+                      ? 'bg-amber-400 animate-pulse'
+                      : 'bg-rose-400'
+                  }`}
+                />
+              </span>
+              <span>{rtStatus === 'connected' ? 'DIRECT' : rtStatus === 'connecting' ? 'SYNC...' : 'OFFLINE'}</span>
+            </button>
+
             {/* Mobile Search Toggle Button */}
             <button
               id="mobile-search-toggle"
@@ -152,13 +202,19 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Dark / Light Theme Toggle */}
             <button
               id="theme-toggle-header-btn"
-              onClick={toggleTheme}
+              onClick={() => {
+                sfx.playClick();
+                toggleTheme();
+              }}
               className="p-2 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors cursor-pointer touch-target flex items-center justify-center"
               title={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
               aria-label="Changer le thème"
             >
               {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-stone-600" />}
             </button>
+
+            {/* Cyber SFX UI Sound Toggle */}
+            <SoundToggleButton />
 
             {/* Quick Demo Role Switcher (Visible in development environment only) */}
             {import.meta.env.DEV && (
@@ -277,6 +333,19 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
+            {/* Media Houses Button (Open to all to explore & for journalists to manage) */}
+            {onOpenMediaHouses && (
+              <button
+                id="header-media-houses-btn"
+                onClick={onOpenMediaHouses}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-300 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 rounded-full shadow-[0_0_10px_rgba(0,243,255,0.15)] transition-all cursor-pointer"
+                title="Explorer les Maisons de Journalistes (quota max 5)"
+              >
+                <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="hidden sm:inline">Maisons</span>
+              </button>
+            )}
+
             {/* Journalist Dashboard / Create Article Button */}
             {isAuthenticated && (user?.role === 'journalist' || user?.role === 'admin') && (
               <button
@@ -384,6 +453,19 @@ export const Header: React.FC<HeaderProps> = ({
                         className="w-full text-left px-4 py-2 text-xs text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/50 flex items-center gap-2.5 font-medium cursor-pointer"
                       >
                         <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" /> Console d'administration
+                      </button>
+                    )}
+
+                    {onOpenMediaHouses && (
+                      <button
+                        id="menu-open-media-houses-dropdown"
+                        onClick={() => {
+                          onOpenMediaHouses();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-cyan-300 hover:bg-cyan-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
+                      >
+                        <Building2 className="w-4 h-4 text-cyan-400" /> Maisons de Journalistes
                       </button>
                     )}
 

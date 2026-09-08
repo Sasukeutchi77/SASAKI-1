@@ -101,6 +101,9 @@ export interface MediaHouse {
   description: string;
   ownerId: string;
   ownerName: string;
+  members?: string[];
+  membersData?: User[];
+  maxJournalists?: number;
   phone?: string;
   email?: string;
   website?: string;
@@ -141,6 +144,10 @@ export interface FactCheckSource {
   title: string;
   url?: string;
   publisher: string;
+  documentType?: 'official_gazette' | 'court_record' | 'ministry_release' | 'field_corroboration' | 'ngo_audit' | 'scientific_report';
+  documentLabel?: string;
+  attachmentAuthSeal?: string;
+  verifiedBadge?: boolean;
 }
 
 export interface FactCheckReport {
@@ -151,6 +158,9 @@ export interface FactCheckReport {
   summary: string;
   checkedBy?: string;
   lastCheckedAt?: string;
+  crossCheckMethod?: string;
+  attachmentAuthLabel?: string;
+  attachmentFingerprint?: string;
 }
 
 export interface PollOption {
@@ -180,6 +190,15 @@ export interface LiveUpdate {
   isOfficial?: boolean;
   timestamp: string;
   category?: string;
+  eventId?: string;
+  eventName?: string;
+  isPinned?: boolean;
+  updateType?: 'flash' | 'minute' | 'source_check' | 'statement';
+  reactions?: {
+    important?: number;
+    verified?: number;
+    quote?: number;
+  };
 }
 
 export interface Article {

@@ -10,10 +10,14 @@ import {
   Calendar,
   FileText,
   Filter,
+  Crown,
+  UserCheck,
 } from 'lucide-react';
 import { User, UserRole } from '../../types';
 import { api } from '../../services/api';
 import { AdminConfirmDialog } from './AdminConfirmDialog';
+
+const MASTER_ACCOUNTS = ['astaimperial45t@gmail.com', 'direction.purge@gmail.com'];
 
 interface AdminUsersTabProps {
   users: (User & { articlesCount: number })[];
@@ -202,17 +206,24 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                     </td>
 
                     <td className="py-3 px-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                          u.role === 'admin'
-                            ? 'bg-red-50 text-red-700 border border-red-200'
-                            : u.role === 'journalist'
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {u.role === 'admin' ? 'Admin' : u.role === 'journalist' ? 'Journaliste' : 'Lecteur'}
-                      </span>
+                      {MASTER_ACCOUNTS.includes(u.email?.toLowerCase()) ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-xs">
+                          <Crown className="w-3 h-3 text-amber-600" />
+                          Compte Principal
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            u.role === 'admin'
+                              ? 'bg-red-50 text-red-700 border border-red-200'
+                              : u.role === 'journalist'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {u.role === 'admin' ? 'Admin' : u.role === 'journalist' ? 'Journaliste' : 'Lecteur'}
+                        </span>
+                      )}
                     </td>
 
                     <td className="py-3 px-4 text-xs text-gray-600">
@@ -249,42 +260,65 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                     </td>
 
                     <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1">
-                        {/* Toggle Verification Badge */}
-                        <button
-                          onClick={() => handleOpenVerifyDialog(u)}
-                          title={u.isVerified ? 'Révoquer le badge officiel' : 'Attribuer le badge officiel'}
-                          className={`p-1.5 rounded-lg border transition ${
-                            u.isVerified
-                              ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-                              : 'bg-gray-50 text-gray-400 border-gray-200 hover:text-blue-600 hover:bg-blue-50'
-                          }`}
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                        </button>
+                      {MASTER_ACCOUNTS.includes(u.email?.toLowerCase()) ? (
+                        <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+                          Accès Super Admin Protégé
+                        </span>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1">
+                          {/* Quick Accreditation Button for Readers */}
+                          {u.role !== 'journalist' && u.role !== 'admin' && (
+                            <button
+                              onClick={() => {
+                                setTargetUser(u);
+                                setSelectedRole('journalist');
+                                setDialogType('role');
+                                setActionReason('Accréditation officielle selon le protocole anti-désinformation');
+                              }}
+                              title="Accréditer comme Journaliste officiel"
+                              className="px-2 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-300 text-xs font-bold flex items-center gap-1 transition shadow-xs"
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                              <span className="hidden xl:inline">Accréditer</span>
+                            </button>
+                          )}
 
-                        {/* Change Role Button */}
-                        <button
-                          onClick={() => handleOpenRoleDialog(u)}
-                          title="Modifier le rôle"
-                          className="p-1.5 rounded-lg bg-gray-50 text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-gray-200 transition"
-                        >
-                          <Shield className="w-4 h-4" />
-                        </button>
+                          {/* Toggle Verification Badge */}
+                          <button
+                            onClick={() => handleOpenVerifyDialog(u)}
+                            title={u.isVerified ? 'Révoquer le badge officiel' : 'Attribuer le badge officiel'}
+                            className={`p-1.5 rounded-lg border transition ${
+                              u.isVerified
+                                ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                                : 'bg-gray-50 text-gray-400 border-gray-200 hover:text-blue-600 hover:bg-blue-50'
+                            }`}
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </button>
 
-                        {/* Suspend / Reactivate Button */}
-                        <button
-                          onClick={() => handleOpenStatusDialog(u)}
-                          title={isSuspended ? 'Réactiver le compte' : 'Suspendre le compte'}
-                          className={`p-1.5 rounded-lg border transition ${
-                            isSuspended
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                          }`}
-                        >
-                          {isSuspended ? <RotateCcw className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
-                        </button>
-                      </div>
+                          {/* Change Role Button */}
+                          <button
+                            onClick={() => handleOpenRoleDialog(u)}
+                            title="Modifier le rôle"
+                            className="p-1.5 rounded-lg bg-gray-50 text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-gray-200 transition"
+                          >
+                            <Shield className="w-4 h-4" />
+                          </button>
+
+                          {/* Suspend / Reactivate Button */}
+                          <button
+                            onClick={() => handleOpenStatusDialog(u)}
+                            title={isSuspended ? 'Réactiver le compte' : 'Suspendre le compte'}
+                            className={`p-1.5 rounded-lg border transition ${
+                              isSuspended
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                            }`}
+                          >
+                            {isSuspended ? <RotateCcw className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -352,6 +386,12 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                 </button>
               ))}
             </div>
+
+            {selectedRole === 'journalist' && (
+              <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl text-xs text-cyan-900 leading-relaxed">
+                <strong>Protocole Anti-Désinformation :</strong> En accréditant ce compte au statut de Journaliste, vous lui donnez l'autorisation de fonder ou d'intégrer une Maison de Journalistes (quota strict de 5 journalistes maximum par maison).
+              </div>
+            )}
           </div>
         )}
 

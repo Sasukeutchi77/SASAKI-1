@@ -9,6 +9,8 @@ import { usersRouter } from './server/routes/users';
 import { adminRouter } from './server/routes/admin';
 import { mediaRouter } from './server/routes/media';
 import { searchRouter } from './server/routes/search';
+import { housesRouter } from './server/routes/houses';
+import { realtimeHub } from './server/realtime';
 import { securityHeaders, safeErrorHandler } from './server/security/middleware';
 import { globalApiLimiter } from './server/security/rateLimiter';
 
@@ -41,7 +43,11 @@ async function startServer() {
   app.use('/api/users', usersRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/media', mediaRouter);
+  app.use('/api/media-houses', housesRouter);
   app.use('/api/search', searchRouter);
+
+  // Real-time synchronization routes (SSE stream and catch-up buffer)
+  realtimeHub.registerRoutes(app);
 
   // Global safe error handler for API exceptions
   app.use('/api', safeErrorHandler);
@@ -52,6 +58,7 @@ async function startServer() {
       server: {
         middlewareMode: true,
         allowedHosts: true,
+        hmr: process.env.DISABLE_HMR !== 'true',
       },
       appType: 'spa',
     });
@@ -64,8 +71,20 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`FasoInfo platform running at http://0.0.0.0:${PORT}`);
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+
+  // Attach WebSocket server for real-time synchronization
+  realtimeHub.attachServer(server);
+
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use.`);
+    } else {
+      console.error('Server error:', err);
+    }
   });
 }
 
