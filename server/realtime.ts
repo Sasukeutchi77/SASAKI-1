@@ -19,6 +19,10 @@ interface ClientMeta {
 const recentEvents: RealtimeEvent[] = [];
 const MAX_RECENT_EVENTS = 100;
 
+export function getRecentEvents(since: number = 0): RealtimeEvent[] {
+  return since > 0 ? recentEvents.filter((e) => e.timestamp > since) : recentEvents.slice(0, 30);
+}
+
 function recordEvent(type: string, payload: any): RealtimeEvent {
   const event: RealtimeEvent = {
     id: `ev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,

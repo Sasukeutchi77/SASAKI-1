@@ -15,6 +15,29 @@ import { realtimeHub } from '../realtime';
 
 export const articlesRouter = Router();
 
+// Helper to parse and sanitize hashtags, ensuring '#' prefix and clean alphanumeric tokens
+export function formatHashtags(rawTags: any): string[] {
+  if (!rawTags) return [];
+  const list = Array.isArray(rawTags)
+    ? rawTags
+    : typeof rawTags === 'string'
+    ? rawTags.split(/[,\s]+/)
+    : [];
+
+  return list
+    .map((t: string) => {
+      if (typeof t !== 'string') return '';
+      const trimmed = t.trim().toLowerCase();
+      const withoutHash = trimmed.replace(/^#+/, '').trim();
+      if (!withoutHash) return '';
+      const sanitized = sanitizeText(withoutHash, { maxLength: 29, allowNewlines: false })
+        .replace(/[^a-z0-9_\-\u00C0-\u017F]/gi, '');
+      return sanitized ? `#${sanitized.toLowerCase()}` : '';
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+}
+
 // List articles with search, category filtering, smart feeds and pagination
 articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
@@ -349,13 +372,8 @@ articlesRouter.post('/', requireJournalistOrAdmin, articleCreationLimiter, (req:
     }
   }
 
-  // Sanitize tags (max 10 tags, max 30 chars each)
-  const cleanTags: string[] = Array.isArray(tags)
-    ? tags
-        .map((t: string) => sanitizeText(t, { maxLength: 30, allowNewlines: false }))
-        .filter(Boolean)
-        .slice(0, 10)
-    : [];
+  // Sanitize hashtags (ensure '#' prefix and clean tokens)
+  const cleanTags: string[] = formatHashtags(tags);
 
   // Enforce Media House requirement:
   // Journalists publish exclusively through their accredited Maison de Journalistes (never as isolated accounts)
@@ -426,22 +444,34 @@ articlesRouter.post('/', requireJournalistOrAdmin, articleCreationLimiter, (req:
 
   data.articles.unshift(newArticle);
 
-  // If published, notify followers
+  // If published, notify followers of both the author and the media house
   if (newArticle.status === 'published') {
-    const followers = data.follows.filter((f) => f.targetId === user.id || (user.mediaId && f.targetId === user.mediaId));
-    for (const f of followers) {
+    const targetFollowIds = new Set<string>([user.id]);
+    if (newArticle.mediaId) targetFollowIds.add(newArticle.mediaId);
+    if (house?.id) targetFollowIds.add(house.id);
+    if (user.mediaId) targetFollowIds.add(user.mediaId);
+
+    const followerIds = new Set<string>();
+    data.follows.forEach((f) => {
+      if (targetFollowIds.has(f.targetId) && f.followerId !== user.id) {
+        followerIds.add(f.followerId);
+      }
+    });
+
+    for (const followerId of followerIds) {
+      const houseOrAuthorName = newArticle.mediaName || user.mediaName || user.name;
       const notifItem = {
         id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        userId: f.followerId,
+        userId: followerId,
         type: 'article' as const,
-        title: `${user.mediaName || user.name} vient de publier un nouvel article`,
+        title: `🔴 ${houseOrAuthorName} vient de publier`,
         message: newArticle.title,
         link: `/article/${newArticle.id}`,
         read: false,
         createdAt: now,
       };
       data.notifications.unshift(notifItem);
-      realtimeHub.broadcastToUser(f.followerId, 'notification:new', notifItem);
+      realtimeHub.broadcastToUser(followerId, 'notification:new', notifItem);
     }
   }
 
@@ -503,7 +533,7 @@ articlesRouter.put('/:id', requireJournalistOrAdmin, (req: AuthenticatedRequest,
   if (videoUrl !== undefined) article.videoUrl = videoUrl ? videoUrl.trim() : undefined;
   if (videoMedia !== undefined) article.videoMedia = videoMedia;
   if (videoThumbnail !== undefined) article.videoThumbnail = videoThumbnail;
-  if (Array.isArray(tags)) article.tags = tags.map((t: string) => t.trim()).filter(Boolean);
+  if (tags !== undefined) article.tags = formatHashtags(tags);
   if (categoryId) {
     const category = data.categories.find((c) => c.id === categoryId);
     if (category) {
@@ -558,8 +588,15 @@ articlesRouter.delete('/:id', requireJournalistOrAdmin, (req: AuthenticatedReque
   data.bookmarks = data.bookmarks.filter((b) => b.articleId !== article.id);
   data.comments = data.comments.filter((c) => c.articleId !== article.id);
 
+  // Update house article count if applicable
+  const house = (data.mediaHouses || []).find((m) => m.id === article.mediaId);
+  if (house) {
+    house.articlesCount = Math.max(0, (house.articlesCount || 1) - 1);
+    realtimeHub.broadcast('mediaHouse:updated', house);
+  }
+
   db.save();
-  realtimeHub.broadcast('article:deleted', { articleId: req.params.id });
+  realtimeHub.broadcast('article:deleted', { articleId: req.params.id, categoryId: article.categoryId });
   return res.json({ message: 'Article supprimé avec succès.' });
 });
 
@@ -855,6 +892,9 @@ articlesRouter.delete('/:id/comments/:commentId', requireAuth, (req: Authenticat
     commentId: targetComment.id,
     commentsCount: article ? article.commentsCount : 0,
   });
+  if (article) {
+    realtimeHub.broadcast('article:updated', { ...article });
+  }
   return res.json({
     message: 'Commentaire supprimé.',
     commentsCount: article ? article.commentsCount : 0,

@@ -21,6 +21,7 @@ import {
 import { MediaHouse, User, Article } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { realtime } from '../services/realtime';
 
 const LOGO_PRESETS = [
   { name: 'Investigation', url: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=200&auto=format&fit=crop&q=80' },
@@ -51,6 +52,10 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
 }) => {
   const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'explore' | 'my-house' | 'governance'>(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Houses list state
   const [houses, setHouses] = useState<MediaHouse[]>([]);
@@ -141,6 +146,70 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
     if (user) {
       loadMyHouse();
     }
+
+    const unsubHouseCreated = realtime.on('mediaHouse:created', (newHouse: MediaHouse) => {
+      if (!newHouse || !newHouse.id) return;
+      setHouses((prev) => {
+        if (prev.some((h) => h.id === newHouse.id)) return prev;
+        return [newHouse, ...prev];
+      });
+    });
+
+    const unsubHouseUpdated = realtime.on('mediaHouse:updated', (updatedHouse: MediaHouse) => {
+      if (!updatedHouse || !updatedHouse.id) return;
+      setHouses((prev) => prev.map((h) => (h.id === updatedHouse.id ? { ...h, ...updatedHouse } : h)));
+      setMyHouse((prev) => (prev && prev.id === updatedHouse.id ? { ...prev, ...updatedHouse } : prev));
+      setSelectedHouseDetail((prev) =>
+        prev && prev.house.id === updatedHouse.id
+          ? { ...prev, house: { ...prev.house, ...updatedHouse } }
+          : prev
+      );
+    });
+
+    const unsubArticleCreated = realtime.on('article:created', (newArt: Article) => {
+      if (!newArt || !newArt.id) return;
+      // If a house detail is open and the article belongs to it, prepend immediately
+      setSelectedHouseDetail((prev) => {
+        if (!prev) return prev;
+        const matches = prev.house.id === newArt.mediaId || prev.house.id === (newArt as any).houseId;
+        if (!matches) return prev;
+        if (prev.articles.some((a) => a.id === newArt.id)) return prev;
+        return {
+          ...prev,
+          house: {
+            ...prev.house,
+            articlesCount: (prev.house.articlesCount || 0) + 1,
+          },
+          articles: [newArt, ...prev.articles],
+        };
+      });
+
+      // Also update the house's count in the main list
+      if (newArt.mediaId) {
+        setHouses((prev) =>
+          prev.map((h) =>
+            h.id === newArt.mediaId ? { ...h, articlesCount: (h.articlesCount || 0) + 1 } : h
+          )
+        );
+      }
+    });
+
+    const unsubArticleDeleted = realtime.on('article:deleted', ({ articleId }: { articleId: string }) => {
+      setSelectedHouseDetail((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          articles: prev.articles.filter((a) => a.id !== articleId),
+        };
+      });
+    });
+
+    return () => {
+      unsubHouseCreated();
+      unsubHouseUpdated();
+      unsubArticleCreated();
+      unsubArticleDeleted();
+    };
   }, [user]);
 
   const handleCreateHouse = async (e: React.FormEvent) => {

@@ -674,6 +674,13 @@ export const api = {
   async getMyMediaHouse() {
     return request<{
       house: MediaHouse | null;
+      articles?: Article[];
+      stats?: {
+        totalViews: number;
+        totalLikes: number;
+        totalComments: number;
+        totalArticles: number;
+      };
       isChef?: boolean;
       maxJournalists?: number;
       canAddMembers?: boolean;
@@ -701,6 +708,29 @@ export const api = {
     return request<{ message: string; house: MediaHouse }>(`/api/media-houses/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  },
+
+  async assignMemberRole(houseId: string, memberId: string, title: string) {
+    return request<{ message: string; memberRoles: Record<string, string>; house: MediaHouse }>(
+      `/api/media-houses/${houseId}/members/${memberId}/role`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ title }),
+      }
+    );
+  },
+
+  async addEditorialNote(houseId: string, content: string, priority: 'urgent' | 'standard' | 'investigation') {
+    return request<{ message: string; note: any; house: MediaHouse }>(`/api/media-houses/${houseId}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ content, priority }),
+    });
+  },
+
+  async deleteEditorialNote(houseId: string, noteId: string) {
+    return request<{ message: string; house: MediaHouse }>(`/api/media-houses/${houseId}/notes/${noteId}`, {
+      method: 'DELETE',
     });
   },
 

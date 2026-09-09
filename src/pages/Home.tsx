@@ -33,6 +33,7 @@ interface HomeProps {
   onOpenSearch?: () => void;
   onOpenCategoryPage?: (catSlug: string) => void;
   onOpenMediaHouses?: () => void;
+  onOpenMyHouse?: () => void;
   searchQuery: string;
   selectedCategory: string | null;
   onSelectCategory: (catSlug: string | null) => void;
@@ -48,6 +49,7 @@ export const Home: React.FC<HomeProps> = ({
   onOpenSearch,
   onOpenCategoryPage,
   onOpenMediaHouses,
+  onOpenMyHouse,
   searchQuery,
   selectedCategory,
   onSelectCategory,
@@ -139,9 +141,19 @@ export const Home: React.FC<HomeProps> = ({
       if (!newArt || !newArt.id) return;
 
       // Check if it matches active filters
-      const matchesCategory = !selectedCategory || selectedCategory === 'all' || newArt.categoryId === selectedCategory;
+      const catObj = categories.find((c) => c.slug === selectedCategory || c.id === selectedCategory);
+      const matchesCategory =
+        !selectedCategory ||
+        selectedCategory === 'all' ||
+        newArt.categoryId === selectedCategory ||
+        (catObj && (newArt.categoryId === catObj.id || newArt.categoryId === catObj.slug));
+
       const matchesTag = !selectedTag || (newArt.tags && newArt.tags.includes(selectedTag));
-      const matchesSearch = !searchQuery || newArt.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch =
+        !searchQuery ||
+        newArt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (newArt.summary && newArt.summary.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (newArt.mediaName && newArt.mediaName.toLowerCase().includes(searchQuery.toLowerCase()));
 
       if (matchesCategory && matchesTag && matchesSearch) {
         setArticles((prev) => {
@@ -149,6 +161,8 @@ export const Home: React.FC<HomeProps> = ({
           return [newArt, ...prev];
         });
       }
+
+      setFeaturedArticle((prev) => prev || newArt);
 
       // Display live flash alert
       setLiveFlash({
@@ -207,6 +221,14 @@ export const Home: React.FC<HomeProps> = ({
       );
     });
 
+    // 7. When a media house is updated (e.g. name changed or article count increased)
+    const unsubHouseUpdated = realtime.on('mediaHouse:updated', (house: any) => {
+      if (!house || !house.id) return;
+      setArticles((prev) =>
+        prev.map((a) => (a.mediaId === house.id ? { ...a, mediaName: house.name } : a))
+      );
+    });
+
     return () => {
       unsubArticleCreated();
       unsubArticleUpdated();
@@ -215,8 +237,9 @@ export const Home: React.FC<HomeProps> = ({
       unsubArticleViewed();
       unsubCommentCreated();
       unsubCommentDeleted();
+      unsubHouseUpdated();
     };
-  }, [selectedCategory, selectedTag, searchQuery]);
+  }, [selectedCategory, selectedTag, searchQuery, categories]);
 
   // Load next page
   const handleLoadMore = async () => {
@@ -454,6 +477,28 @@ export const Home: React.FC<HomeProps> = ({
                   <Users className="w-3.5 h-3.5" />
                   <span>Abonnements</span>
                 </button>
+
+                {/* "Ma Maison" tab - Exclusive for journalists & admins to create/manage their media house */}
+                {isAuthenticated && (user?.role === 'journalist' || user?.role === 'admin') && onOpenMyHouse && (
+                  <button
+                    id="tab-feed-my-house"
+                    onClick={onOpenMyHouse}
+                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer text-cyan-300 hover:text-white bg-cyan-950/40 hover:bg-cyan-900/70 border border-cyan-500/40 shadow-[0_0_12px_rgba(0,243,255,0.15)]"
+                    title="Accéder à Ma Maison de Journaliste"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Ma Maison</span>
+                    {user?.mediaName ? (
+                      <span className="hidden md:inline-block text-[10px] bg-cyan-500/20 text-cyan-200 px-1.5 py-0.2 rounded border border-cyan-400/30">
+                        {user.mediaName}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-400/30 animate-pulse">
+                        À fonder
+                      </span>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 

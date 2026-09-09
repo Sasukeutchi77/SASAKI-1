@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   Plus,
@@ -20,6 +20,8 @@ import {
   Italic,
   CheckCircle2,
   Building2,
+  Hash,
+  AlertTriangle,
 } from 'lucide-react';
 import { Category, Article, CloudinaryMedia, ArticleMediaItem } from '../types';
 import { api } from '../services/api';
@@ -32,14 +34,17 @@ interface CreateArticleModalProps {
   onClose: () => void;
   onArticleCreated: (article: Article) => void;
   articleToEdit?: Article | null;
+  onOpenMyHouse?: () => void;
 }
 
-const PRESET_IMAGES = [
-  { label: 'Industrie & Énergie', url: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1000&auto=format&fit=crop&q=80', alt: 'Centrale solaire photovoltaïque et transition énergétique au Burkina Faso' },
-  { label: 'Culture & FESPACO', url: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1000&auto=format&fit=crop&q=80', alt: 'Célébration culturelle du cinéma africain à Ouagadougou' },
-  { label: 'Agriculture & Sahel', url: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1000&auto=format&fit=crop&q=80', alt: 'Agriculture sahélienne et développement rural' },
-  { label: 'Sport & Étalons', url: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1000&auto=format&fit=crop&q=80', alt: 'Match officiel et ferveur sportive' },
-  { label: 'Numérique & Économie', url: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1000&auto=format&fit=crop&q=80', alt: 'Croissance économique et fintech' },
+const SUGGESTED_HASHTAGS = [
+  '#purge',
+  '#clan',
+  '#famille',
+  '#purgeure',
+  '#purgenews',
+  '#communaute',
+  '#verite',
 ];
 
 export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
@@ -47,6 +52,7 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
   onClose,
   onArticleCreated,
   articleToEdit,
+  onOpenMyHouse,
 }) => {
   const { user } = useAuth();
 
@@ -66,10 +72,10 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
 
   // Media: Cover
   const [coverImage, setCoverImage] = useState(
-    articleToEdit ? articleToEdit.coverImage : PRESET_IMAGES[0].url
+    articleToEdit ? articleToEdit.coverImage : ''
   );
   const [coverImageAlt, setCoverImageAlt] = useState(
-    articleToEdit ? articleToEdit.coverImageAlt || '' : PRESET_IMAGES[0].alt
+    articleToEdit ? articleToEdit.coverImageAlt || '' : ''
   );
   const [coverMedia, setCoverMedia] = useState<CloudinaryMedia | undefined>(
     articleToEdit?.coverMedia
@@ -152,8 +158,43 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
     );
   };
 
+  // Check if journalist requires a media house before publishing
+  const isSuperAdmin = user?.role === 'admin';
+  const hasMediaHouse = !!(user?.mediaId || user?.mediaName);
+  const requiresMediaHouse = user?.role === 'journalist' && !isSuperAdmin && !hasMediaHouse;
+
+  // Real-time parsing of tags into lowercase #tag array
+  const currentTagsArray = useMemo(() => {
+    return tagsInput
+      .split(/[, ]+/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((t) => (t.startsWith('#') ? t.toLowerCase() : `#${t.toLowerCase()}`));
+  }, [tagsInput]);
+
+  const handleToggleHashtag = (tag: string) => {
+    const formatted = tag.startsWith('#') ? tag.toLowerCase() : `#${tag.toLowerCase()}`;
+    if (currentTagsArray.includes(formatted)) {
+      const remaining = currentTagsArray.filter((t) => t !== formatted);
+      setTagsInput(remaining.join(', '));
+    } else {
+      const next = [...currentTagsArray, formatted];
+      setTagsInput(next.join(', '));
+    }
+  };
+
+  const handleRemoveHashtag = (tagToRemove: string) => {
+    const remaining = currentTagsArray.filter((t) => t !== tagToRemove);
+    setTagsInput(remaining.join(', '));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (requiresMediaHouse) {
+      setError('Publication refusée : vous devez créer ou être rattaché à une Maison de Journaliste avant de pouvoir publier des articles.');
+      return;
+    }
+
     if (!title.trim() || !content.trim() || !categoryId) {
       setError('Veuillez renseigner au minimum le titre, la catégorie et le contenu.');
       return;
@@ -162,11 +203,7 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
     setLoading(true);
     setError(null);
 
-    const tags = tagsInput
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
-
+    const tags = currentTagsArray;
     const flatImages = gallery.map((g) => g.url);
 
     try {
@@ -264,6 +301,34 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6">
+          {/* Media House Prerequisite Warning Banner */}
+          {requiresMediaHouse && (
+            <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/50 space-y-2.5">
+              <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                <span>Maison de Journaliste requise pour publier</span>
+              </div>
+              <p className="text-xs text-stone-300 leading-relaxed font-sans">
+                Sur <strong>PURGE-INFO</strong>, tous les articles doivent être publiés sous la responsabilité d'une <strong>Maison de Journaliste</strong> accréditée. Vous devez d'abord fonder votre maison de presse dans l'onglet <em>« Ma Maison »</em> avant de pouvoir publier des articles.
+              </p>
+              <div className="pt-2 flex items-center gap-3">
+                {onOpenMyHouse && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenMyHouse();
+                    }}
+                    className="px-4 py-2 text-xs font-bold text-black bg-gradient-to-r from-amber-400 to-cyan-400 hover:brightness-110 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_12px_rgba(251,191,36,0.4)] font-mono"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    <span>Fonder ma Maison dans « Ma Maison » →</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-red-950/70 border border-red-500/40 text-red-300 text-xs rounded-xl font-medium">
               {error}
@@ -431,35 +496,11 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
               }}
               onAltChange={(alt) => setCoverImageAlt(alt)}
               onRemove={() => {
-                setCoverImage(PRESET_IMAGES[0].url);
-                setCoverImageAlt(PRESET_IMAGES[0].alt);
+                setCoverImage('');
+                setCoverImageAlt('');
                 setCoverMedia(undefined);
               }}
             />
-
-            {/* Presets shortcut */}
-            <div className="flex items-center gap-1.5 flex-wrap pt-2">
-              <span className="text-[11px] text-cyan-400/70 font-medium flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-cyan-400" /> Suggestions de visuels :
-              </span>
-              {PRESET_IMAGES.map((p, idx) => (
-                <button
-                  type="button"
-                  key={idx}
-                  onClick={() => {
-                    setCoverImage(p.url);
-                    setCoverImageAlt(p.alt);
-                  }}
-                  className={`text-[11px] px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
-                    coverImage === p.url
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-semibold shadow-[0_0_10px_rgba(0,243,255,0.3)]'
-                      : 'bg-[#141933] border-cyan-500/30 text-slate-300 hover:border-cyan-400/60'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* SECTION 2: PHOTO GALLERY */}
@@ -612,18 +653,79 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
             )}
           </div>
 
-          {/* Tags */}
-          <div>
-            <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1.5">
-              Tags / Mots-clés (séparés par des virgules)
-            </label>
-            <input
-              type="text"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="Burkina Faso, Économie, Sahel, Ouagadougou, AES"
-              className="w-full px-4 py-2 text-xs bg-[#141933] border border-cyan-500/40 rounded-xl focus:outline-none focus:border-cyan-400 text-white shadow-[0_0_10px_rgba(0,243,255,0.1)]"
-            />
+          {/* Tags / Hashtags */}
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                Hashtags / Mots-clés (# + mot-clé)
+              </label>
+              <span className="text-[11px] text-cyan-400/70 font-mono">
+                Tapez <strong>#</strong> devant chaque mot-clé (ex: #purge, #clan)
+              </span>
+            </div>
+
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-cyan-400 text-sm pointer-events-none">
+                #
+              </span>
+              <input
+                type="text"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="purge, clan, famille, purgeure (séparés par des virgules ou espaces)"
+                className="w-full pl-8 pr-4 py-2.5 text-xs bg-[#141933] border border-cyan-500/40 rounded-xl focus:outline-none focus:border-cyan-400 text-white shadow-[0_0_10px_rgba(0,243,255,0.1)] font-mono"
+              />
+            </div>
+
+            {/* Quick suggested hashtag pills requested by user: #purge #clan #famille #purgeure... */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center gap-1.5 text-[11px] text-cyan-300 font-bold">
+                <Hash className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Hashtags suggérés (cliquez pour ajouter / retirer) :</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {SUGGESTED_HASHTAGS.map((tag) => {
+                  const isActive = currentTagsArray.includes(tag.toLowerCase());
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleToggleHashtag(tag)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer border ${
+                        isActive
+                          ? 'bg-cyan-500/30 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,243,255,0.35)] scale-105'
+                          : 'bg-[#141933] border-cyan-500/30 text-slate-300 hover:border-cyan-400/80 hover:text-cyan-300'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active Hashtag Badges Preview */}
+            {currentTagsArray.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap pt-1.5">
+                <span className="text-[10px] text-cyan-400/60 font-mono">Hashtags actifs :</span>
+                {currentTagsArray.map((t, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-xs font-mono font-bold shadow-[0_0_8px_rgba(0,243,255,0.2)]"
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveHashtag(t)}
+                      className="text-cyan-400 hover:text-red-400 font-black cursor-pointer leading-none"
+                      title="Retirer ce hashtag"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -720,17 +822,13 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
           )}
 
           {/* Tags */}
-          {tagsInput && (
+          {currentTagsArray.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-3 border-t border-cyan-500/20 font-mono">
-              {tagsInput.split(',').map((t, idx) => {
-                const tag = t.trim();
-                if (!tag) return null;
-                return (
-                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-[#141933] border border-cyan-500/30 text-cyan-300 text-xs font-semibold">
-                    #{tag}
-                  </span>
-                );
-              })}
+              {currentTagsArray.map((tag, idx) => (
+                <span key={idx} className="px-2.5 py-1 rounded-lg bg-[#141933] border border-cyan-500/30 text-cyan-300 text-xs font-semibold">
+                  {tag}
+                </span>
+              ))}
             </div>
           )}
         </div>
@@ -755,8 +853,9 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
+              disabled={loading || requiresMediaHouse}
+              title={requiresMediaHouse ? 'Vous devez impérativement créer votre Maison de Journaliste avant de publier' : undefined}
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               {status === 'published' ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               <span>

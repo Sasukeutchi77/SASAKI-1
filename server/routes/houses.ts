@@ -87,6 +87,10 @@ housesRouter.get('/my-house', requireAuth, (req: AuthenticatedRequest, res: Resp
   const isChef = house.ownerId === user.id || isMasterAdmin(user.email);
   const houseArticles = data.articles.filter((a) => a.mediaId === house.id);
 
+  const totalViews = houseArticles.reduce((acc, a) => acc + (a.viewsCount || 0), 0);
+  const totalLikes = houseArticles.reduce((acc, a) => acc + (a.likesCount || 0), 0);
+  const totalComments = houseArticles.reduce((acc, a) => acc + (a.commentsCount || 0), 0);
+
   return res.json({
     house: {
       ...house,
@@ -95,6 +99,13 @@ housesRouter.get('/my-house', requireAuth, (req: AuthenticatedRequest, res: Resp
       journalistsCount: memberIds.length,
       articlesCount: houseArticles.length,
       maxJournalists: MAX_JOURNALISTS_PER_HOUSE,
+    },
+    articles: houseArticles,
+    stats: {
+      totalViews,
+      totalLikes,
+      totalComments,
+      totalArticles: houseArticles.length,
     },
     isChef,
     maxJournalists: MAX_JOURNALISTS_PER_HOUSE,
@@ -181,7 +192,7 @@ housesRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =
     });
   }
 
-  const { name, description, logo, coverImage, phone, email, website, address } = req.body;
+  const { name, description, logo, coverImage, phone, email, website, address, motto, specialties } = req.body;
 
   if (!name || name.trim().length < 3) {
     return res.status(400).json({ error: 'Le nom de la maison de journalistes doit comporter au moins 3 caractères.' });
@@ -210,9 +221,15 @@ housesRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =
     logo: logo && isValidUrl(logo) ? logo : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=150&auto=format&fit=crop&q=80',
     coverImage: coverImage && isValidUrl(coverImage) ? coverImage : 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1000&auto=format&fit=crop&q=80',
     description: description ? sanitizeText(description, { maxLength: 600 }) : `Maison de presse indépendante fondée par ${user.name}.`,
+    motto: motto ? sanitizeText(motto, { maxLength: 120, allowNewlines: false }) : 'L\'information vérifiée, sans concession.',
+    specialties: Array.isArray(specialties)
+      ? specialties.map((s: string) => sanitizeText(s, { maxLength: 40, allowNewlines: false })).filter(Boolean)
+      : ['Investigation', 'Société', 'Sahel'],
     ownerId: user.id, // Chef de la maison
     ownerName: user.name,
     members: [user.id], // Le chef est le 1er membre sur les 5 autorisés
+    memberRoles: { [user.id]: 'Chef de Rédaction' },
+    editorialNotes: [],
     phone: phone ? sanitizeText(phone, { maxLength: 30, allowNewlines: false }) : undefined,
     email: email ? sanitizeText(email, { maxLength: 100, allowNewlines: false }) : undefined,
     website: website && isValidUrl(website) ? website.trim() : undefined,
@@ -257,7 +274,7 @@ housesRouter.put('/:id', requireAuth, (req: AuthenticatedRequest, res: Response)
     return res.status(403).json({ error: 'Seul le Chef de cette maison ou les comptes principaux peuvent modifier ses informations.' });
   }
 
-  const { name, description, logo, coverImage, phone, email, website, address } = req.body;
+  const { name, description, logo, coverImage, phone, email, website, address, motto, specialties } = req.body;
 
   if (name && name.trim().length >= 3) {
     const oldName = house.name;
@@ -274,6 +291,14 @@ housesRouter.put('/:id', requireAuth, (req: AuthenticatedRequest, res: Response)
 
   if (description !== undefined) {
     house.description = sanitizeText(description, { maxLength: 600 });
+  }
+  if (motto !== undefined) {
+    house.motto = sanitizeText(motto, { maxLength: 120, allowNewlines: false });
+  }
+  if (Array.isArray(specialties)) {
+    house.specialties = specialties
+      .map((s: string) => sanitizeText(s, { maxLength: 40, allowNewlines: false }))
+      .filter(Boolean);
   }
   if (logo && isValidUrl(logo)) house.logo = logo;
   if (coverImage && isValidUrl(coverImage)) house.coverImage = coverImage;
@@ -510,5 +535,126 @@ housesRouter.delete('/:id', requireAuth, (req: AuthenticatedRequest, res: Respon
 
   return res.json({
     message: `La maison de journalistes "${house.name}" a été dissoute avec succès. Les journalistes membres ont été libérés.`,
+  });
+});
+
+// 10. Update member editorial title/role in the House
+housesRouter.put('/:id/members/:memberId/role', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const user = req.user!;
+  const house = (data.mediaHouses || []).find((m) => m.id === req.params.id);
+
+  if (!house) {
+    return res.status(404).json({ error: 'Maison de journalistes introuvable.' });
+  }
+
+  const isChef = house.ownerId === user.id;
+  const isSuperAdmin = user.role === 'admin' || isMasterAdmin(user.email);
+  if (!isChef && !isSuperAdmin) {
+    return res.status(403).json({ error: 'Seul le Chef de cette maison peut attribuer les titres éditoriaux.' });
+  }
+
+  const { memberId } = req.params;
+  const { title } = req.body;
+
+  if (!house.members || !house.members.includes(memberId)) {
+    return res.status(404).json({ error: 'Ce journaliste n\'est pas membre de la maison.' });
+  }
+
+  const cleanTitle = title ? sanitizeText(title, { maxLength: 50, allowNewlines: false }) : 'Journaliste';
+
+  if (!house.memberRoles) house.memberRoles = {};
+  house.memberRoles[memberId] = cleanTitle;
+
+  db.save();
+  realtimeHub.broadcast('mediaHouse:updated', house);
+
+  return res.json({
+    message: `Le titre de « ${cleanTitle} » a été attribué avec succès.`,
+    memberRoles: house.memberRoles,
+    house,
+  });
+});
+
+// 11. Add an internal editorial note / story lead
+housesRouter.post('/:id/notes', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const user = req.user!;
+  const house = (data.mediaHouses || []).find((m) => m.id === req.params.id);
+
+  if (!house) {
+    return res.status(404).json({ error: 'Maison de journalistes introuvable.' });
+  }
+
+  const isMember = house.ownerId === user.id || (house.members && house.members.includes(user.id)) || isMasterAdmin(user.email);
+  if (!isMember) {
+    return res.status(403).json({ error: 'Seuls les membres de cette rédaction peuvent poster des notes de service.' });
+  }
+
+  const { content, priority } = req.body;
+  if (!content || content.trim().length < 3) {
+    return res.status(400).json({ error: 'Le contenu de la note de rédaction est trop court.' });
+  }
+
+  const validPriority = ['urgent', 'standard', 'investigation'].includes(priority) ? priority : 'standard';
+
+  const newNote = {
+    id: `note_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    authorId: user.id,
+    authorName: user.name,
+    authorAvatar: user.avatar,
+    content: sanitizeText(content, { maxLength: 800 }),
+    priority: validPriority as 'urgent' | 'standard' | 'investigation',
+    createdAt: new Date().toISOString(),
+  };
+
+  if (!house.editorialNotes) house.editorialNotes = [];
+  house.editorialNotes.unshift(newNote);
+
+  db.save();
+  realtimeHub.broadcast('mediaHouse:updated', house);
+
+  return res.status(201).json({
+    message: 'Note de conférence de rédaction enregistrée.',
+    note: newNote,
+    house,
+  });
+});
+
+// 12. Delete an internal editorial note
+housesRouter.delete('/:id/notes/:noteId', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const user = req.user!;
+  const house = (data.mediaHouses || []).find((m) => m.id === req.params.id);
+
+  if (!house) {
+    return res.status(404).json({ error: 'Maison de journalistes introuvable.' });
+  }
+
+  if (!house.editorialNotes) {
+    return res.status(404).json({ error: 'Note introuvable.' });
+  }
+
+  const noteIndex = house.editorialNotes.findIndex((n) => n.id === req.params.noteId);
+  if (noteIndex === -1) {
+    return res.status(404).json({ error: 'Note introuvable.' });
+  }
+
+  const note = house.editorialNotes[noteIndex];
+  const isAuthor = note.authorId === user.id;
+  const isChef = house.ownerId === user.id;
+  const isSuperAdmin = user.role === 'admin' || isMasterAdmin(user.email);
+
+  if (!isAuthor && !isChef && !isSuperAdmin) {
+    return res.status(403).json({ error: 'Vous ne pouvez pas supprimer cette note de service.' });
+  }
+
+  house.editorialNotes.splice(noteIndex, 1);
+  db.save();
+  realtimeHub.broadcast('mediaHouse:updated', house);
+
+  return res.json({
+    message: 'Note supprimée du carnet de bord de la rédaction.',
+    house,
   });
 });

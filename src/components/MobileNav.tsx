@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Compass, Bookmark, Users, User, Plus } from 'lucide-react';
+import { Home, Compass, Bookmark, Users, User, Plus, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface MobileNavProps {
@@ -13,6 +13,7 @@ interface MobileNavProps {
   onOpenMyProfile: () => void;
   onOpenAuth: () => void;
   onOpenAdmin?: () => void;
+  onOpenMyHouse?: () => void;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({
@@ -23,13 +24,15 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   onOpenBookmarks,
   onOpenMyProfile,
   onOpenAuth,
+  onOpenMyHouse,
 }) => {
   const { user, isAuthenticated, bookmarksCount } = useAuth();
+  const isJournalistOrAdmin = isAuthenticated && (user?.role === 'journalist' || user?.role === 'admin');
 
   return (
     <>
       {/* Floating compose button for journalists & admins on mobile */}
-      {isAuthenticated && (user?.role === 'journalist' || user?.role === 'admin') && (
+      {isJournalistOrAdmin && (
         <button
           id="mobile-floating-create-btn"
           onClick={onOpenCreateArticle}
@@ -45,7 +48,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         id="mobile-bottom-navigation"
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0b0e1a]/95 backdrop-blur-lg border-t border-cyan-500/30 shadow-[0_-5px_25px_rgba(0,243,255,0.1)] safe-area-bottom transition-all"
       >
-        <div className="grid grid-cols-5 h-15 px-1 items-center">
+        <div className={`grid ${isJournalistOrAdmin ? 'grid-cols-6' : 'grid-cols-5'} h-15 px-1 items-center`}>
           {/* 1. Accueil */}
           <button
             id="mobile-nav-home"
@@ -100,7 +103,32 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             <span className="leading-tight mt-0.5">Abonnés</span>
           </button>
 
-          {/* 4. Favoris */}
+          {/* 4. Ma Maison (Section réservée aux journalistes et à l'administrateur pour créer/gérer leur maison) */}
+          {isJournalistOrAdmin && (
+            <button
+              id="mobile-nav-my-house"
+              onClick={() => {
+                if (onOpenMyHouse) {
+                  onOpenMyHouse();
+                }
+              }}
+              className={`flex flex-col items-center justify-center h-full py-1 text-[10px] font-bold transition-all touch-target cursor-pointer ${
+                activeTab === 'my-house'
+                  ? 'text-cyan-300 drop-shadow-[0_0_8px_rgba(0,243,255,0.8)]'
+                  : 'text-cyan-400/80 hover:text-cyan-200'
+              }`}
+            >
+              <div className={`relative p-1 rounded-xl transition-all ${activeTab === 'my-house' ? 'bg-cyan-500/25 border border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.4)]' : 'bg-cyan-950/30 border border-cyan-500/20'}`}>
+                <Building2 className="w-5 h-5 text-cyan-400" />
+                {!user?.mediaId && !user?.mediaName && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
+                )}
+              </div>
+              <span className="leading-tight mt-0.5 text-[10px] text-cyan-300 whitespace-nowrap">Ma Maison</span>
+            </button>
+          )}
+
+          {/* 5. Favoris */}
           <button
             id="mobile-nav-bookmarks"
             onClick={isAuthenticated ? onOpenBookmarks : onOpenAuth}
@@ -121,7 +149,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             <span className="leading-tight mt-0.5">Favoris</span>
           </button>
 
-          {/* 5. Profil */}
+          {/* 6. Profil */}
           <button
             id="mobile-nav-profile"
             onClick={() => {

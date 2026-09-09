@@ -15,6 +15,8 @@ import {
 import { Article, Category } from '../types';
 import { api } from '../services/api';
 import { ArticleCard } from '../components/ArticleCard';
+import { realtime } from '../services/realtime';
+import { sfx } from '../services/soundEffects';
 
 interface CategoryPageProps {
   categorySlug: string;
@@ -56,11 +58,83 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
 
   // Available tags in this category
   const [categoryTags, setCategoryTags] = useState<string[]>([]);
+  const [liveCategoryAlert, setLiveCategoryAlert] = useState<{ article: Article; time: string } | null>(null);
 
   useEffect(() => {
     loadCategoryArticles(1, false);
     loadPopularInCategory();
   }, [categorySlug, sortMode, dateRange]);
+
+  // Real-time synchronization for category articles, comments and interactions
+  useEffect(() => {
+    const isMatchingCategory = (art: Article) => {
+      if (!art) return false;
+      return (
+        art.categoryId === categorySlug ||
+        (currentCategory && (art.categoryId === currentCategory.id || art.categoryId === currentCategory.slug))
+      );
+    };
+
+    const unsubArticleCreated = realtime.on('article:created', (newArt: Article) => {
+      if (!newArt || !newArt.id) return;
+      if (isMatchingCategory(newArt)) {
+        setArticles((prev) => {
+          if (prev.some((a) => a.id === newArt.id)) return prev;
+          return [newArt, ...prev];
+        });
+        setTotal((prev) => prev + 1);
+        setLiveCategoryAlert({
+          article: newArt,
+          time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        });
+        sfx.playNotificationDing();
+      }
+    });
+
+    const unsubArticleUpdated = realtime.on('article:updated', (updatedArt: Article) => {
+      if (!updatedArt || !updatedArt.id) return;
+      setArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
+      setPopularArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
+    });
+
+    const unsubArticleDeleted = realtime.on('article:deleted', ({ articleId }: { articleId: string }) => {
+      setArticles((prev) => prev.filter((a) => a.id !== articleId));
+      setPopularArticles((prev) => prev.filter((a) => a.id !== articleId));
+      setTotal((prev) => Math.max(0, prev - 1));
+    });
+
+    const unsubArticleLiked = realtime.on('article:liked', ({ articleId, likesCount }: { articleId: string; likesCount: number }) => {
+      setArticles((prev) => prev.map((a) => (a.id === articleId ? { ...a, likesCount } : a)));
+      setPopularArticles((prev) => prev.map((a) => (a.id === articleId ? { ...a, likesCount } : a)));
+    });
+
+    const unsubCommentCreated = realtime.on('comment:created', ({ articleId, commentsCount }: { articleId: string; commentsCount?: number }) => {
+      setArticles((prev) =>
+        prev.map((a) => (a.id === articleId ? { ...a, commentsCount: commentsCount !== undefined ? commentsCount : a.commentsCount + 1 } : a))
+      );
+      setPopularArticles((prev) =>
+        prev.map((a) => (a.id === articleId ? { ...a, commentsCount: commentsCount !== undefined ? commentsCount : a.commentsCount + 1 } : a))
+      );
+    });
+
+    const unsubCommentDeleted = realtime.on('comment:deleted', ({ articleId, commentsCount }: { articleId: string; commentsCount?: number }) => {
+      setArticles((prev) =>
+        prev.map((a) => (a.id === articleId ? { ...a, commentsCount: commentsCount !== undefined ? commentsCount : Math.max(0, a.commentsCount - 1) } : a))
+      );
+      setPopularArticles((prev) =>
+        prev.map((a) => (a.id === articleId ? { ...a, commentsCount: commentsCount !== undefined ? commentsCount : Math.max(0, a.commentsCount - 1) } : a))
+      );
+    });
+
+    return () => {
+      unsubArticleCreated();
+      unsubArticleUpdated();
+      unsubArticleDeleted();
+      unsubArticleLiked();
+      unsubCommentCreated();
+      unsubCommentDeleted();
+    };
+  }, [categorySlug, currentCategory]);
 
   const loadCategoryArticles = async (pageNum: number = 1, append: boolean = false) => {
     if (pageNum === 1) {
@@ -188,6 +262,54 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-10">
+        {/* Real-time category breaking news banner */}
+        {liveCategoryAlert && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-[#0a1f18] to-cyan-950/90 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.25)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-3 w-3 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
+              </span>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 font-extrabold font-mono tracking-wider border border-emerald-500/50">
+                    EN DIRECT • {liveCategoryAlert.time}
+                  </span>
+                  {liveCategoryAlert.article.mediaName && (
+                    <span className="font-bold text-cyan-300 text-xs bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
+                      {liveCategoryAlert.article.mediaName}
+                    </span>
+                  )}
+                  <span className="text-slate-300 text-xs">Par {liveCategoryAlert.article.authorName}</span>
+                </div>
+                <h3 className="font-bold text-white text-sm sm:text-base mt-1 line-clamp-1">
+                  {liveCategoryAlert.article.title}
+                </h3>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <button
+                id="category-live-view-btn"
+                onClick={() => {
+                  onOpenArticle(liveCategoryAlert.article);
+                  setLiveCategoryAlert(null);
+                }}
+                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>Lire l'article</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                id="category-live-dismiss-btn"
+                onClick={() => setLiveCategoryAlert(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Popular in this Category spotlight */}
         {popularArticles.length > 0 && (
           <div className="bg-emerald-950/5 border border-emerald-900/10 rounded-3xl p-6 sm:p-8">

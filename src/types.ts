@@ -109,6 +109,18 @@ export interface MediaHouse {
   website?: string;
   address?: string;
   licenseNumber?: string;
+  motto?: string;
+  specialties?: string[];
+  memberRoles?: Record<string, string>;
+  editorialNotes?: Array<{
+    id: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar?: string;
+    content: string;
+    priority: 'urgent' | 'standard' | 'investigation';
+    createdAt: string;
+  }>;
   status: 'active' | 'suspended';
   isVerified: boolean;
   journalistsCount?: number;

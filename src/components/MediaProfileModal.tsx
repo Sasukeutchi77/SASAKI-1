@@ -15,6 +15,7 @@ import {
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ArticleCard } from './ArticleCard';
+import { realtime } from '../services/realtime';
 
 interface MediaProfileModalProps {
   userId: string;
@@ -54,7 +55,42 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
 
   useEffect(() => {
     loadProfile();
-  }, [userId]);
+
+    const unsubArticleCreated = realtime.on('article:created', (newArt: Article) => {
+      if (!newArt || !newArt.id) return;
+      const isMine =
+        newArt.authorId === userId ||
+        newArt.mediaId === userId ||
+        (profileUser?.mediaId && newArt.mediaId === profileUser.mediaId);
+
+      if (isMine) {
+        setArticles((prev) => {
+          if (prev.some((a) => a.id === newArt.id)) return prev;
+          return [newArt, ...prev];
+        });
+      }
+    });
+
+    const unsubArticleUpdated = realtime.on('article:updated', (updatedArt: Article) => {
+      if (!updatedArt || !updatedArt.id) return;
+      setArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
+    });
+
+    const unsubArticleDeleted = realtime.on('article:deleted', ({ articleId }: { articleId: string }) => {
+      setArticles((prev) => prev.filter((a) => a.id !== articleId));
+    });
+
+    const unsubArticleLiked = realtime.on('article:liked', ({ articleId, likesCount }: { articleId: string; likesCount: number }) => {
+      setArticles((prev) => prev.map((a) => (a.id === articleId ? { ...a, likesCount } : a)));
+    });
+
+    return () => {
+      unsubArticleCreated();
+      unsubArticleUpdated();
+      unsubArticleDeleted();
+      unsubArticleLiked();
+    };
+  }, [userId, profileUser?.mediaId]);
 
   const handleToggleFollow = async () => {
     if (!isAuthenticated) return onOpenAuth();

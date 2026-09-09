@@ -37,6 +37,7 @@ interface HeaderProps {
   onOpenProfile: (userId: string) => void;
   onOpenMyProfile: () => void;
   onOpenMediaHouses?: () => void;
+  onOpenMyHouse?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -53,6 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenProfile,
   onOpenMyProfile,
   onOpenMediaHouses,
+  onOpenMyHouse,
 }) => {
   const { user, isAuthenticated, logout, unreadNotifs, bookmarksCount, quickSwitch } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -138,6 +140,28 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Ouvrir la recherche avancée & découverte"
               >
                 Explorer
+              </button>
+            )}
+
+            {/* "Ma Maison" button for journalists and administrators */}
+            {isAuthenticated && (user?.role === 'journalist' || user?.role === 'admin') && onOpenMyHouse && (
+              <button
+                id="header-open-my-house-btn"
+                onClick={onOpenMyHouse}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-300 hover:text-white bg-cyan-950/50 hover:bg-cyan-900/70 border border-cyan-500/40 hover:border-cyan-400 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_12px_rgba(0,243,255,0.15)]"
+                title="Accéder à Ma Maison de Journaliste (création & gestion de la rédaction)"
+              >
+                <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Ma Maison</span>
+                {user?.mediaName ? (
+                  <span className="hidden lg:inline-block max-w-[120px] truncate text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">
+                    {user.mediaName}
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-400/30 animate-pulse">
+                    À créer
+                  </span>
+                )}
               </button>
             )}
           </div>
@@ -260,9 +284,9 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <div>
                           <div className="font-semibold text-blue-800 dark:text-blue-400 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Burkina News (Média)
+                            <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> M. Sawadogo (Journaliste - Burkina News)
                           </div>
-                          <div className="text-[11px] text-stone-500 dark:text-stone-400">125k abonnés, publication, stats</div>
+                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Fondateur de Maison de presse • 125k abonnés</div>
                         </div>
                       </button>
                       <button
@@ -275,9 +299,9 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <div>
                           <div className="font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Salif O. (Journaliste)
+                            <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Salif O. (Journaliste - L’Observateur du Sahel)
                           </div>
-                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Enquêtes, économie, articles</div>
+                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Grand reporter • Rédaction & enquêtes</div>
                         </div>
                       </button>
                       <button
@@ -456,6 +480,20 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
                     )}
 
+                    {(user.role === 'journalist' || user.role === 'admin') && onOpenMyHouse && (
+                      <button
+                        id="menu-open-my-house-dropdown"
+                        onClick={() => {
+                          onOpenMyHouse();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-cyan-300 hover:bg-cyan-950/50 flex items-center gap-2.5 font-bold cursor-pointer"
+                      >
+                        <Building2 className="w-4 h-4 text-cyan-400" />
+                        <span>Ma Maison (Créer & gérer ma rédaction)</span>
+                      </button>
+                    )}
+
                     {onOpenMediaHouses && (
                       <button
                         id="menu-open-media-houses-dropdown"
@@ -463,9 +501,9 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenMediaHouses();
                           setShowUserMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-xs text-cyan-300 hover:bg-cyan-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-xs text-stone-300 hover:bg-cyan-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
                       >
-                        <Building2 className="w-4 h-4 text-cyan-400" /> Maisons de Journalistes
+                        <Building2 className="w-4 h-4 text-stone-400" /> Toutes les Maisons de Presse
                       </button>
                     )}
 

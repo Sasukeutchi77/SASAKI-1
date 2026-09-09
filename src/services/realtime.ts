@@ -12,7 +12,7 @@ class RealtimeService {
   private statusListeners: Set<(status: RealtimeStatus) => void> = new Set();
   private reconnectTimer: any = null;
   private reconnectAttempts = 0;
-  private lastEventTimestamp = Date.now();
+  private lastEventTimestamp = Date.now() - 120000;
   private processedEventIds = new Set<string>();
   private isExplicitlyClosed = false;
 

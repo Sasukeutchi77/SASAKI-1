@@ -242,11 +242,30 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   useEffect(() => {
     if (!articleId) return;
 
-    // 1. Instant comment posting by any user
+    // 1. Instant comment posting by any user (handles both root comments & replies)
     const unsubCommentCreated = realtime.on('comment:created', ({ articleId: aId, comment, commentsCount }: { articleId: string; comment: Comment; commentsCount?: number }) => {
       if (aId === articleId && comment) {
         setComments((prev) => {
-          if (prev.some((c) => c.id === comment.id)) return prev;
+          // Prevent duplicates
+          const exists = prev.some((c) => c.id === comment.id || (c.replies && c.replies.some((r) => r.id === comment.id)));
+          if (exists) return prev;
+
+          // If it's a nested reply:
+          if (comment.parentId) {
+            return prev.map((c) => {
+              if (c.id === comment.parentId) {
+                const currentReplies = c.replies || [];
+                if (currentReplies.some((r) => r.id === comment.id)) return c;
+                return {
+                  ...c,
+                  replies: [...currentReplies, comment],
+                };
+              }
+              return c;
+            });
+          }
+
+          // If it's a top-level root comment:
           return [comment, ...prev];
         });
         setArticle((prev) => (prev ? { ...prev, commentsCount: commentsCount !== undefined ? commentsCount : prev.commentsCount + 1 } : prev));
@@ -254,27 +273,60 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
       }
     });
 
-    // 2. Real-time comment updates
+    // 2. Real-time comment updates (root and replies)
     const unsubCommentUpdated = realtime.on('comment:updated', ({ articleId: aId, comment }: { articleId: string; comment: Comment }) => {
       if (aId === articleId && comment) {
-        setComments((prev) => prev.map((c) => (c.id === comment.id ? comment : c)));
+        setComments((prev) =>
+          prev.map((c) => {
+            if (c.id === comment.id) {
+              return { ...c, ...comment, replies: c.replies };
+            }
+            if (c.replies && c.replies.some((r) => r.id === comment.id)) {
+              return {
+                ...c,
+                replies: c.replies.map((r) => (r.id === comment.id ? { ...r, ...comment } : r)),
+              };
+            }
+            return c;
+          })
+        );
       }
     });
 
-    // 3. Real-time comment deletion
+    // 3. Real-time comment deletion (root and replies)
     const unsubCommentDeleted = realtime.on('comment:deleted', ({ articleId: aId, commentId, commentsCount }: { articleId: string; commentId: string; commentsCount?: number }) => {
       if (aId === articleId && commentId) {
-        setComments((prev) => prev.filter((c) => c.id !== commentId && c.parentId !== commentId));
+        setComments((prev) =>
+          prev
+            .filter((c) => c.id !== commentId && c.parentId !== commentId)
+            .map((c) => ({
+              ...c,
+              replies: c.replies ? c.replies.filter((r) => r.id !== commentId) : [],
+            }))
+        );
         if (commentsCount !== undefined) {
           setArticle((prev) => (prev ? { ...prev, commentsCount } : prev));
         }
       }
     });
 
-    // 4. Real-time comment like
+    // 4. Real-time comment like (root and replies)
     const unsubCommentLiked = realtime.on('comment:liked', ({ articleId: aId, commentId, likesCount: cLikes }: { articleId: string; commentId: string; likesCount: number }) => {
       if (aId === articleId && commentId) {
-        setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, likesCount: cLikes } : c)));
+        setComments((prev) =>
+          prev.map((c) => {
+            if (c.id === commentId) {
+              return { ...c, likesCount: cLikes };
+            }
+            if (c.replies && c.replies.some((r) => r.id === commentId)) {
+              return {
+                ...c,
+                replies: c.replies.map((r) => (r.id === commentId ? { ...r, likesCount: cLikes } : r)),
+              };
+            }
+            return c;
+          })
+        );
       }
     });
 

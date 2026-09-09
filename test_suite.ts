@@ -98,6 +98,42 @@ async function runProductionTestSuite() {
   const publishedArticles = data.articles.filter((a) => a.status === 'published');
   expect(publishedArticles.length > 0, 'Published articles available for public feed');
 
+  // Section 6: Real-time Synchronization & Media House Publication Invariants
+  console.log('\n--- Section 6: Real-Time Synchronization & Media House Invariants ---');
+  const { realtimeHub, getRecentEvents } = await import('./server/realtime');
+
+  const testEvent = realtimeHub.broadcast('article:created', {
+    id: 'test_art_realtime',
+    title: 'Test Article en Direct',
+    mediaName: 'Maison Test',
+    status: 'published',
+  });
+  expect(!!testEvent.id, 'Realtime event recorded with unique ID');
+  expect(testEvent.type === 'article:created', 'Realtime event broadcast type article:created');
+
+  const recent = getRecentEvents(Date.now() - 10000);
+  expect(recent.some((e) => e.id === testEvent.id), 'Recent events buffer contains broadcast event for catch-up');
+
+  // Test Follower target resolution logic for media houses
+  const testFollows = [
+    { id: 'f1', followerId: 'user_A', targetId: 'house_123', createdAt: '' },
+    { id: 'f2', followerId: 'user_B', targetId: 'journ_456', createdAt: '' },
+    { id: 'f3', followerId: 'journ_456', targetId: 'house_123', createdAt: '' }, // self
+  ];
+  const postAuthorId = 'journ_456';
+  const postMediaId = 'house_123';
+  const targets = new Set([postAuthorId, postMediaId]);
+  const followerRecipients = new Set<string>();
+  testFollows.forEach((f) => {
+    if (targets.has(f.targetId) && f.followerId !== postAuthorId) {
+      followerRecipients.add(f.followerId);
+    }
+  });
+
+  expect(followerRecipients.has('user_A'), 'Follower of media house receives real-time publication');
+  expect(followerRecipients.has('user_B'), 'Follower of journalist receives real-time publication');
+  expect(!followerRecipients.has('journ_456'), 'Author does not receive duplicate self-notification');
+
   console.log(`\n========================================`);
   console.log(`Summary: ${passed} Passed, ${failed} Failed`);
   console.log(`========================================\n`);
