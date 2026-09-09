@@ -515,7 +515,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                       type="text"
                       value={mediaNameInput}
                       onChange={(e) => setMediaNameInput(e.target.value)}
-                      placeholder="Ex: L'Observateur du Sahel"
+                      placeholder="Ex: L'Observateur International"
                       className="w-full px-3 py-2 text-xs bg-[#141933] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.1)]"
                     />
                   </div>

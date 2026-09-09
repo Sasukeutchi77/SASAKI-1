@@ -121,11 +121,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       <article
         id={`article-card-compact-${article.id}`}
         onClick={() => onOpenArticle(article)}
-        className={`group p-3 sm:p-3.5 bg-[#0b0e1a]/90 hover:bg-[#0f1426] rounded-2xl border border-cyan-500/25 hover:border-cyan-400/60 shadow-[0_0_15px_rgba(0,243,255,0.06)] hover:shadow-[0_0_20px_rgba(0,243,255,0.2)] transition-all duration-200 flex gap-3 cursor-pointer items-center ${className}`}
+        className={`group p-3 sm:p-3.5 bg-gradient-to-b from-[#0e1936]/85 to-[#050b1c]/95 hover:from-[#13224a]/90 hover:to-[#081028]/98 rounded-2xl border border-blue-500/25 hover:border-cyan-400/60 shadow-[0_8px_25px_-8px_rgba(0,85,255,0.2)] hover:shadow-[0_12px_30px_-5px_rgba(29,104,255,0.35)] transition-all duration-200 flex gap-3 cursor-pointer items-center ${className}`}
       >
         {/* Thumbnail on left */}
         {article.coverImage && (
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-cyan-500/30">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-blue-500/30">
             <img
               src={article.coverImage}
               alt={article.title}
@@ -139,40 +139,40 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider font-mono">
+              <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider font-mono px-1.5 py-0.2 rounded bg-blue-600/20 border border-blue-400/30">
                 {article.categoryName}
               </span>
-              <span className="text-[10px] text-stone-400">•</span>
-              <span className="text-[10px] text-stone-400">{formatDate(article.createdAt)}</span>
+              <span className="text-[10px] text-blue-300/50">•</span>
+              <span className="text-[10px] text-blue-300/60 font-mono">{formatDate(article.createdAt)}</span>
             </div>
-            <h3 className={`font-bold text-xs sm:text-sm text-slate-100 glitch-hover transition-colors line-clamp-2 leading-snug ${titleClassName}`}>
+            <h3 className={`font-bold text-xs sm:text-sm text-white glitch-hover transition-colors line-clamp-2 leading-snug ${titleClassName}`}>
               {article.title}
             </h3>
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-[11px] text-stone-500 dark:text-stone-400">
+          <div className="mt-2 flex items-center justify-between text-[11px] text-blue-300/70">
             <div className="flex items-center gap-1 truncate max-w-[140px]">
-              <span className="truncate font-medium">{article.mediaName || article.authorName}</span>
+              <span className="truncate font-semibold text-blue-100">{article.mediaName || article.authorName}</span>
               {article.isAuthorVerified && (
                 <VerifiedBadge size="xs" type={article.mediaName ? 'media' : 'journalist'} />
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 font-mono">
               <button
                 onClick={handleLike}
-                className={`flex items-center gap-1 hover:text-red-600 transition-colors cursor-pointer py-1 px-1 ${
-                  isLiked ? 'text-red-600 font-bold' : ''
+                className={`flex items-center gap-1 hover:text-red-400 transition-colors cursor-pointer py-1 px-1 ${
+                  isLiked ? 'text-red-500 font-bold' : ''
                 }`}
                 title="J'aime"
               >
-                <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-red-600' : ''}`} />
+                <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                 <span>{likesCount}</span>
               </button>
               <button
                 onClick={handleBookmark}
-                className={`hover:text-emerald-700 transition-colors cursor-pointer py-1 px-1 ${
-                  isBookmarked ? 'text-emerald-700 dark:text-emerald-400' : ''
+                className={`hover:text-cyan-300 transition-colors cursor-pointer py-1 px-1 ${
+                  isBookmarked ? 'text-cyan-400' : ''
                 }`}
                 title="Enregistrer"
               >
@@ -190,50 +190,50 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   }
 
   /* -------------------------------------------------------------
-     VARIANT: FEATURED / HERO (À la Une principale)
+     VARIANT: FEATURED / HERO (Sorsa High Impact Showcase)
      ------------------------------------------------------------- */
   if (variant === 'featured') {
     return (
       <article
         id={`article-card-featured-${article.id}`}
         onClick={() => onOpenArticle(article)}
-        className={`group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-stone-950 text-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer aspect-[16/11] sm:aspect-[21/9] ${className}`}
+        className={`group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-[#040817] text-white border border-blue-500/35 hover:border-cyan-400/70 shadow-[0_15px_40px_-10px_rgba(29,104,255,0.35)] hover:shadow-[0_20px_50px_-8px_rgba(0,210,255,0.5)] transition-all duration-300 cursor-pointer aspect-[16/11] sm:aspect-[21/9] ${className}`}
       >
         <img
           src={article.coverImage}
           alt={article.title}
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover opacity-60 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500"
+          className="w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#040817] via-[#040817]/65 to-transparent" />
 
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-7 flex flex-col justify-end">
           <div className="flex items-center gap-2 mb-2 sm:mb-3 flex-wrap">
-            <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-500 text-stone-950 flex items-center gap-1 shadow-xs">
-              <Sparkles className="w-3 h-3" />
+            <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-yellow-400 text-slate-950 flex items-center gap-1 shadow-[0_0_12px_rgba(250,204,21,0.85)]">
+              <Sparkles className="w-3.5 h-3.5 fill-current" />
               À la Une • {article.categoryName}
             </span>
-            <span className="text-xs text-stone-300 font-medium">
+            <span className="text-xs text-blue-200 font-medium">
               {formatDate(article.createdAt)}
             </span>
-            <span className="text-xs text-stone-400">•</span>
-            <span className="text-xs text-stone-300 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
+            <span className="text-xs text-blue-400/60">•</span>
+            <span className="text-xs text-blue-200 flex items-center gap-1 font-mono">
+              <Clock className="w-3 h-3 text-cyan-400" />
               {readingTimeMinutes} min
             </span>
           </div>
 
-          <h2 className={`font-editorial text-lg sm:text-2xl md:text-3xl font-extrabold text-white leading-tight sm:leading-snug glitch-hover transition-colors line-clamp-2 ${titleClassName}`}>
+          <h2 className={`font-editorial text-lg sm:text-2xl md:text-3xl font-black text-white leading-tight sm:leading-snug glitch-hover transition-colors line-clamp-2 ${titleClassName}`}>
             {article.title}
           </h2>
 
           {article.summary && (
-            <p className="mt-2 text-xs sm:text-sm text-stone-300 line-clamp-2 max-w-3xl leading-relaxed hidden sm:block">
+            <p className="mt-2 text-xs sm:text-sm text-slate-200 line-clamp-2 max-w-3xl leading-relaxed hidden sm:block">
               {article.summary}
             </p>
           )}
 
-          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-stone-300">
+          <div className="mt-4 pt-3 border-t border-blue-500/20 flex items-center justify-between text-xs text-blue-200">
             <div className="flex items-center gap-2.5 min-w-0">
               <img
                 src={
@@ -242,7 +242,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 }
                 alt={article.authorName}
                 referrerPolicy="no-referrer"
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-2 ring-white/20"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-2 ring-blue-400/40"
               />
               <span className="font-bold text-white truncate text-xs sm:text-sm">
                 {article.mediaName || article.authorName}
@@ -253,11 +253,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-stone-300">
+              <span className="flex items-center gap-1 text-slate-200">
                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                 {likesCount}
               </span>
-              <span className="flex items-center gap-1 text-stone-300">
+              <span className="flex items-center gap-1 text-slate-200">
                 <MessageSquare className="w-4 h-4" />
                 {article.commentsCount}
               </span>
@@ -280,11 +280,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       <article
         id={`article-card-large-${article.id}`}
         onClick={() => onOpenArticle(article)}
-        className={`group bg-[#0b0e1a]/95 rounded-2xl sm:rounded-3xl border border-cyan-500/25 hover:border-cyan-400/60 shadow-[0_0_20px_rgba(0,243,255,0.06)] hover:shadow-[0_0_30px_rgba(0,243,255,0.2)] transition-all duration-300 overflow-hidden flex flex-col cursor-pointer ${className}`}
+        className={`group bg-gradient-to-b from-[#0e1936]/85 to-[#050b1c]/95 rounded-2xl sm:rounded-3xl border border-blue-500/25 hover:border-cyan-400/60 shadow-[0_10px_30px_-10px_rgba(0,85,255,0.22)] hover:shadow-[0_16px_35px_-6px_rgba(29,104,255,0.35)] transition-all duration-300 overflow-hidden flex flex-col cursor-pointer ${className}`}
       >
         {/* Cover image */}
         {article.coverImage && (
-          <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden border-b border-cyan-500/15">
+          <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden border-b border-blue-500/20">
             <img
               src={article.coverImage}
               alt={article.title}
@@ -292,12 +292,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
             />
-            <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-[#07080f]/80 border border-cyan-500/40 backdrop-blur-xs text-[11px] font-mono text-cyan-300 flex items-center gap-1">
+            <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[11px] font-mono text-cyan-300 flex items-center gap-1">
               <Clock className="w-3 h-3 text-cyan-400" />
               <span>{readingTimeMinutes} min</span>
             </div>
             <div className="absolute top-3 left-3">
-              <span className="text-[11px] font-bold font-mono px-3 py-1 rounded-full bg-[#0b0e1a]/90 text-cyan-300 shadow-md border border-cyan-500/40">
+              <span className="text-[11px] font-bold font-mono px-3 py-1 rounded-full bg-blue-600/25 text-cyan-300 shadow-md border border-blue-400/40 backdrop-blur-md">
                 {article.categoryName}
               </span>
             </div>
@@ -306,14 +306,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
         <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-xs text-cyan-400/70 font-mono mb-2">
+            <div className="flex items-center gap-2 text-xs text-blue-300/70 font-mono mb-2">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenProfile(article.authorId);
                 }}
-                className="font-bold text-slate-100 hover:text-cyan-300 flex items-center gap-1 transition-colors font-sans"
+                className="font-bold text-white hover:text-cyan-300 flex items-center gap-1 transition-colors font-sans"
               >
                 <span>{article.mediaName || article.authorName}</span>
                 {article.isAuthorVerified && (
@@ -324,18 +324,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               <span>{formatDate(article.createdAt)}</span>
             </div>
 
-            <h2 className={`text-xl sm:text-2xl font-black text-slate-100 leading-tight glitch-hover transition-colors ${titleClassName}`}>
+            <h2 className={`text-xl sm:text-2xl font-black text-white leading-tight glitch-hover transition-colors ${titleClassName}`}>
               {article.title}
             </h2>
 
             {article.summary && (
-              <p className="mt-2 text-sm sm:text-base text-slate-300 leading-relaxed line-clamp-3">
+              <p className="mt-2 text-sm sm:text-base text-slate-200 leading-relaxed line-clamp-3">
                 {article.summary}
               </p>
             )}
           </div>
 
-          <div className="mt-5 pt-4 border-t border-cyan-500/15 flex items-center justify-between text-cyan-400/70 text-xs font-mono">
+          <div className="mt-5 pt-4 border-t border-blue-500/20 flex items-center justify-between text-blue-300/70 text-xs font-mono">
             <div className="flex items-center gap-4">
               <button
                 onClick={handleLike}
@@ -359,15 +359,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <div className="flex items-center gap-1">
               <button
                 onClick={handleBookmark}
-                className={`p-2 rounded-full hover:bg-cyan-500/20 transition-colors cursor-pointer ${
-                  isBookmarked ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(0,243,255,0.7)]' : 'text-cyan-400/60 hover:text-cyan-300'
+                className={`p-2 rounded-full hover:bg-blue-600/20 transition-colors cursor-pointer ${
+                  isBookmarked ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(0,210,255,0.7)]' : 'text-blue-300/60 hover:text-cyan-300'
                 }`}
               >
                 <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
               </button>
               <button
                 onClick={handleShareClick}
-                className="p-2 rounded-full text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-500/20 transition-colors cursor-pointer"
+                className="p-2 rounded-full text-blue-300/60 hover:text-cyan-300 hover:bg-blue-600/20 transition-colors cursor-pointer"
               >
                 <Share2 className="w-4 h-4" />
               </button>
@@ -390,11 +390,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       <article
         id={`article-card-horizontal-${article.id}`}
         onClick={() => onOpenArticle(article)}
-        className={`group bg-[#0b0e1a]/95 rounded-2xl border border-cyan-500/25 hover:border-cyan-400/60 shadow-[0_0_15px_rgba(0,243,255,0.06)] hover:shadow-[0_0_25px_rgba(0,243,255,0.2)] transition-all duration-300 overflow-hidden flex flex-col sm:flex-row cursor-pointer ${className}`}
+        className={`group bg-gradient-to-b from-[#0e1936]/80 to-[#050b1c]/95 rounded-2xl border border-blue-500/25 hover:border-cyan-400/60 shadow-[0_10px_30px_-10px_rgba(0,85,255,0.22)] hover:shadow-[0_14px_35px_-6px_rgba(29,104,255,0.35)] transition-all duration-300 overflow-hidden flex flex-col sm:flex-row cursor-pointer ${className}`}
       >
         {/* Cover image on left (or top on small mobile) */}
         {article.coverImage && (
-          <div className="relative sm:w-2/5 aspect-[16/10] sm:aspect-auto bg-slate-900 overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-cyan-500/15">
+          <div className="relative sm:w-2/5 aspect-[16/10] sm:aspect-auto bg-slate-900 overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-blue-500/20">
             <img
               src={article.coverImage}
               alt={article.title}
@@ -402,7 +402,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
             />
-            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#07080f]/80 border border-cyan-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1">
+            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1">
               <Clock className="w-3 h-3 text-cyan-400" />
               <span>{readingTimeMinutes} min</span>
             </div>
@@ -411,7 +411,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
         <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between gap-2 text-xs text-cyan-400/70 font-mono mb-2">
+            <div className="flex items-center justify-between gap-2 text-xs text-blue-300/70 font-mono mb-2">
               <div className="flex items-center gap-2 truncate">
                 <button
                   type="button"
@@ -419,7 +419,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     e.stopPropagation();
                     onOpenProfile(article.authorId);
                   }}
-                  className="font-bold text-slate-100 hover:text-cyan-300 flex items-center gap-1 truncate cursor-pointer transition-colors font-sans"
+                  className="font-bold text-white hover:text-cyan-300 flex items-center gap-1 truncate cursor-pointer transition-colors font-sans"
                 >
                   <span className="truncate">{article.mediaName || article.authorName}</span>
                   {article.isAuthorVerified && (
@@ -430,23 +430,23 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 <span className="shrink-0">{formatDate(article.createdAt)}</span>
               </div>
 
-              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 shadow-[0_0_6px_rgba(0,243,255,0.2)] shrink-0">
+              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-blue-600/20 text-cyan-300 border border-blue-400/40 shadow-[0_0_6px_rgba(0,210,255,0.2)] shrink-0">
                 {article.categoryName}
               </span>
             </div>
 
-            <h3 className={`text-base sm:text-lg font-black text-slate-100 leading-snug glitch-hover transition-colors line-clamp-2 ${titleClassName}`}>
+            <h3 className={`text-base sm:text-lg font-black text-white leading-snug glitch-hover transition-colors line-clamp-2 ${titleClassName}`}>
               {article.title}
             </h3>
 
             {article.summary && (
-              <p className="mt-1.5 text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
+              <p className="mt-1.5 text-xs sm:text-sm text-slate-200 line-clamp-2 leading-relaxed">
                 {article.summary}
               </p>
             )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-cyan-500/15 flex items-center justify-between text-cyan-400/70 text-xs font-mono">
+          <div className="mt-4 pt-3 border-t border-blue-500/20 flex items-center justify-between text-blue-300/70 text-xs font-mono">
             <div className="flex items-center gap-4">
               <button
                 onClick={handleLike}
@@ -471,8 +471,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <div className="flex items-center gap-1">
               <button
                 onClick={handleBookmark}
-                className={`p-2 rounded-full hover:bg-cyan-500/20 transition-colors cursor-pointer ${
-                  isBookmarked ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(0,243,255,0.7)]' : 'text-cyan-400/60 hover:text-cyan-300'
+                className={`p-2 rounded-full hover:bg-blue-600/20 transition-colors cursor-pointer ${
+                  isBookmarked ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(0,210,255,0.7)]' : 'text-blue-300/60 hover:text-cyan-300'
                 }`}
                 title="Enregistrer l'article"
               >
@@ -480,7 +480,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </button>
               <button
                 onClick={handleShareClick}
-                className="p-2 rounded-full text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-500/20 transition-colors cursor-pointer"
+                className="p-2 rounded-full text-blue-300/60 hover:text-cyan-300 hover:bg-blue-600/20 transition-colors cursor-pointer"
                 title="Partager"
               >
                 <Share2 className="w-4 h-4" />
@@ -503,10 +503,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     <article
       id={`article-card-${article.id}`}
       onClick={() => onOpenArticle(article)}
-      className={`group bg-[#0b0e1a]/95 rounded-2xl border border-cyan-500/25 hover:border-cyan-400/60 shadow-[0_0_15px_rgba(0,243,255,0.06)] hover:shadow-[0_0_25px_rgba(0,243,255,0.2)] transition-all duration-300 overflow-hidden flex flex-col cursor-pointer ${className}`}
+      className={`group bg-gradient-to-b from-[#0e1936]/80 to-[#050b1c]/95 hover:from-[#122048]/85 hover:to-[#070e24]/98 rounded-2xl border border-blue-500/25 hover:border-cyan-400/60 shadow-[0_10px_30px_-10px_rgba(0,85,255,0.22)] hover:shadow-[0_14px_35px_-6px_rgba(29,104,255,0.35)] transition-all duration-300 overflow-hidden flex flex-col cursor-pointer ${className}`}
     >
       {/* Card Header: Author, Media, Verification Badge, Date */}
-      <div className="p-3.5 sm:p-4 flex items-center justify-between gap-3 border-b border-cyan-500/10">
+      <div className="p-3.5 sm:p-4 flex items-center justify-between gap-3 border-b border-blue-500/15">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -521,18 +521,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             }
             alt={article.authorName}
             referrerPolicy="no-referrer"
-            className="w-9 h-9 rounded-full object-cover border border-cyan-500/40 group-hover/author:border-cyan-400 group-hover/author:shadow-[0_0_10px_rgba(0,243,255,0.5)] transition-all shrink-0"
+            className="w-9 h-9 rounded-full object-cover border border-blue-500/40 group-hover/author:border-cyan-400 group-hover/author:shadow-[0_0_12px_rgba(0,210,255,0.5)] transition-all shrink-0"
           />
           <div className="min-w-0">
             <div className="flex items-center gap-1 leading-tight">
-              <span className="font-bold text-xs sm:text-sm text-slate-100 group-hover/author:text-cyan-300 transition-colors truncate">
+              <span className="font-bold text-xs sm:text-sm text-white group-hover/author:text-cyan-300 transition-colors truncate">
                 {article.mediaName || article.authorName}
               </span>
               {article.isAuthorVerified && (
                 <VerifiedBadge size="sm" type={article.mediaName ? 'media' : 'journalist'} />
               )}
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-cyan-400/60 font-mono">
+            <div className="flex items-center gap-1.5 text-[11px] text-blue-300/60 font-mono">
               {article.mediaName && article.authorName !== article.mediaName && (
                 <>
                   <span className="truncate">{article.authorName}</span>
@@ -553,7 +553,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               onSelectCategory(article.categoryId);
             }
           }}
-          className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 shadow-[0_0_8px_rgba(0,243,255,0.2)] hover:bg-cyan-900/60 transition-all cursor-pointer font-mono"
+          className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-600/20 text-cyan-300 border border-blue-400/40 shadow-[0_0_8px_rgba(0,210,255,0.2)] hover:bg-blue-600/30 transition-all cursor-pointer font-mono"
         >
           {article.categoryName}
         </button>
@@ -561,7 +561,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
       {/* Main Cover Image */}
       {article.coverImage && (
-        <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden border-b border-cyan-500/15">
+        <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden border-b border-blue-500/20">
           <img
             src={article.coverImage}
             alt={article.title}
@@ -572,7 +572,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <div className="absolute top-2 left-2 z-10">
             <FactCheckBadge factCheck={article.factCheck} compact />
           </div>
-          <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#07080f]/80 border border-cyan-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1">
+          <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1">
             <Clock className="w-3 h-3 text-cyan-400" />
             <span>{readingTimeMinutes} min</span>
           </div>
@@ -582,11 +582,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       {/* Body: Title, Summary, Tags */}
       <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
         <div>
-          <h2 className={`font-extrabold text-base sm:text-lg text-slate-100 leading-snug glitch-hover transition-colors line-clamp-2 ${titleClassName}`}>
+          <h2 className={`font-black text-base sm:text-lg text-white leading-snug glitch-hover transition-colors line-clamp-2 ${titleClassName}`}>
             {article.title}
           </h2>
           {article.summary && (
-            <p className="mt-1.5 text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
+            <p className="mt-1.5 text-xs sm:text-sm text-slate-200 line-clamp-2 leading-relaxed">
               {article.summary}
             </p>
           )}
@@ -602,13 +602,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     e.stopPropagation();
                     if (onSelectTag) onSelectTag(tag);
                   }}
-                  className="text-[10px] text-cyan-300 bg-[#101428] border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,243,255,0.3)] px-2 py-0.5 rounded-md font-mono transition-all cursor-pointer"
+                  className="text-[10px] text-cyan-300 bg-[#070d24] border border-blue-500/30 hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,210,255,0.3)] px-2 py-0.5 rounded-md font-mono transition-all cursor-pointer"
                 >
                   #{tag}
                 </button>
               ))}
               {article.tags.length > 3 && (
-                <span className="text-[10px] text-cyan-400/60 bg-[#101428] px-1.5 py-0.5 rounded-md font-mono">
+                <span className="text-[10px] text-blue-300/60 bg-[#070d24] px-1.5 py-0.5 rounded-md font-mono">
                   +{article.tags.length - 3}
                 </span>
               )}
@@ -617,7 +617,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         </div>
 
         {/* Action bar: Likes, Comments, Views, Bookmarks, Share */}
-        <div className="mt-4 pt-3 border-t border-cyan-500/15 flex items-center justify-between text-cyan-400/70 text-xs font-mono">
+        <div className="mt-4 pt-3 border-t border-blue-500/20 flex items-center justify-between text-blue-300/70 text-xs font-mono">
           <div className="flex items-center gap-4">
             {/* Like */}
             <button
@@ -643,7 +643,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             </button>
 
             {/* Views counter */}
-            <div className="flex items-center gap-1 text-cyan-400/50" title="Nombre de vues">
+            <div className="flex items-center gap-1 text-blue-400/50" title="Nombre de vues">
               <Eye className="w-3.5 h-3.5" />
               <span>{article.viewsCount}</span>
             </div>
@@ -654,8 +654,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <button
               id={`bookmark-btn-${article.id}`}
               onClick={handleBookmark}
-              className={`p-1.5 rounded-full hover:bg-cyan-500/20 transition-colors cursor-pointer ${
-                isBookmarked ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(0,243,255,0.7)]' : 'text-cyan-400/60 hover:text-cyan-300'
+              className={`p-1.5 rounded-full hover:bg-blue-600/20 transition-colors cursor-pointer ${
+                isBookmarked ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(0,210,255,0.7)]' : 'text-blue-300/60 hover:text-cyan-300'
               }`}
               title="Enregistrer l'article"
             >
@@ -666,7 +666,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <button
               id={`share-btn-${article.id}`}
               onClick={handleShareClick}
-              className="p-1.5 rounded-full text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-500/20 transition-colors cursor-pointer"
+              className="p-1.5 rounded-full text-blue-300/60 hover:text-cyan-300 hover:bg-blue-600/20 transition-colors cursor-pointer"
               title="Partager l'actualité"
             >
               <Share2 className="w-4 h-4" />

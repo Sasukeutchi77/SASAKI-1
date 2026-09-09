@@ -43,7 +43,7 @@ interface AuthContextType {
     motivation: string;
     documentUrl?: string;
   }) => Promise<void>;
-  quickSwitch: (roleKey: 'admin' | 'burkinanews' | 'salif' | 'aminata') => Promise<void>;
+  quickSwitch: (roleKey: 'admin' | 'globalnews' | 'lucas' | 'clara') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -305,12 +305,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // 9. Quick role switch for local testing/demo
-  const quickSwitch = async (roleKey: 'admin' | 'burkinanews' | 'salif' | 'aminata') => {
+  const quickSwitch = async (roleKey: 'admin' | 'globalnews' | 'lucas' | 'clara') => {
     const credentials: Record<string, { email: string; pass: string }> = {
-      admin: { email: 'admin@fasoinfo.bf', pass: 'admin123' },
-      burkinanews: { email: 'burkinanews@fasoinfo.bf', pass: 'media123' },
-      salif: { email: 'salif.ouedraogo@fasoinfo.bf', pass: 'journ123' },
-      aminata: { email: 'aminata.traore@fasoinfo.bf', pass: 'user123' },
+      admin: { email: 'admin@purgeinfo.com', pass: 'admin123' },
+      globalnews: { email: 'medianews@purgeinfo.com', pass: 'media123' },
+      lucas: { email: 'lucas.moreau@purgeinfo.com', pass: 'journ123' },
+      clara: { email: 'clara.dupont@purgeinfo.com', pass: 'user123' },
     };
     const cred = credentials[roleKey];
     if (cred) {

@@ -1,5 +1,5 @@
 /**
- * Full Production Verification Test Suite — FasoInfo
+ * Full Production Verification Test Suite — PurgeInfo
  * Tests critical business logic, role-based access control, article lifecycle,
  * comments, likes, bookmarks, media validation, and input sanitization.
  */
@@ -9,7 +9,7 @@ import { sanitizeText, isValidUrl, isRepetitiveSpam, isValidEmail } from './serv
 import { validateMediaFile } from './src/services/cloudinary';
 
 async function runProductionTestSuite() {
-  console.log('🧪 Running FasoInfo Full Production Test Suite...\n');
+  console.log('🧪 Running PurgeInfo Full Production Test Suite...\n');
   let passed = 0;
   let failed = 0;
 

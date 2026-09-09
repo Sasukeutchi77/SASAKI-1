@@ -18,22 +18,22 @@ import { User } from '../types';
 import { api } from '../services/api';
 
 const HOUSE_NAME_SUGGESTIONS = [
-  'Le Courrier du Faso',
-  'L\'Éclair Sahélien',
-  'La Sentinelle d\'Afrique',
+  'Le Courrier International',
+  'L\'Éclair Mondial',
+  'La Sentinelle des Peuples',
   'Vérité & Démocratie',
-  'Sahel Tribune',
+  'Global News Tribune',
   'Le Flambeau Citoyen',
-  'Ouaga Investigation',
+  'Investigation Directe',
   'L\'Observatoire Indépendant',
 ];
 
 const SPECIALTY_OPTIONS = [
   'Investigation',
-  'Politique & AES',
+  'Politique & Diplomatie',
   'Société & Droits',
-  'Économie & Mines',
-  'Sécurité Sahel',
+  'Économie & Finance',
+  'Géopolitique',
   'Culture & Arts',
   'Technologies & IA',
   'Environnement & Climat',
@@ -45,7 +45,7 @@ const LOGO_PRESETS = [
   { name: 'Économie', url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=200&auto=format&fit=crop&q=80' },
   { name: 'Tech & IA', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80' },
   { name: 'Culture & Société', url: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=200&auto=format&fit=crop&q=80' },
-  { name: 'Sahel & AES', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=200&auto=format&fit=crop&q=80' },
+  { name: 'Monde & Régions', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=200&auto=format&fit=crop&q=80' },
 ];
 
 const COVER_PRESETS = [
@@ -71,12 +71,12 @@ export const CreateHouseWizard: React.FC<CreateHouseWizardProps> = ({
   const [name, setName] = useState<string>('');
   const [motto, setMotto] = useState<string>('L\'information vérifiée, sans concession.');
   const [description, setDescription] = useState<string>('');
-  const [specialties, setSpecialties] = useState<string[]>(['Investigation', 'Sahel', 'Société']);
+  const [specialties, setSpecialties] = useState<string[]>(['Investigation', 'Économie & Finance', 'Société']);
   const [logo, setLogo] = useState<string>(LOGO_PRESETS[0].url);
   const [cover, setCover] = useState<string>(COVER_PRESETS[0].url);
   const [phone, setPhone] = useState<string>('');
   const [email, setEmail] = useState<string>('');
-  const [address, setAddress] = useState<string>('Ouagadougou, Burkina Faso');
+  const [address, setAddress] = useState<string>('Bureau Éditorial Central');
   const [creating, setCreating] = useState<boolean>(false);
 
   const toggleSpecialty = (spec: string) => {
@@ -172,7 +172,7 @@ export const CreateHouseWizard: React.FC<CreateHouseWizardProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Le Courrier du Faso, Sahel Vérité..."
+                  placeholder="Ex: Le Courrier International, La Tribune Citoyenne..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white focus:outline-none focus:border-cyan-400"

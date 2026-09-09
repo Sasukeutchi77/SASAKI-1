@@ -33,10 +33,10 @@ import { api } from '../services/api';
 
 const SPECIALTY_OPTIONS = [
   'Investigation',
-  'Politique & AES',
+  'Politique & Diplomatie',
   'Société & Droits',
-  'Économie & Mines',
-  'Sécurité Sahel',
+  'Économie & Finance',
+  'Géopolitique & Sécurité',
   'Culture & Arts',
   'Technologies & IA',
   'Environnement & Climat',
@@ -50,7 +50,7 @@ const EDITORIAL_ROLE_PRESETS = [
   'Journaliste d\'Enquête',
   'Chef de Rubrique Économie',
   'Chef de Rubrique Politique',
-  'Correspondant Régional Sahel',
+  'Correspondant Régional International',
   'Éditorialiste',
   'Chroniqueur Déontologique',
 ];
@@ -60,7 +60,7 @@ const LOGO_PRESETS = [
   { name: 'Économie', url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=200&auto=format&fit=crop&q=80' },
   { name: 'Tech & IA', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80' },
   { name: 'Culture & Société', url: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=200&auto=format&fit=crop&q=80' },
-  { name: 'Sahel & AES', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=200&auto=format&fit=crop&q=80' },
+  { name: 'Monde & Régions', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=200&auto=format&fit=crop&q=80' },
 ];
 
 const COVER_PRESETS = [
@@ -124,8 +124,8 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
   const [editPhone, setEditPhone] = useState<string>(myHouse.phone || '');
   const [editEmail, setEditEmail] = useState<string>(myHouse.email || '');
   const [editWebsite, setEditWebsite] = useState<string>(myHouse.website || '');
-  const [editAddress, setEditAddress] = useState<string>(myHouse.address || 'Ouagadougou, Burkina Faso');
-  const [editSpecialties, setEditSpecialties] = useState<string[]>(myHouse.specialties || ['Investigation', 'Sahel', 'Société']);
+  const [editAddress, setEditAddress] = useState<string>(myHouse.address || 'Bureau Éditorial Central');
+  const [editSpecialties, setEditSpecialties] = useState<string[]>(myHouse.specialties || ['Investigation', 'Économie & Finance', 'Société']);
   const [savingSettings, setSavingSettings] = useState<boolean>(false);
 
   // Articles filtering state
@@ -405,7 +405,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                       )}
                     </div>
                     <p className="text-xs text-stone-400 mt-1">
-                      Fondée & dirigée par <strong className="text-stone-200">{myHouse.ownerName}</strong> • Ouagadougou, Burkina Faso
+                      Fondée & dirigée par <strong className="text-stone-200">{myHouse.ownerName}</strong> • {myHouse.address || 'Bureau Éditorial Central'}
                     </p>
                   </div>
                 </div>
@@ -1009,7 +1009,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
             <textarea
               rows={3}
               required
-              placeholder="Ex: Angle à creuser sur le cours du mil à Ouaga, contact avec un témoin sur le terrain..."
+              placeholder="Ex: Angle d'investigation sur les cours des matières premières, contact avec un témoin sur le terrain..."
               value={newNoteContent}
               onChange={(e) => setNewNoteContent(e.target.value)}
               className="w-full px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white focus:outline-none focus:border-purple-400"

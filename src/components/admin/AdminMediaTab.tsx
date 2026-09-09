@@ -395,7 +395,7 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Ex: Le Faso Quotidien"
+                      placeholder="Ex: Le Quotidien Indépendant"
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
@@ -405,7 +405,7 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
                       type="text"
                       value={slug}
                       onChange={(e) => setSlug(e.target.value)}
-                      placeholder="Ex: le-faso-quotidien"
+                      placeholder="Ex: chroniques-media"
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>

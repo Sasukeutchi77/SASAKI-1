@@ -628,12 +628,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const isAuthorOrAdmin = user && article && (user.id === article.authorId || user.role === 'admin');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#0b0e1a] text-slate-100 min-h-screen sm:min-h-0 sm:rounded-2xl shadow-[0_0_40px_rgba(0,243,255,0.2)] sm:my-8 overflow-hidden flex flex-col border border-cyan-500/40 transition-all">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-0 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-[#040817] text-slate-100 min-h-screen sm:min-h-0 sm:rounded-2xl shadow-[0_0_50px_rgba(29,104,255,0.3)] sm:my-8 overflow-hidden flex flex-col border border-blue-500/30 transition-all">
         {/* Top Sticky Header */}
-        <div className="sticky top-0 z-20 bg-[#0b0e1a]/95 backdrop-blur-md border-b border-cyan-500/30 px-4 py-3 flex items-center justify-between transition-all">
+        <div className="sticky top-0 z-20 bg-[#040817]/95 backdrop-blur-md border-b border-blue-500/20 px-4 py-3 flex items-center justify-between transition-all">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold font-mono px-2.5 py-1 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 shadow-[0_0_8px_rgba(0,243,255,0.2)]">
+            <span className="text-xs font-bold font-mono px-2.5 py-1 rounded-full bg-blue-600/20 text-cyan-300 border border-blue-400/40 shadow-[0_0_8px_rgba(0,210,255,0.2)]">
               {article?.categoryName || 'Actualité'}
             </span>
             {article?.status === 'draft' && (
@@ -656,12 +656,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 onClick={handleToggleZenMode}
                 className={`px-3 py-1.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 text-xs font-mono font-bold ${
                   isZenMode
-                    ? 'bg-cyan-400 text-black shadow-[0_0_12px_#00f3ff]'
-                    : 'text-cyan-300 hover:text-white hover:bg-cyan-500/20 border border-cyan-500/40'
+                    ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(29,104,255,0.6)]'
+                    : 'text-cyan-300 hover:text-white hover:bg-blue-600/20 border border-blue-500/40'
                 }`}
                 title="Basculer en Mode Lecteur Terminal / Zen [ESC pour quitter]"
               >
-                <Terminal className="w-3.5 h-3.5" />
+                <Terminal className="w-3.5 h-3.5 text-cyan-300" />
                 <span className="hidden sm:inline">{isZenMode ? 'Quitter Console Zen' : 'Mode Lecteur Zen'}</span>
               </button>
             )}
@@ -675,7 +675,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       onOpenEditArticle(article);
                       onClose();
                     }}
-                    className="p-2 text-cyan-400 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full cursor-pointer transition-colors"
+                    className="p-2 text-cyan-400 hover:text-cyan-200 hover:bg-blue-600/20 rounded-full cursor-pointer transition-colors"
                     title="Modifier l'article"
                   >
                     <Edit className="w-4 h-4" />
@@ -695,7 +695,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             <button
               id="close-article-detail-modal"
               onClick={onClose}
-              className="p-2 text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full transition-colors cursor-pointer"
+              className="p-2 text-blue-300/70 hover:text-cyan-200 hover:bg-blue-600/20 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -703,12 +703,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
         </div>
 
         {/* Reading Progress Bar (always active, neon accentuated in Zen mode) */}
-        <div className={`w-full bg-[#07080f] ${isZenMode ? 'h-1.5' : 'h-1'} sticky top-[53px] z-30 overflow-hidden`}>
+        <div className={`w-full bg-[#020512] ${isZenMode ? 'h-1.5' : 'h-1'} sticky top-[53px] z-30 overflow-hidden`}>
           <div
             className={`h-full bg-gradient-to-r ${
               isZenMode
                 ? ZEN_THEMES[zenTheme].progress
-                : 'from-cyan-400 via-fuchsia-500 to-emerald-400 shadow-[0_0_10px_#00f3ff]'
+                : 'from-blue-600 via-cyan-400 to-yellow-400 shadow-[0_0_10px_#00d2ff]'
             } transition-all duration-150 relative`}
             style={{ width: `${scrollProgress}%` }}
           >
@@ -989,7 +989,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             </h1>
 
             {/* Author Box */}
-            <div className="mt-5 p-4 rounded-xl bg-[#101428] border border-cyan-500/30 flex flex-wrap items-center justify-between gap-4 transition-all shadow-[0_0_15px_rgba(0,243,255,0.06)]">
+            <div className="mt-5 p-4 rounded-xl bg-gradient-to-r from-[#0b142c] to-[#040817] border border-blue-500/30 flex flex-wrap items-center justify-between gap-4 transition-all shadow-[0_4px_25px_rgba(0,10,35,0.5)]">
               <button
                 onClick={() => onOpenProfile(article.authorId)}
                 className="flex items-center gap-3 text-left group cursor-pointer"
@@ -1001,7 +1001,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   }
                   alt={article.authorName}
                   referrerPolicy="no-referrer"
-                  className="w-12 h-12 rounded-full object-cover border border-cyan-500/40 group-hover:border-cyan-400 group-hover:shadow-[0_0_10px_rgba(0,243,255,0.5)] transition-all"
+                  className="w-12 h-12 rounded-full object-cover border border-blue-500/40 group-hover:border-cyan-400 group-hover:shadow-[0_0_15px_rgba(0,210,255,0.6)] transition-all"
                 />
                 <div>
                   <div className="flex items-center gap-1.5 font-bold text-sm sm:text-base text-white group-hover:text-cyan-300 transition-colors">
@@ -1014,7 +1014,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                             onOpenTrustSystem();
                           }
                         }}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#20D5EC]/15 text-cyan-300 border border-[#20D5EC]/40 hover:bg-[#20D5EC]/25 cursor-pointer shadow-[0_0_8px_rgba(32,213,236,0.3)] transition-all"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-600/20 text-cyan-300 border border-blue-400/40 hover:bg-blue-600/30 cursor-pointer shadow-[0_0_8px_rgba(0,210,255,0.3)] transition-all"
                         title="Compte certifié (Badge bleu officiel) - Cliquez pour voir la charte"
                       >
                         <VerifiedBadge size="xs" type={article.mediaName ? 'media' : 'journalist'} />
@@ -1022,7 +1022,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-cyan-400/60 font-mono">
+                  <div className="text-xs text-blue-300/60 font-mono">
                     {article.mediaName && article.authorName !== article.mediaName && (
                       <span>Par {article.authorName} • </span>
                     )}
@@ -1037,8 +1037,8 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   onClick={handleFollowAuthor}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold font-mono transition-all shadow-xs cursor-pointer ${
                     isFollowingAuthor
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                      : 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_12px_rgba(0,243,255,0.4)]'
+                      ? 'bg-blue-600/20 text-cyan-300 border border-blue-400/40'
+                      : 'bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-[0_0_15px_rgba(29,104,255,0.4)]'
                   }`}
                 >
                   {isFollowingAuthor ? (
@@ -1057,7 +1057,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             </div>
 
             {/* Date & Stats bar */}
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-stone-500 dark:text-stone-400 pb-4 border-b border-stone-100 dark:border-stone-800">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-blue-300/70 pb-4 border-b border-blue-500/15">
               <span>
                 Publié le{' '}
                 {new Date(article.createdAt).toLocaleDateString('fr-FR', {
@@ -1068,12 +1068,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
                 {Math.max(1, Math.ceil((article.content || '').split(/\s+/).length / 200))} min de lecture
               </span>
               <span>•</span>
               <span className="flex items-center gap-1" title="Vues réelles">
-                <Eye className="w-3.5 h-3.5" />
+                <Eye className="w-3.5 h-3.5 text-cyan-400" />
                 {article.viewsCount} vues
               </span>
             </div>
@@ -1137,7 +1137,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
             {/* Tags */}
             {article.tags && article.tags.length > 0 && (
-              <div className="mt-8 flex flex-wrap gap-2 pt-4 border-t border-cyan-500/20">
+              <div className="mt-8 flex flex-wrap gap-2 pt-4 border-t border-blue-500/20">
                 {article.tags.map((t, idx) => (
                   <button
                     key={idx}
@@ -1148,7 +1148,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                         onClose();
                       }
                     }}
-                    className="text-xs font-mono font-semibold px-3 py-1 rounded-full bg-[#101428] hover:bg-cyan-950/60 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 transition-all cursor-pointer"
+                    className="text-xs font-mono font-semibold px-3 py-1 rounded-full bg-[#081026] hover:bg-blue-600/30 border border-blue-500/30 hover:border-cyan-400 text-cyan-300 transition-all cursor-pointer"
                   >
                     #{t}
                   </button>
@@ -1157,7 +1157,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             )}
 
             {/* Interaction Bar */}
-            <div className="mt-8 p-3 rounded-2xl bg-[#101428] border border-cyan-500/30 flex items-center justify-between shadow-[0_0_20px_rgba(0,243,255,0.06)]">
+            <div className="mt-8 p-3 rounded-2xl bg-[#081026] border border-blue-500/25 flex items-center justify-between shadow-[0_10px_30px_-10px_rgba(0,85,255,0.2)]">
               <div className="flex items-center gap-3">
                 <button
                   id="modal-like-article-btn"
@@ -1165,7 +1165,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all cursor-pointer font-mono ${
                     isLiked
                       ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
-                      : 'bg-[#0b0e1a] text-slate-300 hover:text-white border border-cyan-500/25'
+                      : 'bg-[#040817] text-slate-300 hover:text-white border border-blue-500/25'
                   }`}
                 >
                   <Heart className={`w-4 h-4 transition-transform active:scale-125 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -1177,8 +1177,8 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   onClick={handleBookmark}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all cursor-pointer font-mono ${
                     isBookmarked
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(0,243,255,0.5)]'
-                      : 'bg-[#0b0e1a] text-slate-300 hover:text-white border border-cyan-500/25'
+                      ? 'bg-blue-600/20 text-cyan-300 border border-blue-400/50 shadow-[0_0_10px_rgba(0,210,255,0.5)]'
+                      : 'bg-[#040817] text-slate-300 hover:text-white border border-blue-500/25'
                   }`}
                 >
                   <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-cyan-400 text-cyan-400' : ''}`} />
@@ -1190,7 +1190,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <button
                   id="modal-share-article-btn"
                   onClick={() => setShowShareModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#0b0e1a] text-cyan-300 hover:text-white border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer font-mono"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#040817] text-cyan-300 hover:text-white border border-blue-500/30 text-xs font-bold transition-all cursor-pointer font-mono"
                 >
                   <Share2 className="w-4 h-4" />
                   <span className="hidden sm:inline">Partager</span>
@@ -1199,7 +1199,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <button
                   id="modal-report-article-btn"
                   onClick={() => (isAuthenticated ? setShowReportModal(true) : onOpenAuth())}
-                  className="p-2 text-cyan-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors cursor-pointer"
+                  className="p-2 text-blue-300/60 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors cursor-pointer"
                   title="Signaler un problème sur cet article"
                 >
                   <Flag className="w-4 h-4" />
@@ -1209,10 +1209,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
             {/* Recommended Articles Section ("À lire aussi") */}
             {relatedArticles.length > 0 && (
-              <div className="mt-8 pt-6 border-t border-cyan-500/20">
+              <div className="mt-8 pt-6 border-t border-blue-500/20">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <span>À lire aussi</span>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-cyan-950/70 text-cyan-300 border border-cyan-500/30">
+                  <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-blue-600/20 text-cyan-300 border border-blue-400/40">
                     Recommandations
                   </span>
                 </h3>
@@ -1225,10 +1225,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                           onOpenArticle(rel);
                         }
                       }}
-                      className="group cursor-pointer flex sm:flex-col gap-3 p-3 rounded-xl bg-[#101428] hover:bg-[#141a35] border border-cyan-500/25 hover:border-cyan-400/60 shadow-[0_0_12px_rgba(0,243,255,0.05)] hover:shadow-[0_0_20px_rgba(0,243,255,0.2)] transition-all"
+                      className="group cursor-pointer flex sm:flex-col gap-3 p-3 rounded-xl bg-gradient-to-b from-[#0e1936]/80 to-[#050b1c]/95 hover:from-[#122048]/90 hover:to-[#070e24]/98 border border-blue-500/25 hover:border-cyan-400/60 shadow-[0_4px_15px_rgba(0,10,35,0.4)] hover:shadow-[0_8px_25px_rgba(29,104,255,0.25)] transition-all"
                     >
                       {rel.coverImage && (
-                        <div className="w-20 h-20 sm:w-full sm:h-28 rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-cyan-500/20">
+                        <div className="w-20 h-20 sm:w-full sm:h-28 rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-blue-500/20">
                           <img
                             src={getCoverUrl(rel.coverImage, 400, 240)}
                             alt={rel.title}
@@ -1238,10 +1238,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                         </div>
                       )}
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <h4 className="font-bold text-xs sm:text-sm text-slate-100 group-hover:text-cyan-300 line-clamp-2 leading-snug transition-colors">
+                        <h4 className="font-bold text-xs sm:text-sm text-white group-hover:text-cyan-300 line-clamp-2 leading-snug transition-colors">
                           {rel.title}
                         </h4>
-                        <div className="mt-2 text-[11px] text-cyan-400/60 font-mono flex items-center gap-2">
+                        <div className="mt-2 text-[11px] text-blue-300/60 font-mono flex items-center gap-2">
                           <span>{rel.categoryName || 'Actualité'}</span>
                           <span>•</span>
                           <span>
@@ -1259,7 +1259,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             )}
 
             {/* Discussion / Comments Section */}
-            <section className="mt-10 pt-6 border-t border-cyan-500/20">
+            <section className="mt-10 pt-6 border-t border-blue-500/20">
               <div className="flex items-center gap-2 mb-6">
                 <MessageSquare className="w-5 h-5 text-cyan-400" />
                 <h2 className="text-xl font-extrabold text-white">
@@ -1278,7 +1278,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       }
                       alt={user?.name}
                       referrerPolicy="no-referrer"
-                      className="w-9 h-9 rounded-full object-cover border border-cyan-500/40 shrink-0"
+                      className="w-9 h-9 rounded-full object-cover border border-blue-500/40 shrink-0"
                     />
                     <div className="flex-1">
                       <textarea
@@ -1287,13 +1287,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         placeholder="Exprimez votre avis citoyen dans le respect et la courtoisie (au moins 2 caractères)..."
-                        className="w-full p-3 text-sm bg-[#101428] border border-cyan-500/30 rounded-xl text-slate-100 placeholder:text-cyan-400/40 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,243,255,0.3)] transition-all resize-none"
+                        className="w-full p-3 text-sm bg-[#081026] border border-blue-500/30 rounded-xl text-slate-100 placeholder:text-blue-300/40 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,210,255,0.3)] transition-all resize-none"
                       />
                       <div className="mt-2 flex justify-end">
                         <button
                           type="submit"
                           disabled={!newComment.trim() || isSubmittingComment}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 disabled:opacity-40 text-black text-xs font-bold font-mono rounded-full transition-all cursor-pointer shadow-[0_0_10px_rgba(0,243,255,0.4)]"
+                          className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-40 text-white text-xs font-bold font-mono rounded-full transition-all cursor-pointer shadow-[0_0_15px_rgba(29,104,255,0.4)]"
                         >
                           <Send className="w-3.5 h-3.5" />
                           <span>{isSubmittingComment ? 'Publication...' : 'Publier'}</span>
@@ -1303,13 +1303,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   </div>
                 </form>
               ) : (
-                <div className="mb-8 p-4 rounded-xl bg-[#101428] border border-cyan-500/30 text-center transition-all">
-                  <p className="text-xs sm:text-sm text-cyan-200">
+                <div className="mb-8 p-5 rounded-xl bg-gradient-to-r from-[#0b142c] to-[#040817] border border-blue-500/30 text-center transition-all shadow-[0_4px_20px_rgba(0,10,35,0.4)]">
+                  <p className="text-xs sm:text-sm text-slate-200">
                     Connectez-vous pour réagir et participer aux débats sur cet article.
                   </p>
                   <button
                     onClick={onOpenAuth}
-                    className="mt-2.5 px-4 py-1.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black text-xs font-bold font-mono rounded-full cursor-pointer shadow-[0_0_10px_rgba(0,243,255,0.4)]"
+                    className="mt-3 px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold font-mono rounded-full cursor-pointer shadow-[0_0_15px_rgba(29,104,255,0.4)]"
                   >
                     Se connecter / Créer un compte
                   </button>
@@ -1319,7 +1319,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               {/* Comments Thread List */}
               <div className="space-y-4">
                 {comments.length === 0 ? (
-                  <p className="text-sm text-cyan-400/50 italic font-mono">Soyez le premier à commenter cet article !</p>
+                  <p className="text-sm text-blue-400/50 italic font-mono">Soyez le premier à commenter cet article !</p>
                 ) : (
                   comments.map((comm) => {
                     const canModify = user && (user.id === comm.userId || user.role === 'admin');
@@ -1329,7 +1329,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                     return (
                       <div
                         key={comm.id}
-                        className="p-4 rounded-xl bg-[#101428]/80 border border-cyan-500/25 hover:border-cyan-500/40 transition-all shadow-[0_0_12px_rgba(0,243,255,0.03)]"
+                        className="p-4 rounded-xl bg-[#081026]/90 border border-blue-500/25 hover:border-blue-400/50 transition-all shadow-[0_4px_15px_rgba(0,10,35,0.3)]"
                       >
                         {/* Comment author info */}
                         <div className="flex items-center justify-between">

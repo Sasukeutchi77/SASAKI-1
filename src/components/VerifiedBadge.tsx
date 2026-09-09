@@ -53,13 +53,19 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
     >
       <svg
         viewBox="0 0 24 24"
-        className="w-full h-full drop-shadow-[0_1px_3px_rgba(32,213,236,0.5)]"
+        className="w-full h-full drop-shadow-[0_0_6px_rgba(0,210,255,0.7)]"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Exact TikTok cyan-blue circular badge */}
-        <circle cx="12" cy="12" r="11.5" fill="#20D5EC" />
-        {/* Crisp white checkmark */}
+        <defs>
+          <linearGradient id="sorsaBadgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1d68ff" />
+            <stop offset="100%" stopColor="#00d2ff" />
+          </linearGradient>
+        </defs>
+        {/* Electric Blue / Cyan circular badge */}
+        <circle cx="12" cy="12" r="11.5" fill="url(#sorsaBadgeGrad)" />
+        {/* Crisp pure white checkmark */}
         <path
           d="M7 12.5L10.3 15.8L17.2 8.6"
           stroke="#FFFFFF"
@@ -80,8 +86,8 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   return (
     <span
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#20D5EC]/15 border border-[#20D5EC]/40 text-[#20D5EC] text-[11px] font-bold shadow-[0_0_10px_rgba(32,213,236,0.2)] ${
-        onClick ? 'cursor-pointer hover:bg-[#20D5EC]/25' : ''
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-blue-600/20 to-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-[11px] font-bold shadow-[0_0_12px_rgba(0,210,255,0.25)] ${
+        onClick ? 'cursor-pointer hover:bg-blue-600/30 hover:border-cyan-300' : ''
       } transition-all`}
       title={defaultTitle}
     >

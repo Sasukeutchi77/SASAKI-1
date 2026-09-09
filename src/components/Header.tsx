@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-[#07080f]/90 backdrop-blur-xl border-b border-cyan-500/25 shadow-[0_4px_25px_rgba(0,243,255,0.08)] transition-all">
+    <header className="sticky top-0 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 shadow-[0_4px_30px_rgba(0,10,35,0.7)] transition-all">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-3">
           {/* Logo & Platform Name */}
@@ -86,21 +86,22 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               className="flex items-center gap-2 sm:gap-2.5 text-left group cursor-pointer"
             >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-cyan-400 via-fuchsia-500 to-emerald-400 flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(0,243,255,0.5)] tracking-tight group-hover:scale-105 group-hover:shadow-[0_0_22px_rgba(0,243,255,0.8)] transition-all">
-                P
+              <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 flex items-center justify-center text-white font-black text-xl shadow-[0_0_18px_rgba(29,104,255,0.6)] tracking-tight group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(0,210,255,0.8)] transition-all border border-white/25">
+                <span>P</span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full ring-2 ring-[#040817] shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="font-black text-lg sm:text-xl tracking-tight text-white">
-                    purge<span className="text-cyan-400 drop-shadow-[0_0_8px_rgba(0,243,255,0.7)]">-info</span>
+                    purge<span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(0,210,255,0.8)]">-info</span>
                   </span>
-                  <span className="hidden xs:inline text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-400/40 shadow-[0_0_8px_rgba(0,243,255,0.3)]">
-                    Neon
+                  <span className="hidden xs:inline text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-600/20 text-cyan-300 border border-blue-400/40 shadow-[0_0_10px_rgba(0,210,255,0.25)]">
+                    Sorsa Tech
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] text-cyan-400/60 font-semibold font-mono">
+                <div className="flex items-center gap-1 text-[10px] text-blue-300/70 font-semibold font-mono">
                   <span>DEV:</span>
-                  <span className="text-fuchsia-400 font-extrabold tracking-tight drop-shadow-[0_0_6px_rgba(240,38,211,0.5)]">
+                  <span className="text-yellow-400 font-extrabold tracking-tight drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">
                     SASAKI COMPAGNIE
                   </span>
                 </div>
@@ -111,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Search bar (Desktop) */}
           <div className="hidden md:flex items-center flex-1 max-w-md mx-4 gap-2">
             <div className="relative w-full">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400/60" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400/70" />
               <input
                 id="search-input-desktop"
                 type="text"
@@ -123,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
                     onOpenSearchPage();
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-[#0b0e1a] border border-cyan-500/30 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,243,255,0.25)] rounded-full focus:outline-none transition-all text-cyan-50 placeholder:text-cyan-500/40"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-[#070d24] border border-blue-500/30 focus:border-cyan-400 focus:shadow-[0_0_18px_rgba(0,210,255,0.3)] rounded-full focus:outline-none transition-all text-white placeholder:text-blue-300/40"
               />
               {searchQuery && (
                 <button
@@ -140,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-open-discovery-btn"
                 onClick={onOpenSearchPage}
-                className="px-3.5 py-1.5 text-xs font-bold text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-400/50 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_8px_rgba(0,243,255,0.1)]"
+                className="px-3.5 py-1.5 text-xs font-bold text-cyan-300 hover:text-white hover:bg-blue-600/20 border border-blue-500/30 hover:border-cyan-400/60 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_10px_rgba(29,104,255,0.15)]"
                 title="Ouvrir la recherche avancée & découverte"
               >
                 Explorer
@@ -152,17 +153,17 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-open-my-house-btn"
                 onClick={onOpenMyHouse}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-300 hover:text-white bg-cyan-950/50 hover:bg-cyan-900/70 border border-cyan-500/40 hover:border-cyan-400 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_12px_rgba(0,243,255,0.15)]"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-200 hover:text-white bg-blue-950/60 hover:bg-blue-900/80 border border-blue-500/40 hover:border-cyan-400 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_12px_rgba(29,104,255,0.2)]"
                 title="Accéder à Ma Maison de Journaliste (création & gestion de la rédaction)"
               >
                 <Building2 className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Ma Maison</span>
                 {user?.mediaName ? (
-                  <span className="hidden lg:inline-block max-w-[120px] truncate text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">
+                  <span className="hidden lg:inline-block max-w-[120px] truncate text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/20 text-cyan-200 border border-blue-400/30">
                     {user.mediaName}
                   </span>
                 ) : (
-                  <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-400/30 animate-pulse">
+                  <span className="text-[10px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.2 rounded border border-yellow-400/40 animate-pulse font-black">
                     À créer
                   </span>
                 )}
@@ -174,10 +175,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-open-trust-system-btn"
                 onClick={onOpenTrustSystem}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 hover:border-emerald-400 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-300 hover:text-white bg-blue-950/40 hover:bg-blue-900/60 border border-blue-500/30 hover:border-cyan-400 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_10px_rgba(29,104,255,0.15)]"
                 title="Découvrir notre Système de Confiance & nos 3 Niveaux de Vérification"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Confiance & Vérification</span>
               </button>
             )}
@@ -294,44 +295,44 @@ export const Header: React.FC<HeaderProps> = ({
                       <button
                         id="demo-switch-media"
                         onClick={() => {
-                          quickSwitch('burkinanews');
+                          quickSwitch('globalnews');
                           setShowDemoMenu(false);
                         }}
                         className="w-full text-left px-2.5 py-2 text-xs rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/50 text-stone-800 dark:text-stone-200 flex items-center justify-between cursor-pointer"
                       >
                         <div>
                           <div className="font-semibold text-blue-800 dark:text-blue-400 flex items-center gap-1">
-                            <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> M. Sawadogo (Journaliste - Burkina News)
+                            <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Média Global News (Agence Internationale)
                           </div>
-                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Fondateur de Maison de presse • 125k abonnés</div>
+                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Collectif de journalistes • 125k abonnés</div>
                         </div>
                       </button>
                       <button
                         id="demo-switch-journalist"
                         onClick={() => {
-                          quickSwitch('salif');
+                          quickSwitch('lucas');
                           setShowDemoMenu(false);
                         }}
                         className="w-full text-left px-2.5 py-2 text-xs rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/50 text-stone-800 dark:text-stone-200 flex items-center justify-between cursor-pointer"
                       >
                         <div>
                           <div className="font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1">
-                            <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Salif O. (Journaliste - L’Observateur du Sahel)
+                            <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Lucas Moreau (Grand Reporter)
                           </div>
-                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Grand reporter • Rédaction & enquêtes</div>
+                          <div className="text-[11px] text-stone-500 dark:text-stone-400">L’Observateur International • Enquêtes</div>
                         </div>
                       </button>
                       <button
                         id="demo-switch-reader"
                         onClick={() => {
-                          quickSwitch('aminata');
+                          quickSwitch('clara');
                           setShowDemoMenu(false);
                         }}
                         className="w-full text-left px-2.5 py-2 text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 flex items-center justify-between cursor-pointer"
                       >
                         <div>
                           <div className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
-                            <UserIcon className="w-3.5 h-3.5" /> Aminata T. (Lectrice)
+                            <UserIcon className="w-3.5 h-3.5" /> Clara Dupont (Lectrice)
                           </div>
                           <div className="text-[11px] text-stone-500 dark:text-stone-400">Abonnements, likes, commentaires</div>
                         </div>
@@ -379,7 +380,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-media-houses-btn"
                 onClick={onOpenMediaHouses}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-300 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 rounded-full shadow-[0_0_10px_rgba(0,243,255,0.15)] transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-300 bg-blue-950/60 hover:bg-blue-900/80 border border-blue-500/30 hover:border-cyan-400/60 rounded-full shadow-[0_0_12px_rgba(29,104,255,0.2)] transition-all cursor-pointer"
                 title="Explorer les Maisons de Journalistes (quota max 5)"
               >
                 <Building2 className="w-3.5 h-3.5 text-cyan-400" />
@@ -387,26 +388,26 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Journalist Dashboard / Create Article Button */}
+            {/* Journalist Dashboard / Create Article Button - Sorsa Pure White Pill */}
             {isAuthenticated && (user?.role === 'journalist' || user?.role === 'admin') && (
               <button
                 id="header-create-article-btn"
                 onClick={onOpenCreateArticle}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 active:scale-95 rounded-full shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 text-xs font-black text-slate-950 bg-white hover:bg-slate-100 active:scale-95 rounded-full shadow-[0_0_18px_rgba(255,255,255,0.4)] transition-all cursor-pointer"
               >
                 <PenSquare className="w-3.5 h-3.5" />
                 <span>Rédiger</span>
               </button>
             )}
 
-            {/* Admin Control Center Button */}
+            {/* Admin Control Center Button - Luminous Yellow Accent */}
             {isAuthenticated && user?.role === 'admin' && (
               <button
                 id="header-admin-portal-btn"
                 onClick={onOpenAdmin}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-fuchsia-300 bg-fuchsia-950/50 hover:bg-fuchsia-900/60 border border-fuchsia-500/40 rounded-full shadow-[0_0_10px_rgba(240,38,211,0.25)] transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-yellow-300 bg-yellow-950/40 hover:bg-yellow-900/60 border border-yellow-500/40 rounded-full shadow-[0_0_12px_rgba(250,204,21,0.25)] transition-all cursor-pointer"
               >
-                <Shield className="w-3.5 h-3.5 text-fuchsia-400" />
+                <Shield className="w-3.5 h-3.5 text-yellow-400" />
                 <span className="hidden sm:inline">Administration</span>
               </button>
             )}
@@ -561,14 +562,14 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   id="header-login-btn"
                   onClick={() => onOpenAuth('login')}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-cyan-300 hover:text-white border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_10px_rgba(0,243,255,0.3)] rounded-lg transition-all cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-cyan-300 hover:text-white border border-blue-500/40 hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,210,255,0.3)] rounded-full transition-all cursor-pointer"
                 >
                   Connexion
                 </button>
                 <button
                   id="header-register-btn"
                   onClick={() => onOpenAuth('register')}
-                  className="px-3.5 py-1.5 text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 rounded-lg shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all cursor-pointer"
+                  className="px-4 py-1.5 text-xs font-black text-slate-950 bg-white hover:bg-slate-100 rounded-full shadow-[0_0_18px_rgba(255,255,255,0.4)] transition-all cursor-pointer active:scale-95"
                 >
                   S'inscrire
                 </button>
@@ -579,9 +580,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Search Bar Expansion */}
         {mobileSearchOpen && (
-          <div className="md:hidden pb-3 pt-1 border-t border-stone-100 dark:border-stone-800">
+          <div className="md:hidden pb-3 pt-1 border-t border-blue-500/20">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
               <input
                 id="search-input-mobile"
                 type="text"
@@ -589,12 +590,12 @@ export const Header: React.FC<HeaderProps> = ({
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 autoFocus
-                className="w-full pl-9 pr-9 py-2.5 text-sm bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-stone-900 text-stone-900 dark:text-stone-100"
+                className="w-full pl-9 pr-9 py-2.5 text-sm bg-[#070d24] border border-blue-500/30 rounded-xl focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,210,255,0.3)] text-white placeholder:text-blue-300/40"
               />
               {searchQuery && (
                 <button
                   onClick={() => onSearchChange('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-200 p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>

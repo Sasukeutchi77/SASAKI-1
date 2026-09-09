@@ -355,7 +355,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             type="text"
             value={caption}
             onChange={(e) => onCaptionChange && onCaptionChange(e.target.value)}
-            placeholder="Ex : Photo d'archives purge-info - Ouagadougou 2026"
+            placeholder="Ex : Photo d'archives purge-info - Édition 2026"
             className="w-full px-3 py-1.5 text-xs bg-[#141933] border border-cyan-500/40 rounded-lg text-white placeholder-cyan-500/40 focus:outline-none focus:border-cyan-400"
           />
         </div>

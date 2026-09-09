@@ -1,5 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="108" fill="#059669"/>
-  <path d="M128 160h256M128 256h180M128 352h220" stroke="#ffffff" stroke-width="36" stroke-linecap="round"/>
-  <circle cx="370" cy="256" r="28" fill="#fbbf24"/>
+  <defs>
+    <linearGradient id="sorsa-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#040817"/>
+      <stop offset="100%" stop-color="#02040a"/>
+    </linearGradient>
+    <linearGradient id="electric-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="60%" stop-color="#1d68ff"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Obsidian rounded base with subtle blue stroke -->
+  <rect width="512" height="512" rx="120" fill="url(#sorsa-bg)"/>
+  <rect x="8" y="8" width="496" height="496" rx="112" fill="none" stroke="#1d68ff" stroke-opacity="0.35" stroke-width="6"/>
+
+  <!-- Stylized high-tech 'P' emblem in electric blue -->
+  <path d="M160 380V132h110c62 0 102 38 102 94s-40 94-102 94H236v60H160zm76-134h34c26 0 42-14 42-34s-16-34-42-34h-34v68z" fill="url(#electric-blue)" filter="url(#neon-glow)"/>
+
+  <!-- Luminous golden-yellow accent indicator (from Sorsa palette) -->
+  <circle cx="390" cy="140" r="26" fill="#facc15" filter="url(#neon-glow)"/>
 </svg>

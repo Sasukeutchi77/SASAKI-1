@@ -1,8 +1,8 @@
-# Audit de Sécurité et Spécification de Durcissement — FasoInfo (PROMPT 8)
+# Audit de Sécurité et Spécification de Durcissement — PurgeInfo (PROMPT 8)
 
 ## 1. Synthèse de l'Audit de Sécurité
 
-Cet audit a analysé l'intégralité de la plateforme FasoInfo : Firebase Authentication, règles Firestore, contrôle d'accès basé sur les rôles (RBAC), intégration Cloudinary, API REST Express, validation des entrées utilisateur, mécanismes anti-spam, gestion des sessions et prévention des élévations de privilèges.
+Cet audit a analysé l'intégralité de la plateforme PurgeInfo : Firebase Authentication, règles Firestore, contrôle d'accès basé sur les rôles (RBAC), intégration Cloudinary, API REST Express, validation des entrées utilisateur, mécanismes anti-spam, gestion des sessions et prévention des élévations de privilèges.
 
 ---
 

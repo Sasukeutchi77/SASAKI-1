@@ -33,7 +33,7 @@ async function startServer() {
 
   // Healthcheck
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', name: 'FasoInfo API', version: '1.0.0' });
+    res.json({ status: 'ok', name: 'PurgeInfo API', version: '1.0.0' });
   });
 
   // REST API Routes

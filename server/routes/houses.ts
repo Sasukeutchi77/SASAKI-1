@@ -329,7 +329,7 @@ housesRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =
     motto: motto ? sanitizeText(motto, { maxLength: 120, allowNewlines: false }) : 'L\'information vérifiée, sans concession.',
     specialties: Array.isArray(specialties)
       ? specialties.map((s: string) => sanitizeText(s, { maxLength: 40, allowNewlines: false })).filter(Boolean)
-      : ['Investigation', 'Société', 'Sahel'],
+      : ['Investigation', 'Société', 'Économie & Finance'],
     ownerId: user.id, // Chef de la maison
     ownerName: user.name,
     members: [user.id], // Le chef est le 1er membre sur les 5 autorisés
@@ -338,7 +338,7 @@ housesRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =
     phone: phone ? sanitizeText(phone, { maxLength: 30, allowNewlines: false }) : undefined,
     email: email ? sanitizeText(email, { maxLength: 100, allowNewlines: false }) : undefined,
     website: website && isValidUrl(website) ? website.trim() : undefined,
-    address: address ? sanitizeText(address, { maxLength: 150, allowNewlines: false }) : 'Ouagadougou, Burkina Faso',
+    address: address ? sanitizeText(address, { maxLength: 150, allowNewlines: false }) : 'Bureau Éditorial Central',
     status: 'active',
     isVerified: true,
     journalistsCount: 1,

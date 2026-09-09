@@ -1036,7 +1036,7 @@ adminRouter.post('/media', (req: AuthenticatedRequest, res: Response) => {
     phone: phone ? phone.trim() : undefined,
     email: email ? email.trim() : undefined,
     website: website ? website.trim() : undefined,
-    address: address ? address.trim() : 'Ouagadougou, Burkina Faso',
+    address: address ? address.trim() : 'Bureau Éditorial Central',
     status: 'active',
     isVerified: true,
     journalistsCount: 1,

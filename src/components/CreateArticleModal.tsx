@@ -347,7 +347,7 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Conférence sur l'agroécologie : Ouagadougou accueille les délégations de l'AES"
+              placeholder="Ex: Conférence internationale sur l'agroécologie et la transition énergétique"
               className="w-full px-4 py-2.5 text-sm bg-[#141933] border border-cyan-500/40 rounded-xl focus:outline-none focus:border-cyan-400 font-semibold text-white shadow-[0_0_10px_rgba(0,243,255,0.1)]"
             />
           </div>

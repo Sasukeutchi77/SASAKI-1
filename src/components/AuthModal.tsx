@@ -96,7 +96,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
     }
   };
 
-  const handleDemoSwitch = async (roleKey: 'admin' | 'burkinanews' | 'salif' | 'aminata') => {
+  const handleDemoSwitch = async (roleKey: 'admin' | 'globalnews' | 'lucas' | 'clara') => {
     setLoading(true);
     try {
       await quickSwitch(roleKey);
@@ -109,17 +109,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-md bg-[#0b0e1a] border border-cyan-500/40 rounded-2xl shadow-[0_0_40px_rgba(0,243,255,0.2)] overflow-hidden flex flex-col my-4 max-h-[92vh] transition-all text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-md bg-[#040817] border border-blue-500/30 rounded-2xl shadow-[0_0_50px_rgba(29,104,255,0.25)] overflow-hidden flex flex-col my-4 max-h-[92vh] transition-all text-slate-100">
         {/* Modal Header */}
-        <div className="bg-[#101428] border-b border-cyan-500/30 px-6 py-4 flex items-center justify-between shrink-0 transition-all">
+        <div className="bg-gradient-to-r from-[#0b142c] to-[#040817] border-b border-blue-500/20 px-6 py-4 flex items-center justify-between shrink-0 transition-all">
           <div>
             <h2 className="text-lg font-black text-white">
               {mode === 'login' && 'Connexion à PURGE-INFO'}
               {mode === 'register' && 'Créer un compte citoyen'}
               {mode === 'forgot' && 'Réinitialiser votre mot de passe'}
             </h2>
-            <p className="text-xs text-cyan-400/60 font-mono">
+            <p className="text-xs text-blue-300/60 font-mono">
               {mode === 'login' && 'Accédez à vos lectures, favoris et débats'}
               {mode === 'register' && 'Rejoignez le réseau d’information vérifiée'}
               {mode === 'forgot' && 'Recevez les instructions par courrier électronique'}
@@ -127,20 +127,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-cyan-400/60 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full transition-colors cursor-pointer"
+            className="p-2 text-blue-300/60 hover:text-cyan-200 hover:bg-blue-600/20 rounded-full transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Demo Fast Switch Toolbar */}
-        <div className="px-6 py-3 bg-[#0d1124] border-b border-cyan-500/30 text-slate-200 transition-all">
+        <div className="px-6 py-3 bg-[#070d24] border-b border-blue-500/20 text-slate-200 transition-all">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-cyan-400">
               Comptes Démo Préconfigurés :
             </span>
             {isFirebaseActive && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold font-mono text-cyan-300 bg-cyan-950/70 px-2 py-0.5 rounded-sm border border-cyan-500/40 shadow-[0_0_8px_rgba(0,243,255,0.2)]">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold font-mono text-cyan-300 bg-blue-600/20 px-2 py-0.5 rounded-sm border border-blue-400/40 shadow-[0_0_8px_rgba(0,210,255,0.2)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
                 Firebase Live
               </span>
@@ -149,29 +149,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
           <div className="grid grid-cols-4 gap-1.5 text-center">
             <button
               type="button"
-              onClick={() => handleDemoSwitch('aminata')}
-              className="px-2 py-1 bg-[#141933] hover:bg-cyan-950/60 text-cyan-300 hover:text-cyan-100 text-[11px] font-bold font-mono rounded-lg border border-cyan-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
+              onClick={() => handleDemoSwitch('clara')}
+              className="px-2 py-1 bg-[#0b142c] hover:bg-blue-600/30 text-cyan-300 hover:text-white text-[11px] font-bold font-mono rounded-lg border border-blue-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
             >
               Lecteur
             </button>
             <button
               type="button"
-              onClick={() => handleDemoSwitch('salif')}
-              className="px-2 py-1 bg-[#141933] hover:bg-cyan-950/60 text-cyan-300 hover:text-cyan-100 text-[11px] font-bold font-mono rounded-lg border border-cyan-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
+              onClick={() => handleDemoSwitch('lucas')}
+              className="px-2 py-1 bg-[#0b142c] hover:bg-blue-600/30 text-cyan-300 hover:text-white text-[11px] font-bold font-mono rounded-lg border border-blue-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
             >
               Journaliste
             </button>
             <button
               type="button"
-              onClick={() => handleDemoSwitch('burkinanews')}
-              className="px-2 py-1 bg-[#141933] hover:bg-cyan-950/60 text-cyan-300 hover:text-cyan-100 text-[11px] font-bold font-mono rounded-lg border border-cyan-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
+              onClick={() => handleDemoSwitch('globalnews')}
+              className="px-2 py-1 bg-[#0b142c] hover:bg-blue-600/30 text-cyan-300 hover:text-white text-[11px] font-bold font-mono rounded-lg border border-blue-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
             >
               Média
             </button>
             <button
               type="button"
               onClick={() => handleDemoSwitch('admin')}
-              className="px-2 py-1 bg-[#141933] hover:bg-cyan-950/60 text-cyan-300 hover:text-cyan-100 text-[11px] font-bold font-mono rounded-lg border border-cyan-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
+              className="px-2 py-1 bg-[#0b142c] hover:bg-blue-600/30 text-cyan-300 hover:text-white text-[11px] font-bold font-mono rounded-lg border border-blue-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
             >
               Admin
             </button>
@@ -188,7 +188,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
           )}
 
           {successMessage && (
-            <div className="p-3 bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-xs rounded-xl flex items-start gap-2 font-medium shadow-[0_0_12px_rgba(0,243,255,0.15)]">
+            <div className="p-3 bg-blue-950/60 border border-blue-500/40 text-cyan-300 text-xs rounded-xl flex items-start gap-2 font-medium shadow-[0_0_12px_rgba(0,210,255,0.15)]">
               <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-cyan-400" />
               <span>{successMessage}</span>
             </div>
@@ -201,7 +201,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                 type="button"
                 onClick={handleGoogleAuth}
                 disabled={googleLoading || loading}
-                className="w-full py-2.5 px-4 bg-[#141933] hover:bg-[#1a2142] text-slate-200 border border-cyan-500/30 hover:border-cyan-400 rounded-xl text-xs font-bold font-mono transition-all shadow-[0_0_12px_rgba(0,243,255,0.06)] flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
+                className="w-full py-2.5 px-4 bg-[#081026] hover:bg-[#0e1936] text-slate-200 border border-blue-500/30 hover:border-cyan-400 rounded-xl text-xs font-bold font-mono transition-all shadow-[0_2px_10px_rgba(0,10,35,0.4)] flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
               >
                 {/* Official Google G SVG icon */}
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -226,8 +226,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
               </button>
 
               <div className="relative flex items-center justify-center">
-                <div className="border-t border-cyan-500/20 w-full"></div>
-                <span className="bg-[#0b0e1a] px-3 text-[10px] font-bold font-mono text-cyan-400/50 uppercase tracking-widest">
+                <div className="border-t border-blue-500/20 w-full"></div>
+                <span className="bg-[#040817] px-3 text-[10px] font-bold font-mono text-blue-300/50 uppercase tracking-widest">
                   ou avec votre email
                 </span>
               </div>
@@ -242,14 +242,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   Nom complet / Pseudonyme *
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400/60" />
+                  <UserIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-400/60" />
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex: Aminata Traoré"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#101428] border border-cyan-500/35 text-slate-100 placeholder:text-cyan-400/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(0,243,255,0.3)]"
+                    placeholder="Ex: Clara Dupont"
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#081026] border border-blue-500/35 text-slate-100 placeholder:text-blue-300/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,210,255,0.3)]"
                   />
                 </div>
               </div>
@@ -260,14 +260,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                 Adresse e-mail *
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400/60" />
+                <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-400/60" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre.email@exemple.bf"
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-[#101428] border border-cyan-500/35 text-slate-100 placeholder:text-cyan-400/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(0,243,255,0.3)]"
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-[#081026] border border-blue-500/35 text-slate-100 placeholder:text-blue-300/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,210,255,0.3)]"
                 />
               </div>
             </div>
@@ -293,14 +293,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   )}
                 </div>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400/60" />
+                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-400/60" />
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Au moins 6 caractères"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#101428] border border-cyan-500/35 text-slate-100 placeholder:text-cyan-400/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(0,243,255,0.3)]"
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#081026] border border-blue-500/35 text-slate-100 placeholder:text-blue-300/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,210,255,0.3)]"
                   />
                 </div>
               </div>
@@ -312,21 +312,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   Confirmer le mot de passe *
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400/60" />
+                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-400/60" />
                   <input
                     type="password"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirmez votre mot de passe"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#101428] border border-cyan-500/35 text-slate-100 placeholder:text-cyan-400/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(0,243,255,0.3)]"
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#081026] border border-blue-500/35 text-slate-100 placeholder:text-blue-300/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,210,255,0.3)]"
                   />
                 </div>
               </div>
             )}
 
             {mode === 'register' && (
-              <div className="p-3 bg-[#101428] border border-cyan-500/30 rounded-xl text-[11px] text-cyan-200/80 space-y-1">
+              <div className="p-3 bg-[#081026] border border-blue-500/30 rounded-xl text-[11px] text-blue-200/80 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold font-mono text-cyan-300">
                   <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Règles d’attribution des comptes</span>
@@ -340,7 +340,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-500 hover:brightness-110 disabled:opacity-50 text-black rounded-xl text-xs font-bold font-mono shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2.5 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-50 text-white rounded-xl text-xs font-black font-mono shadow-[0_0_15px_rgba(29,104,255,0.4)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>
                 {loading
@@ -356,9 +356,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
           </form>
 
           {/* Mode Switch Footers */}
-          <div className="text-center pt-1 border-t border-cyan-500/20">
+          <div className="text-center pt-1 border-t border-blue-500/20">
             {mode === 'login' && (
-              <p className="text-xs text-cyan-400/60 font-mono">
+              <p className="text-xs text-blue-300/60 font-mono">
                 Vous n'avez pas encore de compte ?{' '}
                 <button
                   type="button"
@@ -375,7 +375,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
             )}
 
             {mode === 'register' && (
-              <p className="text-xs text-cyan-400/60 font-mono">
+              <p className="text-xs text-blue-300/60 font-mono">
                 Vous avez déjà un compte ?{' '}
                 <button
                   type="button"

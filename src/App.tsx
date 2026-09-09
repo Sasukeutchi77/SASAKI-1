@@ -20,12 +20,17 @@ import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { MediaHousesModal } from './components/MediaHousesModal';
 import { TrustSystemModal } from './components/TrustSystemModal';
+import { BookmarksPage } from './pages/BookmarksPage';
+import { UserProfilePage } from './pages/UserProfilePage';
+import { MediaHousesPage } from './pages/MediaHousesPage';
 import { Article, Category } from './types';
 import { api } from './services/api';
 
 export function AppContent() {
   const { user } = useAuth();
-  const [currentView, setCurrentView] = useState<'home' | 'search' | 'category'>('home');
+  const [currentView, setCurrentView] = useState<
+    'home' | 'search' | 'category' | 'houses' | 'bookmarks' | 'account'
+  >('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -51,12 +56,32 @@ export function AppContent() {
 
   const handleOpenMyHouse = () => {
     setMediaHousesTab('my-house');
-    setShowMediaHousesModal(true);
+    setCurrentView('houses');
+    setMobileTab('my-house');
+    window.location.hash = 'my-house';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenMediaHouses = () => {
     setMediaHousesTab('explore');
-    setShowMediaHousesModal(true);
+    setCurrentView('houses');
+    setMobileTab('houses');
+    window.location.hash = 'houses';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenBookmarks = () => {
+    setCurrentView('bookmarks');
+    setMobileTab('bookmarks');
+    window.location.hash = 'bookmarks';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenMyProfile = () => {
+    setCurrentView('account');
+    setMobileTab('profile');
+    window.location.hash = 'account';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Real-time Global Breaking Notification
@@ -102,6 +127,7 @@ export function AppContent() {
     if (window.location.hash && !window.location.hash.startsWith('#article-')) {
       history.replaceState(null, '', ' ');
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateToSearch = (initialParams?: { query?: string; category?: string; tag?: string }) => {
@@ -146,6 +172,20 @@ export function AppContent() {
       } else if (hash.startsWith('#search')) {
         setCurrentView('search');
         setMobileTab('search');
+      } else if (hash === '#houses') {
+        setMediaHousesTab('explore');
+        setCurrentView('houses');
+        setMobileTab('houses');
+      } else if (hash === '#my-house') {
+        setMediaHousesTab('my-house');
+        setCurrentView('houses');
+        setMobileTab('my-house');
+      } else if (hash === '#bookmarks') {
+        setCurrentView('bookmarks');
+        setMobileTab('bookmarks');
+      } else if (hash === '#account' || hash === '#profile') {
+        setCurrentView('account');
+        setMobileTab('profile');
       } else if (hash.startsWith('#profile-')) {
         const uid = hash.replace('#profile-', '');
         if (uid) setProfileUserId(uid);
@@ -204,9 +244,9 @@ export function AppContent() {
         onOpenAdmin={() => setShowAdminModal(true)}
         onOpenJournalistDashboard={() => setShowJournalistModal(true)}
         onOpenNotifications={() => setShowNotificationsModal(true)}
-        onOpenBookmarks={() => setShowBookmarksModal(true)}
+        onOpenBookmarks={handleOpenBookmarks}
         onOpenProfile={(userId) => setProfileUserId(userId)}
-        onOpenMyProfile={() => setShowUserProfileModal(true)}
+        onOpenMyProfile={handleOpenMyProfile}
         onOpenMediaHouses={handleOpenMediaHouses}
         onOpenMyHouse={handleOpenMyHouse}
         onOpenTrustSystem={() => setShowTrustSystemModal(true)}
@@ -262,6 +302,31 @@ export function AppContent() {
             }}
             onSelectOtherCategory={navigateToCategory}
           />
+        ) : currentView === 'houses' ? (
+          <MediaHousesPage
+            onBack={navigateToHome}
+            onOpenArticle={handleOpenArticle}
+            onOpenProfile={(userId) => setProfileUserId(userId)}
+            onOpenCreateArticle={() => {
+              setArticleToEdit(null);
+              setShowCreateArticle(true);
+            }}
+            initialTab={mediaHousesTab}
+          />
+        ) : currentView === 'bookmarks' ? (
+          <BookmarksPage
+            onBack={navigateToHome}
+            onOpenArticle={handleOpenArticle}
+            onOpenProfile={(userId) => setProfileUserId(userId)}
+            onExploreMore={navigateToHome}
+          />
+        ) : currentView === 'account' ? (
+          <UserProfilePage
+            onBack={navigateToHome}
+            onOpenAuth={() => handleOpenAuth('login')}
+            onOpenMyHouse={handleOpenMyHouse}
+            onOpenBookmarks={handleOpenBookmarks}
+          />
         ) : (
           <Home
             searchQuery={searchQuery}
@@ -290,7 +355,19 @@ export function AppContent() {
 
       {/* Mobile Navigation Bar (Optimized for Android / Mobile screens) */}
       <MobileNav
-        activeTab={currentView === 'search' ? 'search' : mobileTab}
+        activeTab={
+          currentView === 'search'
+            ? 'search'
+            : currentView === 'houses'
+            ? mediaHousesTab === 'my-house'
+              ? 'my-house'
+              : 'houses'
+            : currentView === 'bookmarks'
+            ? 'bookmarks'
+            : currentView === 'account'
+            ? 'profile'
+            : mobileTab
+        }
         onTabChange={(tab) => {
           setMobileTab(tab);
           if (tab === 'trending' || tab === 'search') {
@@ -300,7 +377,14 @@ export function AppContent() {
             setSelectedCategory(null);
             setSelectedTag(null);
             setSearchQuery('');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else if (tab === 'following') {
+            navigateToHome();
+          } else if (tab === 'my-house') {
+            handleOpenMyHouse();
+          } else if (tab === 'bookmarks') {
+            handleOpenBookmarks();
+          } else if (tab === 'profile') {
+            handleOpenMyProfile();
           }
         }}
         onOpenSearch={() => navigateToSearch()}
@@ -309,11 +393,11 @@ export function AppContent() {
           setShowCreateArticle(true);
         }}
         onOpenNotifications={() => setShowNotificationsModal(true)}
-        onOpenBookmarks={() => setShowBookmarksModal(true)}
+        onOpenBookmarks={handleOpenBookmarks}
         onOpenProfile={(userId) => {
           if (userId) setProfileUserId(userId);
         }}
-        onOpenMyProfile={() => setShowUserProfileModal(true)}
+        onOpenMyProfile={handleOpenMyProfile}
         onOpenMediaHouses={handleOpenMediaHouses}
         onOpenMyHouse={handleOpenMyHouse}
         onOpenAuth={() => handleOpenAuth('login')}
@@ -402,7 +486,7 @@ export function AppContent() {
           onOpenArticle={handleOpenArticle}
           onOpenMediaHouses={() => {
             setShowJournalistModal(false);
-            setShowMediaHousesModal(true);
+            handleOpenMediaHouses();
           }}
         />
       )}
@@ -449,7 +533,7 @@ export function AppContent() {
           onClose={() => setShowMediaHousesModal(false)}
           onOpenProfile={() => {
             setShowMediaHousesModal(false);
-            setShowUserProfileModal(true);
+            handleOpenMyProfile();
           }}
           onOpenArticle={(art) => {
             setShowMediaHousesModal(false);
@@ -468,7 +552,7 @@ export function AppContent() {
           onClose={() => setShowTrustSystemModal(false)}
           onOpenVerification={() => {
             setShowTrustSystemModal(false);
-            setShowUserProfileModal(true);
+            handleOpenMyProfile();
           }}
         />
       )}

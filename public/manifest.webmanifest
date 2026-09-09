@@ -1,11 +1,11 @@
 {
-  "name": "FasoInfo - Plateforme d'Actualités & Journalisme Social",
-  "short_name": "FasoInfo",
-  "description": "Plateforme web moderne d'actualités et de journalisme social pour le Burkina Faso et l'Afrique.",
+  "name": "purge-info - Plateforme d'Actualités & Journalisme Social",
+  "short_name": "purge-info",
+  "description": "Plateforme web moderne d'actualités, journalisme citoyen et veille sociale développée par SASAKI COMPAGNIE.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1c1917",
-  "theme_color": "#059669",
+  "background_color": "#040817",
+  "theme_color": "#040817",
   "orientation": "portrait-primary",
   "icons": [
     {

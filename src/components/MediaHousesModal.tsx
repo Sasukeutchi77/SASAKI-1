@@ -16,6 +16,7 @@ import {
   Info,
   Layers,
   ArrowRight,
+  ArrowLeft,
   Trash2,
 } from 'lucide-react';
 import { MediaHouse, User, Article } from '../types';
@@ -29,7 +30,7 @@ const LOGO_PRESETS = [
   { name: 'Économie', url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=200&auto=format&fit=crop&q=80' },
   { name: 'Tech & IA', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80' },
   { name: 'Culture & Société', url: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=200&auto=format&fit=crop&q=80' },
-  { name: 'Sahel & AES', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=200&auto=format&fit=crop&q=80' },
+  { name: 'Monde & Régions', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=200&auto=format&fit=crop&q=80' },
 ];
 
 const COVER_PRESETS = [
@@ -42,14 +43,18 @@ interface MediaHousesModalProps {
   onClose: () => void;
   onOpenArticle?: (article: Article) => void;
   onOpenProfile?: () => void;
+  onOpenCreateArticle?: () => void;
   initialTab?: 'explore' | 'my-house' | 'governance';
+  isPage?: boolean;
 }
 
 export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
   onClose,
   onOpenArticle,
   onOpenProfile,
+  onOpenCreateArticle,
   initialTab = 'explore',
+  isPage = false,
 }) => {
   const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'explore' | 'my-house' | 'governance'>(initialTab);
@@ -83,7 +88,7 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
   const [newCover, setNewCover] = useState<string>('');
   const [newPhone, setNewPhone] = useState<string>('');
   const [newEmail, setNewEmail] = useState<string>('');
-  const [newAddress, setNewAddress] = useState<string>('Ouagadougou, Burkina Faso');
+  const [newAddress, setNewAddress] = useState<string>('Bureau Éditorial Central');
   const [creatingHouse, setCreatingHouse] = useState<boolean>(false);
 
   // Master accounts state
@@ -364,18 +369,15 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
     );
   });
 
-  return (
+  const modalContent = (
     <div
-      id="media-houses-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fadeIn"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      id="media-houses-modal-card"
+      className={
+        isPage
+          ? 'relative w-full bg-[#0b0e17] border border-cyan-500/30 rounded-3xl shadow-[0_0_50px_rgba(0,243,255,0.15)] overflow-hidden text-stone-100'
+          : 'relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#0b0e17] border border-cyan-500/30 rounded-2xl shadow-[0_0_40px_rgba(0,243,255,0.15)] overflow-hidden text-stone-100'
+      }
     >
-      <div
-        id="media-houses-modal-card"
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#0b0e17] border border-cyan-500/30 rounded-2xl shadow-[0_0_40px_rgba(0,243,255,0.15)] overflow-hidden text-stone-100"
-      >
         {/* Header bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-cyan-500/20 bg-[#070911]/80">
           <div className="flex items-center gap-3">
@@ -1025,7 +1027,7 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                           <input
                             type="text"
                             required
-                            placeholder="Ex: Furiosa, Burkina Actu, L'Observateur..."
+                            placeholder="Ex: Global News, Le Courrier, L'Observateur..."
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             className="w-full px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white focus:outline-none focus:border-cyan-400"
@@ -1227,6 +1229,51 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
           )}
         </div>
       </div>
+  );
+
+  if (isPage) {
+    return (
+      <div
+        id="media-houses-page"
+        className="w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn"
+      >
+        {/* Sticky top breadcrumbs & return header */}
+        <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 px-4 sm:px-8 py-3.5 transition-all">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+            <button
+              id="houses-page-back-btn"
+              onClick={onClose}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-950/40 hover:bg-blue-600/20 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer touch-target interactive-pop"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Retour à l'accueil</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-blue-950/60 text-cyan-300 border border-cyan-500/30">
+                <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                {houses.length} Maisons de Presse
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-6 sm:pt-8">
+          {modalContent}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      id="media-houses-modal-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {modalContent}
     </div>
   );
 };

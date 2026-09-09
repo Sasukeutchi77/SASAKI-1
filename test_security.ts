@@ -1,5 +1,5 @@
 /**
- * Automated Security TDD Test Suite — FasoInfo (PROMPT 8)
+ * Automated Security TDD Test Suite — PurgeInfo (PROMPT 8)
  * Verifies the Dirty Dozen attack payloads and security invariants.
  */
 
@@ -8,7 +8,7 @@ import { checkDuplicateComment } from './server/security/rateLimiter';
 import { db, hashPassword, verifyPassword, generateToken, verifyToken } from './server/db';
 
 async function runSecurityTests() {
-  console.log('🔒 Starting FasoInfo Security Test Suite...\n');
+  console.log('🔒 Starting PurgeInfo Security Test Suite...\n');
   let passed = 0;
   let failed = 0;
 
@@ -34,7 +34,7 @@ async function runSecurityTests() {
   // Test 2: Input Sanitization (XSS & Script Tag Stripping)
   // -------------------------------------------------------------
   console.log('\nScenario 2: XSS & Script Tag Stripping');
-  const dangerousScript = '<script>alert("pwned")</script>Bonjour le Faso';
+  const dangerousScript = '<script>alert("pwned")</script>Bonjour à tous';
   const cleanScript = sanitizeText(dangerousScript);
   assert(!cleanScript.includes('<script>') && !cleanScript.includes('alert'), 'Strips <script> tags from content', `Got: ${cleanScript}`);
 
@@ -62,7 +62,7 @@ async function runSecurityTests() {
   const copyPasteSpam = 'gagnez argent gagnez argent gagnez argent gagnez argent gagnez argent gagnez argent';
   assert(isRepetitiveSpam(copyPasteSpam), 'Flags repetitive phrase flooding as spam');
 
-  const legitComment = 'Très belle analyse sur le développement économique et l’agriculture au Burkina Faso.';
+  const legitComment = 'Très belle analyse sur le développement économique et l’agriculture moderne.';
   assert(!isRepetitiveSpam(legitComment), 'Allows legitimate thoughtful user comment');
 
   // -------------------------------------------------------------

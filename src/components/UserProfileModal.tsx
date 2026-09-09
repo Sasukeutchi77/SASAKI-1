@@ -544,7 +544,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
                     type="tel"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    placeholder="+226 XX XX XX XX"
+                    placeholder="+33 6 12 34 56 78"
                     className="w-full px-3 py-2 text-xs bg-[#141933] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.1)]"
                   />
                 </div>
@@ -669,7 +669,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
                       Devenir Journaliste Professionnel / Organe de Presse
                     </h4>
                     <p className="text-xs text-cyan-400/70 mt-0.5">
-                      purge-info offre un espace de publication exclusif aux journalistes titulaires d'une carte de presse reconnue par le Conseil Supérieur de la Communication.
+                      purge-info offre un espace de publication exclusif aux journalistes titulaires d'une carte de presse professionnelle reconnue.
                     </p>
                   </div>
                 </div>
@@ -708,7 +708,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
                       required
                       value={mediaName}
                       onChange={(e) => setMediaName(e.target.value)}
-                      placeholder="Ex: Le Quotidien de Ouaga"
+                      placeholder="Ex: Le Quotidien Indépendant"
                       className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.1)]"
                     />
                   </div>
@@ -722,7 +722,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
                       required
                       value={pressCardNumber}
                       onChange={(e) => setPressCardNumber(e.target.value)}
-                      placeholder="Ex: CSC-BF-2024-8849"
+                      placeholder="Ex: PRESS-ID-2026-9042"
                       className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.1)]"
                     />
                   </div>

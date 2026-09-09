@@ -1286,7 +1286,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                               <span>{m.name}</span>
                               {m.isVerified && <VerifiedBadge size="sm" type="media" />}
                             </div>
-                            <p className="text-xs text-amber-800 font-medium">Rédaction burkinabè</p>
+                            <p className="text-xs text-amber-800 font-medium">Maison de presse certifiée</p>
                             {m.bio && (
                               <p className="text-xs text-stone-600 mt-2 line-clamp-3">
                                 {m.bio}

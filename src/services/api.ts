@@ -15,7 +15,7 @@ import {
 const TOKEN_KEY = 'purge_info_token';
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('fasoinfo_token');
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {
@@ -24,7 +24,6 @@ export function setToken(token: string): void {
 
 export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem('fasoinfo_token');
 }
 
 export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
