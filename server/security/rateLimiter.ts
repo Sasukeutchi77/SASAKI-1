@@ -71,7 +71,10 @@ export function createRateLimiter(options: RateLimitOptions) {
 
   return (req: Request, res: Response, next: NextFunction) => {
     const id = getClientIdentifier(req);
-    const key = `${keyPrefix}:${id}`;
+    const emailSuffix = req.body && typeof req.body.email === 'string' && req.body.email.trim()
+      ? `:${req.body.email.trim().toLowerCase()}`
+      : '';
+    const key = `${keyPrefix}:${id}${emailSuffix}`;
     const now = Date.now();
     const record = memoryStore.get(key);
 
@@ -129,12 +132,12 @@ export const globalApiLimiter = createRateLimiter({
   keyPrefix: 'global',
 });
 
-// 2. Authentication rate limiter (10 attempts / 15 min)
+// 2. Authentication rate limiter (60 attempts / 15 min, no cooldown penalty)
 export const authRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  maxRequests: 12,
+  maxRequests: 60,
   message: 'Trop de tentatives de connexion ou d’inscription.',
-  cooldownMs: 1500, // 1.5s cooldown to prevent automated brute-force scripting
+  cooldownMs: 0,
   keyPrefix: 'auth',
 });
 

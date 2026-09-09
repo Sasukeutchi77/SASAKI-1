@@ -141,16 +141,16 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
 
         <div
           onClick={() => onNavigateTab('media')}
-          className="p-5 bg-white border border-gray-100 hover:border-purple-200 rounded-2xl shadow-sm hover:shadow-md cursor-pointer transition group"
+          className="p-5 bg-white border border-gray-100 hover:border-blue-200 rounded-2xl shadow-sm hover:shadow-md cursor-pointer transition group"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Médias</span>
-            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition">
               <Building2 className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-black text-gray-900">{stats.totalMedia}</div>
-          <p className="text-xs text-purple-600 font-medium mt-1">Maisons de presse</p>
+          <p className="text-xs text-blue-600 font-medium mt-1">Maisons de presse</p>
         </div>
 
         <div

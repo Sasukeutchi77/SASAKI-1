@@ -855,7 +855,7 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
               type="submit"
               disabled={loading || requiresMediaHouse}
               title={requiresMediaHouse ? 'Vous devez impérativement créer votre Maison de Journaliste avant de publier' : undefined}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               {status === 'published' ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               <span>

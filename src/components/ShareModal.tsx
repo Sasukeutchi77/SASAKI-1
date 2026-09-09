@@ -114,7 +114,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ article, onClose }) => {
           {typeof navigator !== 'undefined' && 'share' in navigator && (
             <button
               onClick={handleNativeShare}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 hover:brightness-110 text-black font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,210,255,0.3)] transition-all cursor-pointer"
             >
               <Share2 className="w-4 h-4" />
               <span>Partager via les applications de mon appareil</span>
@@ -157,7 +157,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ article, onClose }) => {
                 onClick={handleCopy}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
                   copied
-                    ? 'bg-fuchsia-600 text-white shadow-[0_0_10px_rgba(217,70,239,0.5)]'
+                    ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(0,210,255,0.5)]'
                     : 'bg-cyan-400 hover:bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,243,255,0.3)]'
                 }`}
               >

@@ -239,7 +239,7 @@ export const api = {
   async getSearchSuggestions(q: string) {
     return request<{
       articles: { id: string; title: string; categoryName: string; coverImage: string; authorName: string }[];
-      journalists: { id: string; name: string; avatar?: string; mediaName?: string; isVerified?: boolean }[];
+      journalists: { id: string; name: string; avatar?: string; mediaName?: string; isVerified?: boolean; role?: string }[];
       media: { id: string; name: string; logo?: string; isVerified?: boolean }[];
       categories: { id: string; name: string; slug: string; articleCount: number }[];
       tags: { tag: string; count: number }[];

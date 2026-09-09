@@ -309,10 +309,10 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
   const roleBadgeColor =
     user.role === 'admin'
-      ? 'bg-amber-500/10 text-amber-300 border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+      ? 'bg-blue-600/20 text-cyan-300 border-blue-400/40 shadow-[0_0_12px_rgba(0,210,255,0.2)]'
       : user.role === 'journalist'
-      ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/40 shadow-[0_0_10px_rgba(0,243,255,0.2)]'
-      : 'bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/40 shadow-[0_0_10px_rgba(217,70,239,0.2)]';
+      ? 'bg-blue-950/60 text-cyan-300 border-blue-500/40 shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+      : 'bg-[#090e24] text-blue-300 border-blue-500/30 shadow-[0_0_8px_rgba(0,180,255,0.1)]';
 
   return (
     <div className="w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn">
@@ -344,9 +344,9 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 logout();
                 onBack();
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/30 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold transition cursor-pointer touch-target"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#080d22] hover:bg-blue-950/70 text-blue-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition cursor-pointer touch-target shadow-[0_0_8px_rgba(0,100,255,0.1)]"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5 text-blue-400" />
               <span className="hidden sm:inline">Déconnexion</span>
             </button>
           </div>
@@ -441,7 +441,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                     <img
                       src={avatarPreview}
                       alt="Aperçu"
-                      className="w-full h-full object-cover ring-2 ring-yellow-400"
+                      className="w-full h-full object-cover ring-2 ring-cyan-400"
                     />
                   ) : user.avatar ? (
                     <img
@@ -555,61 +555,79 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
             )}
 
             {/* User Details */}
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-black text-white tracking-tight">
+            <div className="space-y-3">
+              {/* Row 1: Name, Verified Badge (strictly guarded), Role Badge, Media Name */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                   {user.name}
                 </h1>
-                <VerifiedBadge isVerified={user.isVerified} role={user.role} />
+
+                {/* Verified Badge: Only rendered for accredited journalists or admins */}
+                {user.isVerified && (user.role === 'journalist' || user.role === 'admin') && (
+                  <VerifiedBadge size="md" type={user.role === 'admin' ? 'admin' : 'journalist'} isVerified={true} role={user.role} />
+                )}
+
+                {/* Role Pill */}
+                <span
+                  className={`px-3 py-0.5 rounded-full text-xs font-bold font-mono border uppercase tracking-wider ${roleBadgeColor}`}
+                >
+                  {roleLabel}
+                </span>
+
                 {user.mediaName && (
-                  <span className="flex items-center gap-1 text-xs text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded-full border border-cyan-500/40">
-                    <Building2 className="w-3 h-3 text-cyan-400" />
+                  <span className="flex items-center gap-1.5 text-xs text-cyan-300 bg-cyan-950/60 px-3 py-0.5 rounded-full border border-cyan-500/40 font-semibold">
+                    <Building2 className="w-3.5 h-3.5 text-cyan-400" />
                     {user.mediaName}
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-3 text-xs text-slate-400 font-mono mt-1 flex-wrap">
-                <span>@{user.username || user.email.split('@')[0]}</span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-blue-400" />
-                  {user.email}
+              {/* Row 2: Clean, separated chips for handle, email, phone (no orphan dots) */}
+              <div className="flex items-center gap-2 text-xs text-slate-300 flex-wrap pt-0.5">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#040817] border border-blue-500/25 text-slate-300 font-mono">
+                  <span className="text-cyan-400 font-bold">@</span>
+                  <span>{user.username || user.email.split('@')[0]}</span>
                 </span>
+
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#040817] border border-blue-500/25 text-slate-300">
+                  <Mail className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                  <span>{user.email}</span>
+                </span>
+
                 {user.phone && (
-                  <>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-cyan-400" />
-                      {user.phone}
-                    </span>
-                  </>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#040817] border border-blue-500/25 text-slate-300">
+                    <Phone className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>{user.phone}</span>
+                  </span>
                 )}
               </div>
 
+              {/* Row 3: Bio */}
               {user.bio && !isEditing && (
-                <p className="text-sm text-slate-200 mt-3 max-w-2xl leading-relaxed">
-                  {user.bio}
-                </p>
+                <div className="mt-2 p-3.5 rounded-2xl bg-[#040817]/60 border border-blue-500/20 max-w-3xl">
+                  <p className="text-sm text-slate-200 leading-relaxed">
+                    {user.bio}
+                  </p>
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-blue-500/20 mb-8 overflow-x-auto scrollbar-none pb-1">
+        {/* Tab Navigation with guaranteed no-shrink and no-overlap */}
+        <div className="bg-[#050b1d] p-1.5 rounded-2xl border border-blue-500/25 flex items-center gap-2 mb-8 overflow-x-auto scrollbar-none shadow-inner">
           <button
             onClick={() => {
               sfx.playClick();
               setActiveTab('profile');
             }}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer touch-target ${
+            className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 touch-target ${
               activeTab === 'profile'
-                ? 'text-cyan-300 border-cyan-400 shadow-[0_4px_12px_rgba(0,210,255,0.2)]'
-                : 'text-slate-400 border-transparent hover:text-slate-200'
+                ? 'bg-gradient-to-r from-blue-600/30 to-cyan-500/30 text-cyan-200 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,210,255,0.2)]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
             }`}
           >
-            <UserIcon className="w-4 h-4" />
+            <UserIcon className="w-4 h-4 shrink-0" />
             <span>Profil & Identité</span>
           </button>
 
@@ -618,16 +636,16 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
               sfx.playClick();
               setActiveTab('accreditation');
             }}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer touch-target ${
+            className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 touch-target ${
               activeTab === 'accreditation'
-                ? 'text-cyan-300 border-cyan-400 shadow-[0_4px_12px_rgba(0,210,255,0.2)]'
-                : 'text-slate-400 border-transparent hover:text-slate-200'
+                ? 'bg-gradient-to-r from-blue-600/30 to-cyan-500/30 text-cyan-200 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,210,255,0.2)]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
             }`}
           >
-            <Award className="w-4 h-4" />
-            <span>Accréditation Presse & Certification</span>
-            {user.role === 'journalist' && (
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <Award className="w-4 h-4 shrink-0" />
+            <span>Accréditation Presse</span>
+            {user.role === 'journalist' && user.isVerified && (
+              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f3ff] shrink-0" />
             )}
           </button>
 
@@ -636,14 +654,14 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
               sfx.playClick();
               setActiveTab('security');
             }}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer touch-target ${
+            className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 touch-target ${
               activeTab === 'security'
-                ? 'text-cyan-300 border-cyan-400 shadow-[0_4px_12px_rgba(0,210,255,0.2)]'
-                : 'text-slate-400 border-transparent hover:text-slate-200'
+                ? 'bg-gradient-to-r from-blue-600/30 to-cyan-500/30 text-cyan-200 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,210,255,0.2)]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
             }`}
           >
-            <Shield className="w-4 h-4" />
-            <span>Sécurité & Déontologie</span>
+            <Shield className="w-4 h-4 shrink-0" />
+            <span>Sécurité & Charte</span>
           </button>
         </div>
 
@@ -767,7 +785,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
         {activeTab === 'accreditation' && (
           <div className="space-y-6">
             <div className="bg-[#0b142c]/60 border border-blue-500/25 rounded-3xl p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-blue-500/20">
                 <div>
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
                     <Award className="w-5 h-5 text-cyan-400" />
@@ -778,10 +796,30 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   </p>
                 </div>
 
-                <VerifiedBadge isVerified={user.isVerified} role={user.role} />
+                {user.isVerified && (user.role === 'journalist' || user.role === 'admin') ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-950/70 border border-cyan-400/40 text-cyan-300 text-xs font-bold shrink-0">
+                    <VerifiedBadge size="sm" type={user.role === 'admin' ? 'admin' : 'journalist'} isVerified={true} role={user.role} />
+                    <span>{user.role === 'admin' ? 'Administration Principale Certifiée' : 'Compte Certifié Officiel'}</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0a0f26] border border-blue-500/30 text-blue-300 text-xs font-medium shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                    <span>Non Certifié (Compte Citoyen)</span>
+                  </div>
+                )}
               </div>
 
-              {user.role === 'journalist' || user.role === 'admin' ? (
+              {user.role === 'admin' ? (
+                <div className="p-5 rounded-2xl bg-blue-950/60 border border-cyan-500/30 space-y-3">
+                  <div className="flex items-center gap-2 text-cyan-300 text-sm font-bold">
+                    <CheckCircle2 className="w-5 h-5 text-cyan-400" />
+                    <span>Compte Administrateur Principal</span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Vous disposez des privilèges complets d'administration, de gestion du système, de validation des accréditations de presse et de supervision de la plateforme.
+                  </p>
+                </div>
+              ) : user.role === 'journalist' ? (
                 <div className="p-5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 space-y-3">
                   <div className="flex items-center gap-2 text-cyan-300 text-sm font-bold">
                     <CheckCircle2 className="w-5 h-5 text-cyan-400" />
@@ -798,8 +836,28 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/30 text-xs text-slate-300 leading-relaxed">
-                    Vous êtes actuellement inscrit en tant que <strong>Lecteur Citoyen</strong>. Si vous êtes un journaliste professionnel, indépendant ou membre d'une rédaction, vous pouvez soumettre une demande d'accréditation avec vos justificatifs.
+                  <div className="p-5 rounded-2xl bg-blue-950/40 border border-blue-500/30 space-y-3">
+                    <div className="flex items-center gap-2 text-cyan-300 text-sm font-bold">
+                      <AlertCircle className="w-5 h-5 text-cyan-400 shrink-0" />
+                      <span>Règles du système d'accréditation et certification</span>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Vous êtes actuellement inscrit en tant que <strong>Lecteur Citoyen</strong>. Par mesure de sécurité et de rigueur journalistique, aucun compte citoyen n'est certifié par défaut.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                      <div className="p-3 rounded-xl bg-[#040817] border border-blue-500/20">
+                        <span className="block font-bold text-cyan-300 mb-1">1. Demande</span>
+                        <span className="text-slate-400">Renseignez votre organe de presse et vos coordonnées de contact.</span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-[#040817] border border-blue-500/20">
+                        <span className="block font-bold text-cyan-300 mb-1">2. Justificatif</span>
+                        <span className="text-slate-400">Fournissez votre numéro de carte de presse ou pièce d'accréditation.</span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-[#040817] border border-blue-500/20">
+                        <span className="block font-bold text-cyan-300 mb-1">3. Validation</span>
+                        <span className="text-slate-400">L'administration valide le dossier et octroie le badge bleu officiel.</span>
+                      </div>
+                    </div>
                   </div>
 
                   <form onSubmit={handleSubmitAccreditation} className="space-y-4">
@@ -889,14 +947,10 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 Chaque compte dispose d'un indice d'intégrité calculé en fonction de ses vérifications factuelles et du respect de la charte.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div className="p-4 rounded-2xl bg-[#040817] border border-blue-500/30 text-center">
                   <span className="block text-2xl font-black font-mono text-cyan-300">100%</span>
                   <span className="text-[11px] text-slate-400 font-medium">Score d'intégrité</span>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#040817] border border-blue-500/30 text-center">
-                  <span className="block text-2xl font-black font-mono text-yellow-400">0</span>
-                  <span className="text-[11px] text-slate-400 font-medium">Signalements</span>
                 </div>
                 <div className="p-4 rounded-2xl bg-[#040817] border border-blue-500/30 text-center">
                   <span className="block text-2xl font-black font-mono text-emerald-400">Actif</span>

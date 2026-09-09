@@ -21,9 +21,15 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
   if (payload) {
     const user = db.getData().users.find((u) => u.id === payload.userId);
     if (user) {
-      if (isMasterAdmin(user.email) && user.role !== 'admin') {
-        user.role = 'admin';
-        user.isVerified = true;
+      if (isMasterAdmin(user.email)) {
+        if (user.role !== 'admin') {
+          user.role = 'admin';
+          user.isVerified = true;
+          user.verificationStatus = 'approved';
+          db.save();
+        }
+      } else if (user.role === 'admin') {
+        user.role = 'user';
         db.save();
       }
       req.user = user;
@@ -124,9 +130,9 @@ export function requireAdmin(req: AuthenticatedRequest, res: Response, next: Nex
       accountSuspended: true,
     });
   }
-  if (req.user.role !== 'admin' && !isMasterAdmin(req.user.email)) {
+  if (!isMasterAdmin(req.user.email)) {
     return res.status(403).json({
-      error: 'Accès strictement réservé aux comptes principaux de contrôle de la plateforme.',
+      error: 'Accès strictement réservé aux 4 comptes administrateurs officiels de la plateforme.',
     });
   }
   next();

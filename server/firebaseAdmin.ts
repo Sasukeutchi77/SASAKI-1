@@ -1,10 +1,58 @@
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
-import { getAuth, DecodedIdToken } from 'firebase-admin/auth';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import type { App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import type { DecodedIdToken } from 'firebase-admin/auth';
+import crypto from 'crypto';
 
 let appInstance: App | null = null;
+let initAttempted = false;
+
+/**
+ * Safely format and validate PEM private key before feeding it to Firebase Admin.
+ * Prevents OpenSSL `error:1E08010C:DECODER routines::unsupported` crashes.
+ */
+function formatAndValidatePrivateKey(rawKey?: string): string | null {
+  if (!rawKey || typeof rawKey !== 'string') return null;
+  let key = rawKey.trim();
+
+  // Strip wrapping quotes if any
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1).trim();
+  }
+
+  // Normalize literal escaped newlines
+  key = key.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n');
+
+  // If newlines were flattened into spaces, reconstruct standard PEM lines
+  if (!key.includes('\n')) {
+    const beginMarker = '-----BEGIN PRIVATE KEY-----';
+    const endMarker = '-----END PRIVATE KEY-----';
+    if (key.includes(beginMarker) && key.includes(endMarker)) {
+      const start = key.indexOf(beginMarker) + beginMarker.length;
+      const end = key.indexOf(endMarker);
+      const body = key.slice(start, end).replace(/\s+/g, '');
+      const chunks = body.match(/.{1,64}/g);
+      if (chunks) {
+        key = `${beginMarker}\n${chunks.join('\n')}\n${endMarker}\n`;
+      }
+    }
+  }
+
+  // Verify that OpenSSL can actually decode the private key
+  try {
+    crypto.createPrivateKey(key);
+    return key;
+  } catch {
+    // If the key is corrupted or not a valid PEM, return null safely
+    return null;
+  }
+}
 
 export function getFirebaseAdmin(): App | null {
   if (appInstance) return appInstance;
+  if (initAttempted) return null;
+
+  initAttempted = true;
 
   const existingApps = getApps();
   if (existingApps.length > 0) {
@@ -14,24 +62,25 @@ export function getFirebaseAdmin(): App | null {
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY
-    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    : undefined;
+  const validatedPrivateKey = formatAndValidatePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
 
-  if (projectId && clientEmail && privateKey) {
+  if (projectId && clientEmail && validatedPrivateKey) {
     try {
       appInstance = initializeApp({
         credential: cert({
           projectId,
           clientEmail,
-          privateKey,
+          privateKey: validatedPrivateKey,
         }),
       });
       console.log('Firebase Admin SDK initialisé avec succès.');
       return appInstance;
-    } catch (err) {
-      console.warn('Avertissement lors de l’initialisation de Firebase Admin SDK:', err);
+    } catch (err: any) {
+      console.warn('Firebase Admin SDK non disponible:', err?.message || err);
     }
+  } else {
+    // Graceful fallback to local JWT auth without noisy error stack
+    console.info('[Firebase Admin] Service account non configuré ou clé invalide — mode authentification locale actif.');
   }
 
   return null;

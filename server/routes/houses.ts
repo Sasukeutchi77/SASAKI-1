@@ -33,13 +33,17 @@ housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const { q } = req.query;
   const currentUserId = req.user?.id;
+  const isGlobalAdmin = req.user ? (req.user.role === 'admin' || (req.user.email && isMasterAdmin(req.user.email))) : false;
   let hasChanges = false;
 
   let houses = (data.mediaHouses || []).map((m) => {
     const memberIds = m.members && Array.isArray(m.members) ? m.members : [m.ownerId];
-    const membersData = data.users
-      .filter((u) => memberIds.includes(u.id))
-      .map(sanitizeMember);
+    const isMemberOfThisHouse = currentUserId ? (memberIds.includes(currentUserId) || m.ownerId === currentUserId) : false;
+    const canSeeHouseJournalists = isMemberOfThisHouse || isGlobalAdmin;
+
+    const membersData = canSeeHouseJournalists
+      ? data.users.filter((u) => memberIds.includes(u.id)).map(sanitizeMember)
+      : undefined;
     const articles = data.articles.filter((a) => a.mediaId === m.id || (a.mediaName && a.mediaName.toLowerCase() === m.name.toLowerCase()));
 
     const followers = data.follows.filter((f) => f.targetId === m.id || (m.ownerId && f.targetId === m.ownerId));
@@ -57,11 +61,11 @@ housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
 
     return {
       ...m,
-      members: memberIds,
+      members: canSeeHouseJournalists ? memberIds : undefined,
       membersData,
-      journalistsCount: memberIds.length,
+      journalistsCount: canSeeHouseJournalists ? memberIds.length : undefined,
       articlesCount: Math.max(m.articlesCount || 0, articles.length),
-      maxJournalists: MAX_JOURNALISTS_PER_HOUSE,
+      maxJournalists: canSeeHouseJournalists ? MAX_JOURNALISTS_PER_HOUSE : undefined,
       followersCount,
       isFollowing,
     };
@@ -172,10 +176,14 @@ housesRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
   }
 
   const currentUserId = req.user?.id;
+  const isGlobalAdmin = req.user ? (req.user.role === 'admin' || (req.user.email && isMasterAdmin(req.user.email))) : false;
   const memberIds = house.members && Array.isArray(house.members) ? house.members : [house.ownerId];
-  const membersData = data.users
-    .filter((u) => memberIds.includes(u.id))
-    .map(sanitizeMember);
+  const isMemberOfThisHouse = currentUserId ? (memberIds.includes(currentUserId) || house.ownerId === currentUserId) : false;
+  const canSeeHouseJournalists = isMemberOfThisHouse || isGlobalAdmin;
+
+  const membersData = canSeeHouseJournalists
+    ? data.users.filter((u) => memberIds.includes(u.id)).map(sanitizeMember)
+    : undefined;
 
   const houseArticles = data.articles.filter((a) => a.mediaId === house.id && a.status === 'published');
 
@@ -195,11 +203,11 @@ housesRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
   return res.json({
     house: {
       ...house,
-      members: memberIds,
+      members: canSeeHouseJournalists ? memberIds : undefined,
       membersData,
-      journalistsCount: memberIds.length,
+      journalistsCount: canSeeHouseJournalists ? memberIds.length : undefined,
       articlesCount: houseArticles.length,
-      maxJournalists: MAX_JOURNALISTS_PER_HOUSE,
+      maxJournalists: canSeeHouseJournalists ? MAX_JOURNALISTS_PER_HOUSE : undefined,
       followersCount,
       isFollowing,
     },

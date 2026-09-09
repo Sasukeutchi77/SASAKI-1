@@ -115,7 +115,7 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
             }}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'moderation'
-                ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_12px_rgba(0,210,255,0.4)]'
                 : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
             }`}
           >
@@ -130,7 +130,7 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
             }}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'charter'
-                ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white shadow-[0_0_12px_rgba(240,38,211,0.4)]'
+                ? 'bg-gradient-to-r from-blue-700 to-cyan-400 text-white shadow-[0_0_12px_rgba(0,210,255,0.4)]'
                 : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
             }`}
           >
@@ -347,8 +347,8 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
           {/* TAB 3: MODERATION & REPORTING */}
           {activeTab === 'moderation' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/40 text-xs text-slate-200 leading-relaxed">
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-sm mb-1">
+              <div className="p-4 rounded-2xl bg-blue-950/30 border border-blue-500/40 text-xs text-slate-200 leading-relaxed">
+                <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm mb-1">
                   <AlertTriangle className="w-4 h-4" />
                   <span>Règles Impératives de Modération</span>
                 </div>
@@ -419,7 +419,7 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
           {activeTab === 'charter' && (
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-[#0d1226] border border-cyan-500/30 text-xs text-slate-300 space-y-3">
-                <div className="flex items-center gap-2 text-fuchsia-400 font-bold text-sm">
+                <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
                   <Award className="w-4 h-4" />
                   <span>La Charte Déontologique des Journalistes Accrédités</span>
                 </div>

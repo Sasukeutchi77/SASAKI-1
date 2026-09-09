@@ -49,7 +49,7 @@ export const ZEN_THEMES = {
     meta: 'text-cyan-400/70',
     activeBtn: 'bg-cyan-400 text-black shadow-[0_0_10px_#00f3ff] font-bold',
     inactiveBtn: 'bg-[#070d20] text-cyan-300/70 border border-cyan-500/30 hover:text-cyan-200',
-    progress: 'from-cyan-400 via-fuchsia-500 to-emerald-400 shadow-[0_0_12px_#00f3ff]',
+    progress: 'from-blue-600 via-cyan-400 to-blue-400 shadow-[0_0_12px_#00f3ff]',
   },
   amber: {
     id: 'amber',
@@ -862,9 +862,9 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <strong className="text-white underline decoration-cyan-500">{article.authorName}</strong>
                 {article.isAuthorVerified && (
                   <div className="flex items-center gap-1.5">
-                    <VerifiedBadge size="sm" type={article.mediaName ? 'media' : 'journalist'} />
+                    <VerifiedBadge size="sm" type={article.authorRole === 'admin' ? 'admin' : article.mediaName ? 'media' : 'journalist'} role={article.authorRole} />
                     <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold">
-                      {article.mediaName ? 'RÉDACTION CERTIFIÉE' : 'JOURNALISTE ACCRÉDITÉ'}
+                      {article.authorRole === 'admin' ? 'ADMINISTRATEUR OFFICIEL' : article.mediaName ? 'RÉDACTION CERTIFIÉE' : 'JOURNALISTE ACCRÉDITÉ'}
                     </span>
                   </div>
                 )}
@@ -1017,7 +1017,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                         className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-600/20 text-cyan-300 border border-blue-400/40 hover:bg-blue-600/30 cursor-pointer shadow-[0_0_8px_rgba(0,210,255,0.3)] transition-all"
                         title="Compte certifié (Badge bleu officiel) - Cliquez pour voir la charte"
                       >
-                        <VerifiedBadge size="xs" type={article.mediaName ? 'media' : 'journalist'} />
+                        <VerifiedBadge size="xs" type={article.authorRole === 'admin' ? 'admin' : article.mediaName ? 'media' : 'journalist'} role={article.authorRole} />
                         <span className="text-white text-[10px] uppercase tracking-wider font-semibold">Certifié</span>
                       </span>
                     )}

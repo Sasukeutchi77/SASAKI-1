@@ -163,10 +163,10 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                       r.targetType === 'article'
-                        ? 'bg-amber-100 text-amber-700'
+                        ? 'bg-blue-100 text-blue-800'
                         : r.targetType === 'comment'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-purple-100 text-purple-700'
+                        ? 'bg-cyan-100 text-cyan-800'
+                        : 'bg-slate-100 text-slate-800'
                     }`}
                   >
                     {r.targetType === 'article' ? (

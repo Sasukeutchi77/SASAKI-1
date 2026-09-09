@@ -475,9 +475,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-semibold text-stone-900 truncate flex items-center gap-1">
                                   {j.name}
-                                  {j.isVerified && <VerifiedBadge size="xs" type="journalist" />}
+                                  {j.isVerified && <VerifiedBadge size="xs" type={j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'admin' : 'journalist'} isVerified={j.isVerified} role={j.role} />}
                                 </p>
-                                <p className="text-[10px] text-stone-500 truncate">{j.mediaName || 'Journaliste'}</p>
+                                <p className="text-[10px] text-stone-500 truncate">{j.mediaName || (j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'Administrateur' : 'Journaliste')}</p>
                               </div>
                             </button>
                           ))}
@@ -961,10 +961,10 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                                 className="font-bold text-stone-900 hover:text-emerald-700 cursor-pointer flex items-center gap-1.5 truncate text-sm sm:text-base"
                               >
                                 <span>{j.name}</span>
-                                {j.isVerified && <VerifiedBadge size="sm" type="journalist" />}
+                                {j.isVerified && <VerifiedBadge size="sm" type={j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'admin' : 'journalist'} isVerified={j.isVerified} role={j.role} />}
                               </div>
                               <p className="text-xs text-stone-500 font-medium truncate">
-                                {j.mediaName || 'Journaliste d’investigation'}
+                                {j.mediaName || (j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'Administrateur' : 'Journaliste d’investigation')}
                               </p>
                               {j.bio && (
                                 <p className="text-xs text-stone-600 mt-1 line-clamp-2">
@@ -1217,10 +1217,10 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                               className="font-bold text-stone-900 hover:text-emerald-700 cursor-pointer flex items-center gap-1.5 truncate text-base"
                             >
                               <span>{j.name}</span>
-                              {j.isVerified && <VerifiedBadge size="sm" type="journalist" />}
+                              {j.isVerified && <VerifiedBadge size="sm" type={j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'admin' : 'journalist'} isVerified={j.isVerified} role={j.role} />}
                             </div>
                             <p className="text-xs text-stone-500 font-medium truncate">
-                              {j.mediaName || 'Journaliste accrédité'}
+                              {j.mediaName || (j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'Administrateur' : 'Journaliste accrédité')}
                             </p>
                             {j.bio && (
                               <p className="text-xs text-stone-600 mt-2 line-clamp-3">
@@ -1470,7 +1470,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
                     <Users className="w-5 h-5 text-emerald-600" />
-                    <span>Journalistes et Rédactions certifiées à suivre</span>
+                    <span>Comptes certifiés, Journalistes & Rédactions à suivre</span>
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1542,9 +1542,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                             className="font-bold text-stone-900 hover:text-emerald-700 cursor-pointer flex items-center gap-1.5 truncate text-sm"
                           >
                             <span>{j.name}</span>
-                            {j.isVerified && <VerifiedBadge size="xs" type="journalist" />}
+                            {j.isVerified && <VerifiedBadge size="xs" type={j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'admin' : 'journalist'} isVerified={j.isVerified} role={j.role} />}
                           </div>
-                          <p className="text-[11px] text-stone-500 line-clamp-1">{j.mediaName || 'Journaliste'}</p>
+                          <p className="text-[11px] text-stone-500 line-clamp-1">{j.mediaName || (j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'Administrateur' : 'Journaliste')}</p>
                         </div>
                       </div>
                       <div className="mt-3.5 pt-2.5 border-t border-stone-100 flex items-center justify-between">

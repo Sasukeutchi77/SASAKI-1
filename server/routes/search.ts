@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { db } from '../db';
 import { AuthenticatedRequest } from '../auth';
 import { Article, Category, User } from '../../src/types';
+import { isMasterAdmin } from '../config/masterAccounts';
 
 export const searchRouter = Router();
 
@@ -201,11 +202,16 @@ searchRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
     });
   }
 
-  const serializedMedia = matchingMedia.map((m) => ({
-    ...m,
-    journalistsCount: m.journalists.size,
-    journalists: undefined,
-  }));
+  const isGlobalAdmin = req.user ? (req.user.role === 'admin' || (req.user.email && isMasterAdmin(req.user.email))) : false;
+  const serializedMedia = matchingMedia.map((m) => {
+    const isMember = currentUserId ? m.journalists.has(currentUserId) : false;
+    const canSee = isMember || isGlobalAdmin;
+    return {
+      ...m,
+      journalistsCount: canSee ? m.journalists.size : undefined,
+      journalists: undefined,
+    };
+  });
 
   // --- 4. Categories Search ---
   let matchingCategories = data.categories.map((c) => {
@@ -315,6 +321,7 @@ searchRouter.get('/suggestions', (req: AuthenticatedRequest, res: Response) => {
       avatar: u.avatar,
       mediaName: u.mediaName,
       isVerified: u.isVerified,
+      role: u.role,
     }));
 
   // Media suggestions (top 3)

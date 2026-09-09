@@ -43,7 +43,6 @@ interface AuthContextType {
     motivation: string;
     documentUrl?: string;
   }) => Promise<void>;
-  quickSwitch: (roleKey: 'admin' | 'globalnews' | 'lucas' | 'clara') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -125,23 +124,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 1. Email + Password Login
   const loginWithEmail = async (email: string, pass: string) => {
     setIsLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
     try {
-      if (isFirebaseActive && firebaseAuth) {
-        try {
-          const { idToken } = await loginWithFirebaseEmail(email, pass);
-          api.setToken(idToken);
-          setToken(idToken);
-          await refreshUser();
-          return;
-        } catch (fbErr: any) {
-          throw new Error(mapFirebaseError(fbErr.code || fbErr.message));
-        }
-      } else {
-        // Platform REST fallback login
-        const data = await api.login({ email, password: pass });
+      // 1. Prioritize Platform REST login
+      try {
+        const data = await api.login({ email: cleanEmail, password: pass });
         setToken(data.token);
         setUser(data.user);
         await refreshUser();
+        return;
+      } catch (apiErr: any) {
+        // If REST login fails, check if the account exists in Firebase Auth
+        if (isFirebaseActive && firebaseAuth) {
+          try {
+            const { idToken } = await loginWithFirebaseEmail(cleanEmail, pass);
+            api.setToken(idToken);
+            setToken(idToken);
+            await refreshUser();
+            return;
+          } catch {
+            // If Firebase also fails, surface the clearer platform REST error message
+            throw apiErr;
+          }
+        }
+        throw apiErr;
       }
     } finally {
       setIsLoading(false);
@@ -152,29 +158,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // CRITICAL RULE: New registration is strictly role: USER (never admin or journalist directly)
   const registerWithEmail = async (name: string, email: string, pass: string) => {
     setIsLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
     try {
+      // 1. Always register user on the platform REST backend
+      const res = await api.register({
+        name: cleanName,
+        email: cleanEmail,
+        password: pass,
+        accountType: 'user', // Forced USER role
+      });
+      setToken(res.token);
+      setUser(res.user);
+
+      // 2. Opportunistically sync with Firebase if active (non-blocking)
       if (isFirebaseActive && firebaseAuth) {
         try {
-          const { idToken } = await registerWithFirebaseEmail(name, email, pass);
-          api.setToken(idToken);
-          setToken(idToken);
-          await refreshUser();
-          return;
-        } catch (fbErr: any) {
-          throw new Error(mapFirebaseError(fbErr.code || fbErr.message));
+          await registerWithFirebaseEmail(cleanName, cleanEmail, pass);
+        } catch (fbErr) {
+          console.info('Firebase registration sync skipped:', fbErr);
         }
-      } else {
-        // Platform REST registration strictly enforcing 'reader'/'user'
-        const res = await api.register({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          password: pass,
-          accountType: 'user', // Forced USER role
-        });
-        setToken(res.token);
-        setUser(res.user);
-        await refreshUser();
       }
+
+      await refreshUser();
     } finally {
       setIsLoading(false);
     }
@@ -205,14 +211,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 4. Password Reset
   const resetPassword = async (email: string) => {
-    if (isFirebaseActive && firebaseAuth) {
-      try {
-        await sendFirebasePasswordReset(email);
-      } catch (fbErr: any) {
-        throw new Error(mapFirebaseError(fbErr.code || fbErr.message));
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      await api.forgotPassword(cleanEmail);
+    } catch {
+      if (isFirebaseActive && firebaseAuth) {
+        try {
+          await sendFirebasePasswordReset(cleanEmail);
+        } catch (fbErr: any) {
+          throw new Error(mapFirebaseError(fbErr.code || fbErr.message));
+        }
       }
-    } else {
-      await api.forgotPassword(email);
     }
   };
 
@@ -304,23 +313,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await refreshUser();
   };
 
-  // 9. Quick role switch for local testing/demo
-  const quickSwitch = async (roleKey: 'admin' | 'globalnews' | 'lucas' | 'clara') => {
-    const credentials: Record<string, { email: string; pass: string }> = {
-      admin: { email: 'admin@purgeinfo.com', pass: 'admin123' },
-      globalnews: { email: 'medianews@purgeinfo.com', pass: 'media123' },
-      lucas: { email: 'lucas.moreau@purgeinfo.com', pass: 'journ123' },
-      clara: { email: 'clara.dupont@purgeinfo.com', pass: 'user123' },
-    };
-    const cred = credentials[roleKey];
-    if (cred) {
-      const data = await api.login({ email: cred.email, password: cred.pass });
-      setToken(data.token);
-      setUser(data.user);
-      await refreshUser();
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -343,7 +335,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         removeAvatar,
         removeCover,
         requestJournalistVerification,
-        quickSwitch,
       }}
     >
       {children}

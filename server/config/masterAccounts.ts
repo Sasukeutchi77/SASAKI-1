@@ -2,20 +2,27 @@
  * CONFIGURATION DES COMPTES PRINCIPAUX (SUPER ADMINISTRATEURS)
  * 
  * Règle stricte de PURGE-INFO :
- * 1. Seuls ces 2 comptes principaux détiennent le contrôle TOTAL de la plateforme.
- * 2. Tous les autres comptes créés (inscription manuelle ou Google) sont d'abord de simples utilisateurs ('user').
- * 3. Seuls ces 2 comptes principaux ont le pouvoir d'accréditer/promouvoir un compte simple en 'journaliste'.
- * 4. Les comptes journalistes créent ou rejoignent une « Maison de Journalistes » (max 5 journalistes par maison)
+ * 1. Seuls ces 4 comptes administrateurs détiennent le contrôle TOTAL de la plateforme :
+ *    - naruto455t@gmail.com
+ *    - itachi45t@gmail.com
+ *    - nami45tt@gmail.com
+ *    - minato45tt@gmail.com
+ * 2. À part ces 4 adresses, aucun autre compte ne peut être administrateur.
+ * 3. Tous les autres comptes créés (inscription manuelle ou Google) sont des comptes citoyens ('user').
+ * 4. Seuls ces 4 comptes administrateurs ont le pouvoir d'accréditer/promouvoir un compte simple en 'journaliste'.
+ * 5. Les journalistes accrédités créent ou rejoignent une « Maison de Journalistes » (max 5 journalistes par maison)
  *    pour pouvoir publier leurs journaux et articles.
  */
 
 export const MASTER_ADMIN_EMAILS: string[] = [
-  'astaimperial45t@gmail.com',  // Compte Principal 1 (Super Administrateur Principal)
-  'direction.purge@gmail.com', // Compte Principal 2 (Second compte Super Administrateur)
+  'naruto455t@gmail.com',
+  'itachi45t@gmail.com',
+  'nami45tt@gmail.com',
+  'minato45tt@gmail.com',
 ];
 
 /**
- * Vérifie si une adresse e-mail correspond à l'un des deux comptes principaux
+ * Vérifie si une adresse e-mail correspond à l'un des comptes administrateurs officiels
  */
 export function isMasterAdmin(email?: string | null): boolean {
   if (!email) return false;
@@ -24,8 +31,9 @@ export function isMasterAdmin(email?: string | null): boolean {
 }
 
 /**
- * Récupère la liste des deux comptes principaux configurés
+ * Récupère la liste des comptes administrateurs officiels configurés
  */
 export function getMasterAdminEmails(): string[] {
   return [...MASTER_ADMIN_EMAILS];
 }
+

@@ -165,7 +165,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         >
           <button
             type="button"
-            className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black flex items-center justify-center shadow-[0_0_25px_rgba(0,243,255,0.5)] hover:scale-110 hover:brightness-110 transition duration-200 cursor-pointer"
+            className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 text-white flex items-center justify-center shadow-[0_0_25px_rgba(0,243,255,0.6)] hover:scale-110 transition duration-200 cursor-pointer"
             aria-label="Lire la vidéo"
           >
             <Play className="w-8 h-8 fill-current ml-1" />

@@ -230,6 +230,16 @@ export function AppContent() {
     <div className="min-h-screen bg-[#07080f] text-slate-100 flex flex-col font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* Top Header with brand, search bar, demo switcher, notifications */}
       <Header
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={(slug) => {
+          if (slug) {
+            navigateToCategory(slug);
+          } else {
+            setSelectedCategory(null);
+            navigateToHome();
+          }
+        }}
         searchQuery={searchQuery}
         onSearchChange={(q) => {
           setSearchQuery(q);
@@ -289,7 +299,7 @@ export function AppContent() {
           />
         ) : currentView === 'category' ? (
           <CategoryPage
-            categorySlug={selectedCategory || 'politique'}
+            categorySlug={selectedCategory || 'purgeur'}
             categories={categories}
             onBack={navigateToHome}
             onOpenArticle={handleOpenArticle}

@@ -17,7 +17,12 @@ import { User, UserRole } from '../../types';
 import { api } from '../../services/api';
 import { AdminConfirmDialog } from './AdminConfirmDialog';
 
-const MASTER_ACCOUNTS = ['astaimperial45t@gmail.com', 'direction.purge@gmail.com'];
+const MASTER_ACCOUNTS = [
+  'naruto455t@gmail.com',
+  'itachi45t@gmail.com',
+  'nami45tt@gmail.com',
+  'minato45tt@gmail.com',
+];
 
 interface AdminUsersTabProps {
   users: (User & { articlesCount: number })[];

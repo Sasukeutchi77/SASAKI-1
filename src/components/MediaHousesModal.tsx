@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { realtime } from '../services/realtime';
 import { VerifiedBadge } from './VerifiedBadge';
+import { MyHouseDashboard } from './MyHouseDashboard';
 
 const LOGO_PRESETS = [
   { name: 'Investigation', url: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=200&auto=format&fit=crop&q=80' },
@@ -75,6 +76,7 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
   const [availableJournalists, setAvailableJournalists] = useState<(User & { isAvailable: boolean })[]>([]);
   const [selectedJournalistId, setSelectedJournalistId] = useState<string>('');
   const [addingMember, setAddingMember] = useState<boolean>(false);
+  const [houseArticles, setHouseArticles] = useState<Article[]>([]);
 
   // Selected house for detailed view
   const [selectedHouseDetail, setSelectedHouseDetail] = useState<{ house: MediaHouse; articles: Article[] } | null>(null);
@@ -122,6 +124,19 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
       setMyHouse(res.house);
       setIsChef(!!res.isChef);
 
+      if (res.house) {
+        try {
+          const detailRes = await api.getMediaHouseById(res.house.id);
+          if (detailRes && detailRes.articles) {
+            setHouseArticles(detailRes.articles);
+          }
+        } catch (detailErr) {
+          console.error('Failed to load house articles in loadMyHouse:', detailErr);
+        }
+      } else if (user.role === 'journalist') {
+        setShowCreateForm(true);
+      }
+
       if (res.isChef || user.role === 'admin') {
         const jRes = await api.getAvailableJournalists();
         setAvailableJournalists(jRes.journalists || []);
@@ -140,8 +155,10 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
     } catch (err) {
       // Fallback
       setMasterAccounts([
-        { email: 'astaimperial45t@gmail.com', name: 'Asta Imperial (Fondateur Principal)', isRegistered: true, role: 'admin' },
-        { email: 'direction.purge@gmail.com', name: 'Direction Éditoriale PURGE-INFO', isRegistered: true, role: 'admin' },
+        { email: 'naruto455t@gmail.com', name: 'Naruto (Administrateur)', isRegistered: true, role: 'admin' },
+        { email: 'itachi45t@gmail.com', name: 'Itachi (Administrateur)', isRegistered: true, role: 'admin' },
+        { email: 'nami45tt@gmail.com', name: 'Nami (Administratrice)', isRegistered: true, role: 'admin' },
+        { email: 'minato45tt@gmail.com', name: 'Minato (Administrateur)', isRegistered: true, role: 'admin' },
       ]);
     }
   };
@@ -429,6 +446,9 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
             onClick={() => {
               setActiveTab('my-house');
               setSelectedHouseDetail(null);
+              if (user?.role === 'journalist' && !myHouse) {
+                setShowCreateForm(true);
+              }
             }}
             className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
               activeTab === 'my-house' && !selectedHouseDetail
@@ -437,7 +457,12 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
             }`}
           >
             <Crown className="w-4 h-4" />
-            Ma Maison de Journalistes
+            <span>{user?.role === 'journalist' && !myHouse ? 'Fonder ma Maison' : 'Ma Maison de Journalistes'}</span>
+            {user?.role === 'journalist' && !myHouse && (
+              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-400/40 font-black animate-pulse">
+                À Créer
+              </span>
+            )}
             {myHouse && (
               <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
                 {myHouse.name}
@@ -502,6 +527,31 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                 </div>
               </div>
 
+              {/* Proposal banner for unhoused journalist */}
+              {user?.role === 'journalist' && !myHouse && !loadingMyHouse && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-cyan-950/40 to-blue-950/40 border-2 border-amber-400/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm font-black text-amber-300">
+                      <Crown className="w-4 h-4 text-amber-400" />
+                      <span>Vous êtes journaliste accrédité sans maison de presse</span>
+                    </div>
+                    <p className="text-xs text-stone-300">
+                      Pour publier des articles sur PURGE-INFO, vous devez être rattaché à une Maison de Journalistes. Fondez la vôtre dès maintenant et devenez Chef de Rédaction !
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('my-house');
+                      setShowCreateForm(true);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-cyan-400 hover:brightness-110 text-black text-xs font-black transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Créer ma propre Maison →</span>
+                  </button>
+                </div>
+              )}
+
               {/* Houses Grid */}
               {loadingHouses ? (
                 <div className="py-12 text-center text-xs text-cyan-300 font-mono">
@@ -514,7 +564,8 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredHouses.map((house) => {
-                    const membersCount = house.members?.length || 1;
+                    const isMemberOfThisHouse = (user && (house.ownerId === user.id || (house.members && house.members.includes(user.id)))) || user?.role === 'admin';
+                    const displayCount = house.journalistsCount || house.members?.length || 1;
                     return (
                       <div
                         key={house.id}
@@ -535,9 +586,15 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                                   <VerifiedBadge size="xs" type="media" />
                                 )}
                               </h4>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 shrink-0">
-                                {membersCount}/5 journalistes
-                              </span>
+                              {isMemberOfThisHouse ? (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 shrink-0">
+                                  {displayCount}/5 journalistes
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-800/80 text-stone-400 border border-stone-700/60 shrink-0">
+                                  Rédaction accréditée
+                                </span>
+                              )}
                             </div>
 
                             <p className="text-[11px] text-stone-400 line-clamp-2 mt-1">
@@ -559,7 +616,7 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                               {house.articlesCount || 0} articles
                             </span>
                             <span className="text-cyan-400 group-hover:translate-x-0.5 transition flex items-center gap-0.5 font-bold">
-                              Voir l'équipe <ArrowRight className="w-3 h-3" />
+                              {isMemberOfThisHouse ? "Gérer l'équipe" : "Consulter la maison"} <ArrowRight className="w-3 h-3" />
                             </span>
                           </div>
                         </div>
@@ -641,9 +698,19 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                       </span>
                     </button>
 
-                    <span className="px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold">
-                      {selectedHouseDetail.house.membersData?.length || 1} / 5 Journalistes
-                    </span>
+                    {(() => {
+                      const isDetailHouseMember = (user && (selectedHouseDetail.house.ownerId === user.id || (selectedHouseDetail.house.members && selectedHouseDetail.house.members.includes(user.id)))) || user?.role === 'admin';
+                      const count = selectedHouseDetail.house.journalistsCount || selectedHouseDetail.house.membersData?.length || 1;
+                      return isDetailHouseMember ? (
+                        <span className="px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold">
+                          {count} / 5 Journalistes
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-xl bg-stone-800 text-stone-400 border border-stone-700 font-bold">
+                          Rédaction accréditée
+                        </span>
+                      );
+                    })()}
                     <span className="px-3 py-1 rounded-xl bg-stone-800 text-stone-300 border border-stone-700">
                       {selectedHouseDetail.articles.length} Publications
                     </span>
@@ -665,46 +732,78 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                 </div>
               </div>
 
-              {/* Members of this house (Max 5 journalists) */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-cyan-400" />
-                  Membres de la rédaction (Journalistes accrédités)
-                </h4>
+              {/* Members of this house (Visible ONLY to members or admins) */}
+              {(() => {
+                const isDetailHouseMember = (user && (selectedHouseDetail.house.ownerId === user.id || (selectedHouseDetail.house.members && selectedHouseDetail.house.members.includes(user.id)))) || user?.role === 'admin';
+                if (isDetailHouseMember) {
+                  return (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Users className="w-4 h-4 text-cyan-400" />
+                        Membres de la rédaction ({selectedHouseDetail.house.membersData?.length || 1}/5)
+                      </h4>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {selectedHouseDetail.house.membersData?.map((m) => {
-                    const isTheChef = m.id === selectedHouseDetail.house.ownerId;
-                    return (
-                      <div
-                        key={m.id}
-                        className={`p-3 rounded-xl border flex items-center gap-3 ${
-                          isTheChef
-                            ? 'bg-amber-950/20 border-amber-500/40'
-                            : 'bg-stone-900 border-stone-800'
-                        }`}
-                      >
-                        <img
-                          src={m.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-                          alt={m.name}
-                          className="w-10 h-10 rounded-full object-cover border border-cyan-400/30 shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold text-white truncate flex items-center gap-1">
-                            {m.name}
-                            {isTheChef && (
-                              <Crown className="w-3 h-3 text-amber-400 shrink-0" title="Chef de la maison" />
-                            )}
-                          </div>
-                          <div className="text-[10px] text-stone-400 truncate">
-                            {isTheChef ? 'Chef de rédaction' : 'Journaliste membre'}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {selectedHouseDetail.house.membersData?.map((m) => {
+                          const isTheChef = m.id === selectedHouseDetail.house.ownerId;
+                          return (
+                            <div
+                              key={m.id}
+                              className={`p-3 rounded-xl border flex items-center gap-3 ${
+                                isTheChef
+                                  ? 'bg-amber-950/20 border-amber-500/40'
+                                  : 'bg-stone-900 border-stone-800'
+                              }`}
+                            >
+                              <img
+                                src={m.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                                alt={m.name}
+                                className="w-10 h-10 rounded-full object-cover border border-cyan-400/30 shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-bold text-white truncate flex items-center gap-1">
+                                  {m.name}
+                                  {isTheChef && (
+                                    <Crown className="w-3 h-3 text-amber-400 shrink-0" title="Chef de la maison" />
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-stone-400 truncate">
+                                  {isTheChef ? 'Chef de rédaction' : 'Journaliste membre'}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-cyan-400" />
+                        Direction Éditoriale
+                      </h4>
+                      <div className="p-4 rounded-xl bg-stone-900 border border-stone-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <Crown className="w-5 h-5 text-amber-400 shrink-0" />
+                          <div>
+                            <div className="text-xs font-bold text-white">
+                              {selectedHouseDetail.house.ownerName}
+                            </div>
+                            <div className="text-[10px] text-stone-400">
+                              Chef de Rédaction & Fondateur
+                            </div>
                           </div>
                         </div>
+                        <div className="text-[11px] text-stone-500 italic bg-stone-950/60 px-3 py-1.5 rounded-lg border border-stone-800">
+                          🔒 Effectif et journalistes de l'équipe réservés aux membres
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                    </div>
+                  );
+                }
+              })()}
 
               {/* Articles published by this house */}
               <div className="space-y-3 pt-2">
@@ -807,176 +906,31 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                         onClick={() => setActiveTab('governance')}
                         className="text-cyan-400 hover:text-cyan-300 font-bold underline cursor-pointer"
                       >
-                        Voir les 2 comptes principaux →
+                        Voir les comptes administrateurs →
                       </button>
                     </div>
                   </div>
                 </div>
               ) : myHouse ? (
-                /* Accredited Journalist with an Active House */
-                <div className="space-y-6">
-                  {/* House Banner */}
-                  <div className="p-5 rounded-2xl bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/30 space-y-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={myHouse.logo}
-                          alt={myHouse.name}
-                          className="w-14 h-14 rounded-xl object-cover border-2 border-cyan-400 bg-black shrink-0"
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-base font-black text-white">{myHouse.name}</h3>
-                            {isChef && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/40 flex items-center gap-1">
-                                <Crown className="w-3 h-3 text-amber-400" /> Chef de Rédaction
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-stone-400">
-                            Chef : <strong className="text-white">{myHouse.ownerName}</strong> • {myHouse.articlesCount || 0} publications
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-mono font-bold">
-                          {myHouse.members?.length || 1} / 5 Journalistes
-                        </span>
-                        {(isChef || user.role === 'admin') && (
-                          <button
-                            onClick={() => handleDeleteHouse(myHouse.id, myHouse.name)}
-                            className="px-3 py-1 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                            title="Dissoudre et supprimer cette maison de journalistes"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Dissoudre la maison</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-stone-300 border-t border-cyan-500/20 pt-3">
-                      {myHouse.description}
-                    </p>
-                  </div>
-
-                  {/* Journalists in this house (Quota: Max 5) */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        <Users className="w-4 h-4 text-cyan-400" />
-                        Équipe de journalistes ({myHouse.members?.length || 1}/5 maximum)
-                      </h4>
-
-                      {isChef && (myHouse.members?.length || 1) < 5 && (
-                        <span className="text-[11px] text-emerald-400 font-semibold">
-                          Il reste {5 - (myHouse.members?.length || 1)} place(s) disponible(s)
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {myHouse.membersData?.map((member) => {
-                        const isChefMember = member.id === myHouse.ownerId;
-                        return (
-                          <div
-                            key={member.id}
-                            className="p-3 rounded-xl bg-stone-900 border border-stone-800 flex items-center justify-between gap-3"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <img
-                                src={member.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-                                alt={member.name}
-                                className="w-10 h-10 rounded-full object-cover border border-cyan-400/30 shrink-0"
-                              />
-                              <div className="min-w-0">
-                                <div className="text-xs font-bold text-white truncate flex items-center gap-1">
-                                  {member.name}
-                                  {isChefMember && <Crown className="w-3 h-3 text-amber-400" />}
-                                </div>
-                                <div className="text-[10px] text-stone-400 truncate">
-                                  {isChefMember ? 'Chef de la maison' : 'Journaliste assistant'}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Chef can remove assistant journalists */}
-                            {isChef && !isChefMember && (
-                              <button
-                                onClick={() => handleRemoveMember(member.id, member.name)}
-                                className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-950/40 transition cursor-pointer"
-                                title="Retirer ce journaliste de la maison"
-                              >
-                                <UserMinus className="w-4 h-4" />
-                              </button>
-                            )}
-
-                            {/* Non-chef member can leave */}
-                            {!isChef && member.id === user.id && (
-                              <button
-                                onClick={() => handleRemoveMember(user.id, user.name)}
-                                className="px-2 py-1 rounded text-[10px] text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-500/30 transition cursor-pointer"
-                              >
-                                Quitter la maison
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Add Journalist Section (Chef only, if under 5) */}
-                  {isChef && (
-                    <div className="p-4 rounded-xl bg-stone-900/70 border border-cyan-500/20 space-y-3">
-                      <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <UserPlus className="w-4 h-4 text-cyan-400" />
-                        Intégrer un journaliste accrédité dans votre maison (Quota: max 5)
-                      </h5>
-
-                      {(myHouse.members?.length || 1) >= 5 ? (
-                        <div className="text-xs text-amber-400 font-semibold">
-                          Le quota maximal de 5 journalistes pour cette maison est atteint. Vous ne pouvez plus ajouter de membre.
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row items-center gap-2">
-                          <select
-                            value={selectedJournalistId}
-                            onChange={(e) => setSelectedJournalistId(e.target.value)}
-                            className="w-full sm:flex-1 px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-stone-200 focus:outline-none focus:border-cyan-400"
-                          >
-                            <option value="">Sélectionner un journaliste accrédité disponible...</option>
-                            {availableJournalists
-                              .filter((j) => j.id !== user.id && !myHouse.members?.includes(j.id))
-                              .map((j) => (
-                                <option key={j.id} value={j.id}>
-                                  {j.name} ({j.email}) {j.isAvailable ? '— Libre' : `— Actuellement chez ${j.currentHouseName}`}
-                                </option>
-                              ))}
-                          </select>
-
-                          <button
-                            onClick={handleAddMember}
-                            disabled={!selectedJournalistId || addingMember}
-                            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-black bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 rounded-xl transition cursor-pointer flex items-center justify-center gap-1"
-                          >
-                            <UserPlus className="w-3.5 h-3.5" />
-                            {addingMember ? 'Ajout...' : 'Intégrer le journaliste'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Publishing Rule Notice */}
-                  <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/20 text-xs text-cyan-300/90 leading-relaxed flex items-center gap-2.5">
-                    <Info className="w-4 h-4 shrink-0 text-cyan-400" />
-                    <span>
-                      Tous les articles rédigés par les membres de cette équipe seront publiés au nom de <strong>{myHouse.name}</strong>, garantissant la traçabilité et la crédibilité éditoriale.
-                    </span>
-                  </div>
-                </div>
+                /* Accredited Journalist with an Active House -> Complete Newsroom Dashboard */
+                <MyHouseDashboard
+                  myHouse={myHouse}
+                  isChef={isChef}
+                  currentUser={user!}
+                  houseArticles={houseArticles}
+                  houseStats={{
+                    totalArticles: Math.max(myHouse.articlesCount || 0, houseArticles.length),
+                    totalViews: houseArticles.reduce((acc, a) => acc + (a.viewsCount || 0), 0),
+                    totalLikes: houseArticles.reduce((acc, a) => acc + (a.likesCount || 0), 0),
+                    totalComments: houseArticles.reduce((acc, a) => acc + (a.commentsCount || 0), 0),
+                  }}
+                  availableJournalists={availableJournalists}
+                  onOpenArticle={onOpenArticle}
+                  onOpenCreateArticle={onOpenCreateArticle}
+                  onRefreshHouse={loadMyHouse}
+                  onDeleteHouse={handleDeleteHouse}
+                  showMsg={(type, text) => showMsg(type, text)}
+                />
               ) : (
                 /* Accredited Journalist WITHOUT a house yet */
                 <div className="space-y-5">
@@ -1188,11 +1142,11 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                 </div>
               </div>
 
-              {/* The Two Master Accounts List */}
+              {/* The Master Accounts List */}
               <div className="space-y-3">
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
                   <Crown className="w-4 h-4 text-amber-400" />
-                  Les 2 Comptes Principaux Configurés
+                  Les 4 Comptes Administrateurs Officiels
                 </h4>
 
                 <div className="space-y-2.5">

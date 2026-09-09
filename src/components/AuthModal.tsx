@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User as UserIcon, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
+import { X, Lock, Mail, User as UserIcon, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface AuthModalProps {
@@ -8,12 +8,14 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' }) => {
-  const { loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword, quickSwitch, isFirebaseActive } = useAuth();
+  const { loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword, isFirebaseActive } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,18 +98,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
     }
   };
 
-  const handleDemoSwitch = async (roleKey: 'admin' | 'globalnews' | 'lucas' | 'clara') => {
-    setLoading(true);
-    try {
-      await quickSwitch(roleKey);
-      onClose();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto">
       <div className="relative w-full max-w-md bg-[#040817] border border-blue-500/30 rounded-2xl shadow-[0_0_50px_rgba(29,104,255,0.25)] overflow-hidden flex flex-col my-4 max-h-[92vh] transition-all text-slate-100">
@@ -133,57 +123,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
           </button>
         </div>
 
-        {/* Demo Fast Switch Toolbar */}
-        <div className="px-6 py-3 bg-[#070d24] border-b border-blue-500/20 text-slate-200 transition-all">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-cyan-400">
-              Comptes Démo Préconfigurés :
-            </span>
-            {isFirebaseActive && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold font-mono text-cyan-300 bg-blue-600/20 px-2 py-0.5 rounded-sm border border-blue-400/40 shadow-[0_0_8px_rgba(0,210,255,0.2)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                Firebase Live
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-4 gap-1.5 text-center">
-            <button
-              type="button"
-              onClick={() => handleDemoSwitch('clara')}
-              className="px-2 py-1 bg-[#0b142c] hover:bg-blue-600/30 text-cyan-300 hover:text-white text-[11px] font-bold font-mono rounded-lg border border-blue-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
-            >
-              Lecteur
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoSwitch('lucas')}
-              className="px-2 py-1 bg-[#0b142c] hover:bg-blue-600/30 text-cyan-300 hover:text-white text-[11px] font-bold font-mono rounded-lg border border-blue-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
-            >
-              Journaliste
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoSwitch('globalnews')}
-              className="px-2 py-1 bg-[#0b142c] hover:bg-blue-600/30 text-cyan-300 hover:text-white text-[11px] font-bold font-mono rounded-lg border border-blue-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
-            >
-              Média
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoSwitch('admin')}
-              className="px-2 py-1 bg-[#0b142c] hover:bg-blue-600/30 text-cyan-300 hover:text-white text-[11px] font-bold font-mono rounded-lg border border-blue-500/30 hover:border-cyan-400 transition-all shadow-xs cursor-pointer"
-            >
-              Admin
-            </button>
-          </div>
-        </div>
-
         {/* Content Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
           {error && (
-            <div className="p-3 bg-red-950/50 border border-red-500/40 text-red-300 text-xs rounded-xl flex items-start gap-2 font-medium">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
-              <span>{error}</span>
+            <div className="p-3 bg-red-950/60 border border-red-500/40 text-red-200 text-xs rounded-xl flex flex-col gap-2 font-medium">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                <span className="leading-relaxed">{error}</span>
+              </div>
+              {mode === 'login' && error.toLowerCase().includes('aucun compte') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setMode('register');
+                  }}
+                  className="self-start mt-1 px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_10px_rgba(0,210,255,0.2)]"
+                >
+                  <span>Créer mon compte citoyen maintenant</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
 
@@ -295,13 +255,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-400/60" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Au moins 6 caractères"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#081026] border border-blue-500/35 text-slate-100 placeholder:text-blue-300/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,210,255,0.3)]"
+                    className="w-full pl-9 pr-10 py-2 text-xs bg-[#081026] border border-blue-500/35 text-slate-100 placeholder:text-blue-300/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,210,255,0.3)]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-blue-400/60 hover:text-cyan-300 p-1 cursor-pointer transition-colors"
+                    title={showPassword ? 'Masquer' : 'Afficher'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
             )}
@@ -314,13 +282,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-400/60" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirmez votre mot de passe"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#081026] border border-blue-500/35 text-slate-100 placeholder:text-blue-300/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,210,255,0.3)]"
+                    className="w-full pl-9 pr-10 py-2 text-xs bg-[#081026] border border-blue-500/35 text-slate-100 placeholder:text-blue-300/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,210,255,0.3)]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-blue-400/60 hover:text-cyan-300 p-1 cursor-pointer transition-colors"
+                    title={showConfirmPassword ? 'Masquer' : 'Afficher'}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
             )}

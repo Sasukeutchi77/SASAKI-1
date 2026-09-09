@@ -116,7 +116,11 @@ authRouter.post('/login', authRateLimiter, (req, res) => {
   const cleanEmail = String(email).trim().toLowerCase();
   const user = db.getData().users.find((u) => u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    return res.status(401).json({ error: 'Identifiants invalides (email ou mot de passe incorrect).' });
+    return res.status(401).json({
+      error: `Aucun compte n'est enregistré avec l'adresse « ${cleanEmail} ». Cliquez sur "Créer un compte" pour vous inscrire en quelques secondes.`,
+      notFound: true,
+      email: cleanEmail,
+    });
   }
 
   if (user.status === 'suspended') {
@@ -128,7 +132,10 @@ authRouter.post('/login', authRateLimiter, (req, res) => {
 
   const valid = verifyPassword(password, user.passwordHash, user.passwordSalt);
   if (!valid) {
-    return res.status(401).json({ error: 'Identifiants invalides (email ou mot de passe incorrect).' });
+    return res.status(401).json({
+      error: 'Mot de passe incorrect pour cette adresse email. Veuillez vérifier votre saisie ou réinitialiser votre mot de passe.',
+      invalidPassword: true,
+    });
   }
 
   if (isMasterAdmin(user.email) && user.role !== 'admin') {

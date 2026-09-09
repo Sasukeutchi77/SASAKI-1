@@ -41,7 +41,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {actionLabel && onAction && (
             <button
               onClick={onAction}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black text-xs sm:text-sm font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:brightness-110 transition-all cursor-pointer active:scale-95"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-400 text-white text-xs sm:text-sm font-bold shadow-[0_0_15px_rgba(0,210,255,0.4)] transition-all cursor-pointer active:scale-95"
             >
               {actionLabel}
             </button>

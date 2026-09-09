@@ -87,9 +87,9 @@ export const FactCheckBadge: React.FC<FactCheckBadgeProps> = ({ factCheck, compa
   const getDocBadgeColor = (type?: string) => {
     switch (type) {
       case 'official_gazette':
-        return 'bg-amber-950/70 text-amber-300 border-amber-500/40';
+        return 'bg-blue-950/70 text-cyan-300 border-blue-500/40';
       case 'court_record':
-        return 'bg-purple-950/70 text-purple-300 border-purple-500/40';
+        return 'bg-[#141933] text-cyan-200 border-cyan-500/40';
       case 'ministry_release':
         return 'bg-blue-950/70 text-blue-300 border-blue-500/40';
       default:

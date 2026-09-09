@@ -2,7 +2,9 @@ import React from 'react';
 
 interface VerifiedBadgeProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-  type?: 'journalist' | 'media';
+  type?: 'journalist' | 'media' | 'admin';
+  isVerified?: boolean;
+  role?: string;
   showLabel?: boolean;
   label?: string;
   className?: string;
@@ -14,6 +16,8 @@ interface VerifiedBadgeProps {
 export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   size = 'sm',
   type = 'journalist',
+  isVerified = true,
+  role,
   showLabel = false,
   label,
   className = '',
@@ -21,6 +25,10 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   followersCount,
   title,
 }) => {
+  // If explicitly marked not verified, or if the user is a standard citizen (role: 'user'), do NOT display the badge
+  if (!isVerified || role === 'user') {
+    return null;
+  }
   const sizeClasses = {
     xs: 'w-3.5 h-3.5',
     sm: 'w-4 h-4',
@@ -31,7 +39,11 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
 
   const defaultTitle =
     title ||
-    (type === 'journalist'
+    (type === 'admin' || role === 'admin'
+      ? `Administrateur Officiel (Badge bleu) • ${
+          followersCount && followersCount > 0 ? `${followersCount} abonnés` : 'Compte officiel vérifié'
+        }`
+      : type === 'journalist'
       ? `Journaliste certifié (Badge bleu) • ${
           followersCount && followersCount >= 50
             ? `${followersCount} abonnés (seuil 50 atteint)`
@@ -81,7 +93,13 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
     return badgeIcon;
   }
 
-  const defaultLabel = label || (type === 'journalist' ? 'Journaliste certifié' : 'Maison certifiée');
+  const defaultLabel =
+    label ||
+    (type === 'admin' || role === 'admin'
+      ? 'Administrateur certifié'
+      : type === 'journalist'
+      ? 'Journaliste certifié'
+      : 'Maison certifiée');
 
   return (
     <span

@@ -131,7 +131,7 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
         ) : (
           <div className="overflow-y-auto flex-1">
             {/* Banner Cover */}
-            <div className="h-36 sm:h-48 w-full bg-gradient-to-r from-cyan-950 via-[#0d1226] to-fuchsia-950/80 border-b border-cyan-500/30 relative">
+            <div className="h-36 sm:h-48 w-full bg-gradient-to-r from-cyan-950 via-[#0d1226] to-blue-950/80 border-b border-cyan-500/30 relative">
               <div className="absolute inset-0 bg-[radial-gradient(#00f3ff_1px,transparent_1px)] [background-size:16px_16px] opacity-20" />
             </div>
 
@@ -176,7 +176,7 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold font-mono text-sm transition-all cursor-pointer ${
                       isFollowing
                         ? 'bg-[#141933] hover:bg-[#1a2245] text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(0,243,255,0.15)]'
-                        : 'bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:brightness-110'
+                        : 'bg-gradient-to-r from-blue-600 to-cyan-400 text-white shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:brightness-110'
                     }`}
                   >
                     {isFollowing ? (

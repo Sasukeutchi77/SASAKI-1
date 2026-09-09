@@ -198,7 +198,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                 onOpenCreateArticle();
                 onClose();
               }}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black rounded-lg text-xs font-bold font-mono shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:brightness-110 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white rounded-lg text-xs font-bold font-mono shadow-[0_0_15px_rgba(0,210,255,0.4)] transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Nouvel article</span>
@@ -229,7 +229,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
             </div>
             <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
               <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
-                <Heart className="w-3.5 h-3.5 text-fuchsia-400" /> Likes reçus
+                <Heart className="w-3.5 h-3.5 text-cyan-400" /> Likes reçus
               </div>
               <div className="mt-1 text-xl font-black text-white">{totalLikes}</div>
             </div>
@@ -260,7 +260,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                       ({myHouse.members?.length || 1}/5 journalistes)
                     </span>
                     {myHouse.ownerId === user?.id ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/40">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-950 text-cyan-300 border border-blue-500/40">
                         Chef de Rédaction
                       </span>
                     ) : (
@@ -341,7 +341,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                     onOpenCreateArticle();
                     onClose();
                   }}
-                  className="mt-3 px-4 py-2 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black rounded-lg text-xs font-bold font-mono hover:brightness-110 shadow-[0_0_15px_rgba(0,243,255,0.3)] cursor-pointer"
+                  className="mt-3 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white rounded-lg text-xs font-bold font-mono shadow-[0_0_15px_rgba(0,210,255,0.3)] cursor-pointer"
                 >
                   Rédiger mon premier article
                 </button>
@@ -369,7 +369,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                             className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
                               art.status === 'published'
                                 ? 'bg-cyan-950/70 border border-cyan-500/40 text-cyan-300'
-                                : 'bg-amber-950/70 border border-amber-500/40 text-amber-300'
+                                : 'bg-blue-950/70 border border-blue-500/40 text-cyan-300'
                             }`}
                           >
                             {art.status === 'published' ? 'En ligne' : 'Brouillon'}
@@ -389,7 +389,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                             <Eye className="w-3.5 h-3.5" /> {art.viewsCount}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Heart className="w-3.5 h-3.5 text-fuchsia-400" /> {art.likesCount}
+                            <Heart className="w-3.5 h-3.5 text-cyan-400" /> {art.likesCount}
                           </span>
                           <span className="flex items-center gap-1">
                             <MessageSquare className="w-3.5 h-3.5" /> {art.commentsCount}
@@ -482,9 +482,9 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                   </p>
                 </div>
               ) : user?.verificationStatus === 'pending' ? (
-                <div className="p-6 rounded-2xl bg-[#101428] border border-amber-500/40 text-amber-300">
+                <div className="p-6 rounded-2xl bg-[#101428] border border-blue-500/40 text-cyan-300">
                   <div className="flex items-center gap-2 font-bold font-mono text-base text-white">
-                    <Clock className="w-5 h-5 text-amber-400" />
+                    <Clock className="w-5 h-5 text-cyan-400" />
                     <span>Demande de vérification en cours d’examen</span>
                   </div>
                   <p className="mt-2 text-xs text-slate-300 leading-relaxed font-mono">
@@ -551,7 +551,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                   <button
                     type="submit"
                     disabled={submittingVerif}
-                    className="px-5 py-2.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black hover:brightness-110 disabled:opacity-50 rounded-xl text-xs font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-[0_0_15px_rgba(0,210,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>{submittingVerif ? 'Envoi en cours...' : 'Soumettre ma demande à l’administration'}</span>
@@ -577,7 +577,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                     onClick={() => setMediaFilter('all')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                       mediaFilter === 'all'
-                        ? 'bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black'
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-400 text-white shadow-[0_0_10px_rgba(0,210,255,0.3)]'
                         : 'bg-[#141933] text-cyan-300 border border-cyan-500/30 hover:border-cyan-400'
                     }`}
                   >
@@ -588,7 +588,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                     onClick={() => setMediaFilter('image')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                       mediaFilter === 'image'
-                        ? 'bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black'
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-400 text-white shadow-[0_0_10px_rgba(0,210,255,0.3)]'
                         : 'bg-[#141933] text-cyan-300 border border-cyan-500/30 hover:border-cyan-400'
                     }`}
                   >
@@ -600,7 +600,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                     onClick={() => setMediaFilter('video')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                       mediaFilter === 'video'
-                        ? 'bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black'
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-400 text-white shadow-[0_0_10px_rgba(0,210,255,0.3)]'
                         : 'bg-[#141933] text-cyan-300 border border-cyan-500/30 hover:border-cyan-400'
                     }`}
                   >
@@ -612,7 +612,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                 <button
                   type="button"
                   onClick={() => setShowMediaUploader(!showMediaUploader)}
-                  className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black hover:brightness-110 rounded-lg text-xs font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)] flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white rounded-lg text-xs font-bold shadow-[0_0_15px_rgba(0,210,255,0.3)] flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
                   <UploadCloud className="w-4 h-4" />
                   <span>{showMediaUploader ? 'Fermer l’outil d’envoi' : 'Téléverser un média Cloud'}</span>

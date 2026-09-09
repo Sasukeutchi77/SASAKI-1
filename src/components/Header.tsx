@@ -24,8 +24,21 @@ import { SoundToggleButton } from './SoundToggleButton';
 import { sfx } from '../services/soundEffects';
 import { realtime, RealtimeStatus } from '../services/realtime';
 import { VerifiedBadge } from './VerifiedBadge';
+import { Category } from '../types';
+
+const OFFICIAL_CATEGORIES_DEFAULT: Category[] = [
+  { id: 'cat_purgeur', name: 'PURGEUR', slug: 'purgeur', description: 'Actualités, profils, faits d’armes et chroniques des Purgeurs', status: 'active' },
+  { id: 'cat_clans', name: 'CLANS', slug: 'clans', description: 'Alliances, territoires, rivalités et opérations des clans', status: 'active' },
+  { id: 'cat_familles', name: 'FAMILLES', slug: 'familles', description: 'Lignées historiques, grandes dynasties et actualités des familles', status: 'active' },
+  { id: 'cat_purge', name: 'PURGE', slug: 'purge', description: 'Déroulement, décrets officiels, règles et alertes de la Purge', status: 'active' },
+  { id: 'cat_competition', name: 'COMPÉTITION', slug: 'competition', description: 'Tournois, duels d’élite, arènes, classements et compétitions', status: 'active' },
+  { id: 'cat_celebrites', name: 'CÉLÉBRITÉS', slug: 'celebrites', description: 'Figures publiques, icônes, légendes et personnalités influentes', status: 'active' },
+];
 
 interface HeaderProps {
+  categories?: Category[];
+  selectedCategory?: string | null;
+  onSelectCategory?: (slug: string | null) => void;
   onSearchChange: (search: string) => void;
   searchQuery: string;
   onGoHome?: () => void;
@@ -44,6 +57,9 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  categories,
+  selectedCategory,
+  onSelectCategory,
   onSearchChange,
   searchQuery,
   onGoHome,
@@ -60,10 +76,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMyHouse,
   onOpenTrustSystem,
 }) => {
-  const { user, isAuthenticated, logout, unreadNotifs, bookmarksCount, quickSwitch } = useAuth();
+  const { user, isAuthenticated, logout, unreadNotifs, bookmarksCount } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showDemoMenu, setShowDemoMenu] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [rtStatus, setRtStatus] = useState<RealtimeStatus>(realtime.getStatus());
 
@@ -88,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 flex items-center justify-center text-white font-black text-xl shadow-[0_0_18px_rgba(29,104,255,0.6)] tracking-tight group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(0,210,255,0.8)] transition-all border border-white/25">
                 <span>P</span>
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full ring-2 ring-[#040817] shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full ring-2 ring-[#040817] shadow-[0_0_8px_rgba(0,210,255,0.8)]" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
@@ -101,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-blue-300/70 font-semibold font-mono">
                   <span>DEV:</span>
-                  <span className="text-yellow-400 font-extrabold tracking-tight drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">
+                  <span className="text-cyan-400 font-extrabold tracking-tight drop-shadow-[0_0_8px_rgba(0,210,255,0.6)]">
                     SASAKI COMPAGNIE
                   </span>
                 </div>
@@ -163,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {user.mediaName}
                   </span>
                 ) : (
-                  <span className="text-[10px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.2 rounded border border-yellow-400/40 animate-pulse font-black">
+                  <span className="text-[10px] bg-blue-500/20 text-cyan-300 px-1.5 py-0.2 rounded border border-blue-400/40 font-mono font-bold">
                     À créer
                   </span>
                 )}
@@ -202,23 +217,23 @@ export const Header: React.FC<HeaderProps> = ({
               }
               className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer border ${
                 rtStatus === 'connected'
-                  ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:border-emerald-400 hover:shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                  ? 'bg-blue-950/60 border-cyan-500/40 text-cyan-300 hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,210,255,0.3)]'
                   : rtStatus === 'connecting'
-                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-300'
-                  : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+                  ? 'bg-blue-950/40 border-blue-500/30 text-blue-300'
+                  : 'bg-[#0b0e1a] border-slate-700/60 text-slate-400'
               }`}
             >
               <span className="relative flex h-2 w-2">
                 {rtStatus === 'connected' && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
                 )}
                 <span
                   className={`relative inline-flex rounded-full h-2 w-2 ${
                     rtStatus === 'connected'
-                      ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]'
+                      ? 'bg-cyan-400 shadow-[0_0_8px_#00f3ff]'
                       : rtStatus === 'connecting'
-                      ? 'bg-amber-400 animate-pulse'
-                      : 'bg-rose-400'
+                      ? 'bg-blue-400 animate-pulse'
+                      : 'bg-slate-500'
                   }`}
                 />
               </span>
@@ -252,96 +267,11 @@ export const Header: React.FC<HeaderProps> = ({
               title={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
               aria-label="Changer le thème"
             >
-              {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-stone-600" />}
+              {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-stone-600" />}
             </button>
 
             {/* Cyber SFX UI Sound Toggle */}
             <SoundToggleButton />
-
-            {/* Quick Demo Role Switcher (Visible in development environment only) */}
-            {import.meta.env.DEV && (
-              <div className="relative">
-                <button
-                  id="quick-demo-role-btn"
-                  onClick={() => setShowDemoMenu(!showDemoMenu)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700 transition-colors cursor-pointer"
-                  title="Basculer rapidement entre les rôles de test (Mode Dev)"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span className="hidden sm:inline">Rôle Test</span>
-                </button>
-
-                {showDemoMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 p-2 z-50 animate-in fade-in zoom-in-95">
-                    <div className="px-2 py-1.5 text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider border-b border-stone-100 dark:border-stone-800">
-                      Tester avec un rôle :
-                    </div>
-                    <div className="mt-1 space-y-1">
-                      <button
-                        id="demo-switch-admin"
-                        onClick={() => {
-                          quickSwitch('admin');
-                          setShowDemoMenu(false);
-                        }}
-                        className="w-full text-left px-2.5 py-2 text-xs rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-stone-800 dark:text-stone-200 flex items-center justify-between cursor-pointer"
-                      >
-                        <div>
-                          <div className="font-semibold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
-                            <Shield className="w-3.5 h-3.5" /> Administrateur
-                          </div>
-                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Modération, vérifications, gestion</div>
-                        </div>
-                      </button>
-                      <button
-                        id="demo-switch-media"
-                        onClick={() => {
-                          quickSwitch('globalnews');
-                          setShowDemoMenu(false);
-                        }}
-                        className="w-full text-left px-2.5 py-2 text-xs rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/50 text-stone-800 dark:text-stone-200 flex items-center justify-between cursor-pointer"
-                      >
-                        <div>
-                          <div className="font-semibold text-blue-800 dark:text-blue-400 flex items-center gap-1">
-                            <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Média Global News (Agence Internationale)
-                          </div>
-                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Collectif de journalistes • 125k abonnés</div>
-                        </div>
-                      </button>
-                      <button
-                        id="demo-switch-journalist"
-                        onClick={() => {
-                          quickSwitch('lucas');
-                          setShowDemoMenu(false);
-                        }}
-                        className="w-full text-left px-2.5 py-2 text-xs rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/50 text-stone-800 dark:text-stone-200 flex items-center justify-between cursor-pointer"
-                      >
-                        <div>
-                          <div className="font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1">
-                            <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Lucas Moreau (Grand Reporter)
-                          </div>
-                          <div className="text-[11px] text-stone-500 dark:text-stone-400">L’Observateur International • Enquêtes</div>
-                        </div>
-                      </button>
-                      <button
-                        id="demo-switch-reader"
-                        onClick={() => {
-                          quickSwitch('clara');
-                          setShowDemoMenu(false);
-                        }}
-                        className="w-full text-left px-2.5 py-2 text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 flex items-center justify-between cursor-pointer"
-                      >
-                        <div>
-                          <div className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
-                            <UserIcon className="w-3.5 h-3.5" /> Clara Dupont (Lectrice)
-                          </div>
-                          <div className="text-[11px] text-stone-500 dark:text-stone-400">Abonnements, likes, commentaires</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Notifications Button */}
             {isAuthenticated && (
@@ -353,7 +283,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Bell className="w-5 h-5" />
                 {unreadNotifs > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-600 rounded-full ring-2 ring-white dark:ring-stone-900 animate-pulse" />
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-cyan-400 rounded-full ring-2 ring-[#040817] shadow-[0_0_8px_rgba(0,210,255,0.8)] animate-pulse" />
                 )}
               </button>
             )}
@@ -400,14 +330,14 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Admin Control Center Button - Luminous Yellow Accent */}
+            {/* Admin Control Center Button - Black and Blue Cyber Accent */}
             {isAuthenticated && user?.role === 'admin' && (
               <button
                 id="header-admin-portal-btn"
                 onClick={onOpenAdmin}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-yellow-300 bg-yellow-950/40 hover:bg-yellow-900/60 border border-yellow-500/40 rounded-full shadow-[0_0_12px_rgba(250,204,21,0.25)] transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-200 bg-blue-950/60 hover:bg-blue-900/80 border border-cyan-500/40 rounded-full shadow-[0_0_12px_rgba(0,210,255,0.25)] transition-all cursor-pointer"
               >
-                <Shield className="w-3.5 h-3.5 text-yellow-400" />
+                <Shield className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="hidden sm:inline">Administration</span>
               </button>
             )}
@@ -438,14 +368,14 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 py-2 z-50 animate-in fade-in zoom-in-95">
-                    <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
-                      <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <div className="absolute right-0 mt-2 w-60 bg-[#070b1a] rounded-2xl shadow-xl border border-blue-500/30 py-2 z-50 animate-in fade-in zoom-in-95 text-slate-100">
+                    <div className="px-4 py-3 border-b border-blue-500/20">
+                      <div className="font-bold text-sm text-white flex items-center gap-1.5">
                         <span>{user.name}</span>
                         {user.isVerified && <VerifiedBadge size="xs" type={user.role === 'admin' ? 'admin' : 'journalist'} />}
                       </div>
-                      <div className="text-xs text-stone-500 dark:text-stone-400 truncate">{user.email}</div>
-                      <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                      <div className="text-xs text-blue-300/70 truncate">{user.email}</div>
+                      <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-950/60 text-cyan-300 border border-blue-500/30">
                         {user.role === 'admin' ? 'Super Administrateur' : user.role === 'journalist' ? (user.mediaName || 'Journaliste') : 'Lecteur'}
                       </div>
                     </div>
@@ -456,9 +386,9 @@ export const Header: React.FC<HeaderProps> = ({
                         onOpenMyProfile();
                         setShowUserMenu(false);
                       }}
-                      className="w-full text-left px-4 py-2.5 text-xs text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-2.5 font-medium cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:text-white hover:bg-blue-950/50 flex items-center gap-2.5 font-medium cursor-pointer"
                     >
-                      <UserIcon className="w-4 h-4 text-emerald-700 dark:text-emerald-400" /> Mon profil & Paramètres
+                      <UserIcon className="w-4 h-4 text-cyan-400" /> Mon profil & Paramètres
                     </button>
 
                     <button
@@ -467,9 +397,9 @@ export const Header: React.FC<HeaderProps> = ({
                         onOpenProfile(user.id);
                         setShowUserMenu(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-xs text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-2.5 cursor-pointer"
+                      className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-blue-950/40 flex items-center gap-2.5 cursor-pointer"
                     >
-                      <UserIcon className="w-4 h-4 text-stone-400" /> Voir ma page publique
+                      <UserIcon className="w-4 h-4 text-blue-400" /> Voir ma page publique
                     </button>
 
                     {(user.role === 'journalist' || user.role === 'admin') && (
@@ -479,9 +409,9 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenJournalistDashboard();
                           setShowUserMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-xs text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-2.5 cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-blue-950/40 flex items-center gap-2.5 cursor-pointer"
                       >
-                        <Layers className="w-4 h-4 text-stone-500" /> Tableau de bord Journaliste
+                        <Layers className="w-4 h-4 text-blue-400" /> Tableau de bord Journaliste
                       </button>
                     )}
 
@@ -492,9 +422,9 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenAdmin();
                           setShowUserMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-xs text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/50 flex items-center gap-2.5 font-medium cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-xs text-cyan-300 hover:text-white hover:bg-blue-950/60 flex items-center gap-2.5 font-bold cursor-pointer"
                       >
-                        <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" /> Console d'administration
+                        <Shield className="w-4 h-4 text-cyan-400" /> Console d'administration
                       </button>
                     )}
 
@@ -505,7 +435,7 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenMyHouse();
                           setShowUserMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-xs text-cyan-300 hover:bg-cyan-950/50 flex items-center gap-2.5 font-bold cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-xs text-cyan-300 hover:text-white hover:bg-blue-950/60 flex items-center gap-2.5 font-bold cursor-pointer"
                       >
                         <Building2 className="w-4 h-4 text-cyan-400" />
                         <span>Ma Maison (Créer & gérer ma rédaction)</span>
@@ -519,9 +449,9 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenMediaHouses();
                           setShowUserMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-xs text-stone-300 hover:bg-cyan-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-blue-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
                       >
-                        <Building2 className="w-4 h-4 text-stone-400" /> Toutes les Maisons de Presse
+                        <Building2 className="w-4 h-4 text-blue-400" /> Toutes les Maisons de Presse
                       </button>
                     )}
 
@@ -532,16 +462,16 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenTrustSystem();
                           setShowUserMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-xs text-emerald-400 hover:bg-emerald-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-xs text-cyan-300 hover:text-white hover:bg-blue-950/50 flex items-center gap-2.5 font-medium cursor-pointer"
                       >
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" /> Charte & Système de Confiance
+                        <ShieldCheck className="w-4 h-4 text-cyan-400" /> Charte & Système de Confiance
                       </button>
                     )}
 
-                    <div className="border-t border-stone-100 dark:border-stone-800 my-1.5" />
+                    <div className="border-t border-blue-500/20 my-1.5" />
 
-                    <div className="px-4 py-1 text-[10px] text-stone-400 dark:text-stone-500 font-semibold">
-                      Développeur : <span className="text-amber-500 font-bold">SASAKI COMPAGNIE</span>
+                    <div className="px-4 py-1 text-[10px] text-blue-300/70 font-semibold font-mono">
+                      Développeur : <span className="text-cyan-400 font-bold">SASAKI COMPAGNIE</span>
                     </div>
 
                     <button
@@ -550,9 +480,9 @@ export const Header: React.FC<HeaderProps> = ({
                         logout();
                         setShowUserMenu(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 flex items-center gap-2.5 font-medium cursor-pointer"
+                      className="w-full text-left px-4 py-2 text-xs text-blue-300 hover:text-cyan-200 hover:bg-blue-950/50 flex items-center gap-2.5 font-medium cursor-pointer"
                     >
-                      <LogOut className="w-4 h-4" /> Se déconnecter
+                      <LogOut className="w-4 h-4 text-blue-400" /> Se déconnecter
                     </button>
                   </div>
                 )}
@@ -604,6 +534,47 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
       </div>
+
+      {/* Official Categories Navigation Bar */}
+      <nav aria-label="Rubriques officielles" className="border-t border-blue-500/20 bg-[#030612]/90 backdrop-blur-md shadow-inner overflow-x-auto no-scrollbar">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-1.5 py-2 min-w-max">
+          <button
+            id="nav-category-all"
+            onClick={() => {
+              sfx.playClick();
+              if (onSelectCategory) onSelectCategory(null);
+              if (onGoHome) onGoHome();
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+              !selectedCategory || selectedCategory === 'all'
+                ? 'bg-gradient-to-r from-blue-600/40 to-cyan-500/40 text-cyan-200 border border-cyan-400/60 shadow-[0_0_12px_rgba(0,210,255,0.35)]'
+                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            Accueil
+          </button>
+          {(categories && categories.length > 0 ? categories : OFFICIAL_CATEGORIES_DEFAULT).map((cat) => {
+            const isActive = selectedCategory === cat.slug || selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id || cat.slug}
+                id={`nav-category-${cat.slug}`}
+                onClick={() => {
+                  sfx.playClick();
+                  if (onSelectCategory) onSelectCategory(cat.slug);
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_16px_rgba(0,210,255,0.5)] border border-cyan-300/60 scale-[1.02]'
+                    : 'text-slate-300 hover:text-cyan-300 hover:bg-blue-500/10 border border-transparent'
+                }`}
+              >
+                <span>{cat.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </header>
   );
 };

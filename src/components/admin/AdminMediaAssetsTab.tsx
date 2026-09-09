@@ -102,13 +102,13 @@ export const AdminMediaAssetsTab: React.FC<AdminMediaAssetsTabProps> = ({ onFlas
       case 'article_cover':
         return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Couverture article</span>;
       case 'article_gallery':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Galerie reportage</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Galerie reportage</span>;
       case 'article_video':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">Vidéo article</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800">Vidéo article</span>;
       case 'press_card':
         return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-800">Carte de presse</span>;
       case 'media_logo':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Logo rédaction</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Logo rédaction</span>;
       default:
         return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600">Général</span>;
     }
@@ -139,7 +139,7 @@ export const AdminMediaAssetsTab: React.FC<AdminMediaAssetsTabProps> = ({ onFlas
         <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-xs">
           <div className="flex items-center justify-between text-stone-500 mb-1">
             <span className="text-xs font-semibold uppercase">Vidéos</span>
-            <VideoIcon className="w-4 h-4 text-purple-600" />
+            <VideoIcon className="w-4 h-4 text-cyan-600" />
           </div>
           <p className="text-2xl font-black text-stone-900">{videoCount}</p>
           <span className="text-[11px] text-stone-500 font-medium">MP4, WebM</span>
@@ -271,7 +271,7 @@ export const AdminMediaAssetsTab: React.FC<AdminMediaAssetsTabProps> = ({ onFlas
                   <div className="absolute top-2 left-2 flex items-center gap-1.5">
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/70 text-white backdrop-blur-xs flex items-center gap-1">
                       {m.resourceType === 'video' ? (
-                        <VideoIcon className="w-3 h-3 text-purple-400" />
+                        <VideoIcon className="w-3 h-3 text-cyan-400" />
                       ) : (
                         <ImageIcon className="w-3 h-3 text-emerald-400" />
                       )}

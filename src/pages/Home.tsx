@@ -356,7 +356,7 @@ export const Home: React.FC<HomeProps> = ({
                   onOpenArticle(liveFlash.article);
                   setLiveFlash(null);
                 }}
-                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-fuchsia-600 hover:from-red-500 hover:to-fuchsia-500 text-white font-bold text-xs shadow-[0_0_15px_rgba(239,68,68,0.6)] transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-blue-700 to-cyan-500 hover:from-blue-600 hover:to-cyan-400 text-white font-bold text-xs shadow-[0_0_15px_rgba(0,210,255,0.4)] transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <span>Consulter en direct</span>
                 <span>→</span>
@@ -468,7 +468,7 @@ export const Home: React.FC<HomeProps> = ({
                   onClick={() => setFeedTab('trending')}
                   className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     feedTab === 'trending'
-                      ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white shadow-[0_0_15px_rgba(240,38,211,0.5)]'
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_15px_rgba(0,210,255,0.4)]'
                       : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
                   }`}
                   title="Articles populaires : Les articles les plus lus, likés ou commentés"
@@ -512,7 +512,7 @@ export const Home: React.FC<HomeProps> = ({
                         {user.mediaName}
                       </span>
                     ) : (
-                      <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-400/30 animate-pulse">
+                      <span className="text-[10px] bg-blue-500/20 text-cyan-300 px-1.5 py-0.2 rounded border border-blue-400/40 font-mono font-bold">
                         À fonder
                       </span>
                     )}
@@ -537,7 +537,7 @@ export const Home: React.FC<HomeProps> = ({
                 <div className="absolute inset-0 bg-gradient-to-t from-[#07080f] via-[#07080f]/50 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 flex flex-col justify-end">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black shadow-[0_0_10px_rgba(0,243,255,0.5)]">
+                    <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 text-white shadow-[0_0_10px_rgba(0,243,255,0.5)]">
                       À la Une • {featuredArticle.categoryName}
                     </span>
                     <span className="text-xs text-cyan-300/80 font-mono">
@@ -824,7 +824,10 @@ export const Home: React.FC<HomeProps> = ({
                           )}
                         </div>
                         <div className="text-[11px] text-cyan-400/60 font-mono truncate">
-                          {house.members?.length || house.journalistsCount || 1} journaliste(s) • {house.specialties?.[0] || 'Généraliste'}
+                          {((user && (house.ownerId === user.id || (house.members && house.members.includes(user.id)))) || user?.role === 'admin') && (house.journalistsCount || house.members?.length)
+                            ? `${house.journalistsCount || house.members?.length} journaliste(s) • `
+                            : 'Rédaction accréditée • '}
+                          {house.specialties?.[0] || 'Généraliste'}
                         </div>
                       </div>
                     </div>
@@ -868,11 +871,11 @@ export const Home: React.FC<HomeProps> = ({
                         <div className="font-bold text-xs text-white group-hover:text-cyan-300 truncate flex items-center gap-1 transition-colors">
                           <span>{j.name}</span>
                           {j.isVerified && (
-                            <VerifiedBadge size="xs" type="journalist" />
+                            <VerifiedBadge size="xs" type={j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'admin' : 'journalist'} isVerified={j.isVerified} role={j.role} />
                           )}
                         </div>
                         <div className="text-[11px] text-cyan-400/60 font-mono truncate">
-                          {j.mediaName || 'Reporter indépendant'} • {j.followersCount || 0} abonnés
+                          {j.mediaName || (j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'Administrateur' : 'Reporter indépendant')} • {j.followersCount || 0} abonnés
                         </div>
                       </div>
                     </button>
@@ -948,9 +951,9 @@ export const Home: React.FC<HomeProps> = ({
                 purge-info est la plateforme moderne d'actualités, de journalisme social et de veille citoyenne.
                 Chaque article est vérifié pour assurer une information intègre.
               </p>
-              <div className="p-2.5 rounded-xl bg-fuchsia-950/40 border border-fuchsia-500/40 flex items-center justify-between shadow-[0_0_10px_rgba(240,38,211,0.2)]">
+              <div className="p-2.5 rounded-xl bg-blue-950/60 border border-blue-500/40 flex items-center justify-between shadow-[0_0_12px_rgba(0,210,255,0.25)]">
                 <span className="text-[11px] font-bold text-slate-300 font-mono">DÉVELOPPEUR :</span>
-                <span className="text-xs font-black text-fuchsia-400 tracking-wider font-mono drop-shadow-[0_0_6px_rgba(240,38,211,0.6)]">
+                <span className="text-xs font-black text-cyan-400 tracking-wider font-mono drop-shadow-[0_0_8px_rgba(0,210,255,0.8)]">
                   SASAKI COMPAGNIE
                 </span>
               </div>

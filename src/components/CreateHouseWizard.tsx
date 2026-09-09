@@ -29,14 +29,14 @@ const HOUSE_NAME_SUGGESTIONS = [
 ];
 
 const SPECIALTY_OPTIONS = [
-  'Investigation',
-  'Politique & Diplomatie',
-  'Société & Droits',
-  'Économie & Finance',
-  'Géopolitique',
-  'Culture & Arts',
-  'Technologies & IA',
-  'Environnement & Climat',
+  'PURGEUR',
+  'CLANS',
+  'FAMILLES',
+  'PURGE',
+  'COMPÉTITION',
+  'CÉLÉBRITÉS',
+  'Investigation & Faits d’armes',
+  'Stratégie & Territoires',
   'Fact-Checking & Vérité',
 ];
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Building2,
   Users,
@@ -27,19 +27,21 @@ import {
   Calendar,
   Layers,
   Edit3,
+  Check,
+  Shield,
 } from 'lucide-react';
-import { MediaHouse, User, Article } from '../types';
+import { MediaHouse, User, Article, Category } from '../types';
 import { api } from '../services/api';
 
 const SPECIALTY_OPTIONS = [
-  'Investigation',
-  'Politique & Diplomatie',
-  'Société & Droits',
-  'Économie & Finance',
-  'Géopolitique & Sécurité',
-  'Culture & Arts',
-  'Technologies & IA',
-  'Environnement & Climat',
+  'PURGEUR',
+  'CLANS',
+  'FAMILLES',
+  'PURGE',
+  'COMPÉTITION',
+  'CÉLÉBRITÉS',
+  'Investigation & Faits d’armes',
+  'Stratégie & Territoires',
   'Vérification & Fact-Checking',
 ];
 
@@ -101,7 +103,81 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
   onDeleteHouse,
   showMsg,
 }) => {
-  const [subTab, setSubTab] = useState<'overview' | 'team' | 'articles' | 'editorial-desk' | 'settings'>('overview');
+  const [subTab, setSubTab] = useState<'overview' | 'publish' | 'team' | 'articles' | 'editorial-desk' | 'settings'>('overview');
+
+  // Categories and publishing state for house journalists
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [pubTitle, setPubTitle] = useState<string>('');
+  const [pubCategoryId, setPubCategoryId] = useState<string>('');
+  const [pubSummary, setPubSummary] = useState<string>('');
+  const [pubContent, setPubContent] = useState<string>('');
+  const [pubCoverImage, setPubCoverImage] = useState<string>('');
+  const [pubTags, setPubTags] = useState<string>('');
+  const [pubSubmitting, setPubSubmitting] = useState<boolean>(false);
+  const [pubSuccessMsg, setPubSuccessMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.getCategories()
+      .then((res) => {
+        if (res.categories && res.categories.length > 0) {
+          setCategories(res.categories);
+          setPubCategoryId(res.categories[0].id);
+        }
+      })
+      .catch((err) => console.error('Error fetching categories in MyHouseDashboard:', err));
+  }, []);
+
+  const handlePublishArticle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanTitle = pubTitle.trim();
+    const cleanContent = pubContent.trim();
+    if (!cleanTitle || cleanTitle.length < 5) {
+      showMsg('error', 'Le titre doit contenir au moins 5 caractères.');
+      return;
+    }
+    if (!cleanContent || cleanContent.length < 30) {
+      showMsg('error', 'Le contenu doit comporter au moins 30 caractères.');
+      return;
+    }
+    if (!pubCategoryId) {
+      showMsg('error', 'Veuillez sélectionner une catégorie.');
+      return;
+    }
+
+    setPubSubmitting(true);
+    try {
+      const tagsArray = pubTags
+        .split(',')
+        .map((t) => t.trim().replace(/^#/, ''))
+        .filter(Boolean);
+
+      await api.createArticle({
+        title: cleanTitle,
+        summary: pubSummary.trim() || cleanTitle.substring(0, 160),
+        content: cleanContent,
+        categoryId: pubCategoryId,
+        tags: tagsArray.length > 0 ? tagsArray : (myHouse.specialties || ['Information']),
+        coverImage: pubCoverImage.trim() || 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1000&auto=format&fit=crop&q=80',
+        status: 'published',
+      });
+
+      setPubSuccessMsg(`Votre article « ${cleanTitle} » a été publié avec succès sous l'égide officielle de ${myHouse.name} !`);
+      setPubTitle('');
+      setPubSummary('');
+      setPubContent('');
+      setPubCoverImage('');
+      setPubTags('');
+      showMsg('success', `Article publié avec succès au nom de ${myHouse.name} !`);
+      await onRefreshHouse();
+      setTimeout(() => {
+        setPubSuccessMsg(null);
+      }, 7000);
+    } catch (err: any) {
+      showMsg('error', err?.message || 'Erreur lors de la publication de l’article.');
+    } finally {
+      setPubSubmitting(false);
+    }
+  };
 
   // Member management state
   const [selectedJournalistId, setSelectedJournalistId] = useState<string>('');
@@ -298,6 +374,22 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
           </button>
 
           <button
+            id="subtab-publish-btn"
+            onClick={() => setSubTab('publish')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              subTab === 'publish'
+                ? 'bg-gradient-to-r from-cyan-500/30 via-blue-500/30 to-blue-600/20 text-cyan-200 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,243,255,0.25)]'
+                : 'text-stone-300 hover:text-white hover:bg-stone-800/80 bg-stone-900/60 border border-stone-800'
+            }`}
+          >
+            <PenTool className="w-4 h-4 text-cyan-400" />
+            <span>Espace Publication</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 font-extrabold uppercase">
+              Rédaction
+            </span>
+          </button>
+
+          <button
             id="subtab-articles-btn"
             onClick={() => setSubTab('articles')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
@@ -395,8 +487,8 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                         {myHouse.name}
                       </h2>
                       {isChef ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/40 flex items-center gap-1">
-                          <Crown className="w-3.5 h-3.5 text-amber-400" /> Chef de Rédaction
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/20 text-cyan-300 border border-blue-400/40 flex items-center gap-1">
+                          <Crown className="w-3.5 h-3.5 text-cyan-400" /> Chef de Rédaction
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center gap-1">
@@ -487,7 +579,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                     className={`p-2.5 rounded-xl border text-center transition ${
                       isOccupied
                         ? isChefSlot
-                          ? 'bg-amber-950/30 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                          ? 'bg-blue-950/30 border-blue-500/50 shadow-[0_0_10px_rgba(0,210,255,0.2)]'
                           : 'bg-cyan-950/30 border-cyan-500/40'
                         : 'bg-stone-950/40 border-dashed border-stone-800 text-stone-600'
                     }`}
@@ -507,6 +599,71 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* DEDICATED NEWSROOM PUBLISHING WORKSPACE CARD */}
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0c1527] via-[#09101d] to-[#0a1420] border-2 border-cyan-500/40 shadow-[0_0_25px_rgba(0,243,255,0.15)] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-3.5">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-base font-black text-white">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-sm">
+                    <PenTool className="w-4 h-4" />
+                  </div>
+                  <span>Espace Rédaction & Publication d'Articles</span>
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                </div>
+                <p className="text-xs text-stone-300">
+                  Endroit officiel réservé aux journalistes de la maison : tout article rédigé ici est certifié et publié sous la bannière officielle de <strong className="text-cyan-300">{myHouse.name}</strong>.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Accrédité Publication</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Journalist Author Identity strip */}
+            <div className="p-3 rounded-xl bg-stone-900/90 border border-stone-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img
+                  src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                  alt={currentUser.name}
+                  className="w-8 h-8 rounded-full object-cover border border-cyan-400/40 shrink-0"
+                />
+                <div className="min-w-0">
+                  <div className="font-bold text-white truncate">
+                    Rédacteur : <strong>{currentUser.name}</strong>
+                  </div>
+                  <div className="text-[11px] text-cyan-400 font-mono">
+                    {isChef ? 'Chef de Rédaction' : 'Journaliste Titulaire'} • Maison : {myHouse.name}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setSubTab('publish')}
+                  className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-cyan-950/90 hover:bg-cyan-900/90 text-cyan-200 border border-cyan-500/50 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <PenTool className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Rédiger dans la Maison</span>
+                </button>
+                {onOpenCreateArticle && (
+                  <button
+                    type="button"
+                    onClick={onOpenCreateArticle}
+                    className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:brightness-110 text-black text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,243,255,0.35)]"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Grand Format & Médias</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -537,7 +694,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
             <div className="p-4 rounded-2xl bg-stone-900 border border-stone-800 space-y-1">
               <div className="flex items-center justify-between text-stone-400 text-xs">
                 <span>Engagement</span>
-                <Heart className="w-4 h-4 text-rose-400" />
+                <Heart className="w-4 h-4 text-cyan-400" />
               </div>
               <div className="text-2xl font-black text-white font-mono">
                 {houseStats.totalLikes}
@@ -548,7 +705,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
             <div className="p-4 rounded-2xl bg-stone-900 border border-stone-800 space-y-1">
               <div className="flex items-center justify-between text-stone-400 text-xs">
                 <span>Débats Citoyens</span>
-                <MessageSquare className="w-4 h-4 text-amber-400" />
+                <MessageSquare className="w-4 h-4 text-cyan-400" />
               </div>
               <div className="text-2xl font-black text-white font-mono">
                 {houseStats.totalComments}
@@ -577,13 +734,13 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
 
             <div
               onClick={() => setSubTab('editorial-desk')}
-              className="p-4 rounded-2xl bg-gradient-to-br from-stone-900 to-purple-950/30 border border-purple-500/30 hover:border-purple-400 transition cursor-pointer group space-y-2"
+              className="p-4 rounded-2xl bg-gradient-to-br from-stone-900 to-blue-950/30 border border-blue-500/30 hover:border-cyan-400 transition cursor-pointer group space-y-2"
             >
               <div className="flex items-center justify-between">
-                <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300">
+                <div className="p-2 rounded-xl bg-blue-500/20 text-cyan-300">
                   <Layers className="w-5 h-5" />
                 </div>
-                <ArrowRight className="w-4 h-4 text-stone-500 group-hover:text-purple-400 group-hover:translate-x-1 transition" />
+                <ArrowRight className="w-4 h-4 text-stone-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition" />
               </div>
               <div className="text-sm font-bold text-white">Conférence de Rédaction</div>
               <p className="text-xs text-stone-400 leading-relaxed">
@@ -675,7 +832,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                         <Eye className="w-3.5 h-3.5 text-cyan-400" /> {art.viewsCount || 0}
                       </span>
                       <span className="flex items-center gap-1 text-[11px]">
-                        <Heart className="w-3.5 h-3.5 text-rose-400" /> {art.likesCount || 0}
+                        <Heart className="w-3.5 h-3.5 text-cyan-400" /> {art.likesCount || 0}
                       </span>
                       <span className="text-cyan-400 font-bold ml-2">Lire →</span>
                     </div>
@@ -704,8 +861,8 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
 
             <span className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold shrink-0 ${
               spotsAvailable > 0
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
-                : 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+                : 'bg-blue-950/40 text-blue-300 border border-blue-400/40'
             }`}>
               {spotsAvailable > 0 ? `${spotsAvailable} place(s) disponible(s)` : 'Équipe au complet (5/5)'}
             </span>
@@ -723,7 +880,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                   key={member.id}
                   className={`p-4 rounded-2xl border space-y-3 relative ${
                     isChefMember
-                      ? 'bg-amber-950/20 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+                      ? 'bg-blue-950/20 border-blue-500/40 shadow-[0_0_15px_rgba(0,210,255,0.1)]'
                       : 'bg-stone-900 border-stone-800'
                   }`}
                 >
@@ -737,13 +894,13 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
                           {member.name}
-                          {isChefMember && <Crown className="w-4 h-4 text-amber-400 shrink-0" title="Chef de Rédaction" />}
+                          {isChefMember && <Crown className="w-4 h-4 text-cyan-400 shrink-0" title="Chef de Rédaction" />}
                         </div>
                         <div className="text-xs text-stone-400 truncate">{member.email}</div>
                         <div className="mt-1">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             isChefMember
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
+                              ? 'bg-blue-500/20 text-cyan-300 border border-blue-400/40'
                               : 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
                           }`}>
                             <Award className="w-3 h-3" />
@@ -977,7 +1134,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                         <Eye className="w-3.5 h-3.5 text-cyan-400" /> {art.viewsCount || 0}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Heart className="w-3.5 h-3.5 text-rose-400" /> {art.likesCount || 0}
+                        <Heart className="w-3.5 h-3.5 text-cyan-400" /> {art.likesCount || 0}
                       </span>
                     </div>
                   </div>
@@ -994,14 +1151,14 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
           {/* Memo Creator */}
           <form
             onSubmit={handleAddEditorialNote}
-            className="p-5 rounded-2xl bg-stone-900 border border-purple-500/30 space-y-4"
+            className="p-5 rounded-2xl bg-stone-900 border border-blue-500/30 space-y-4"
           >
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-purple-400" />
+                <Layers className="w-4 h-4 text-cyan-400" />
                 Conférence de Rédaction • Nouveau mémo ou piste d'enquête
               </h4>
-              <span className="text-[10px] text-purple-300/80 font-mono">
+              <span className="text-[10px] text-cyan-300/80 font-mono">
                 Espace confidentiel aux 5 membres de la maison
               </span>
             </div>
@@ -1012,7 +1169,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
               placeholder="Ex: Angle d'investigation sur les cours des matières premières, contact avec un témoin sur le terrain..."
               value={newNoteContent}
               onChange={(e) => setNewNoteContent(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white focus:outline-none focus:border-purple-400"
+              className="w-full px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white focus:outline-none focus:border-cyan-400"
             />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1034,29 +1191,29 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                   onClick={() => setNewNotePriority('investigation')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
                     newNotePriority === 'investigation'
-                      ? 'bg-purple-500/20 text-purple-300 border-purple-400'
+                      ? 'bg-blue-600/30 text-cyan-200 border-cyan-400'
                       : 'bg-stone-950 text-stone-400 border-stone-800'
                   }`}
                 >
-                  🟣 Enquête en cours
+                  🔷 Enquête en cours
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewNotePriority('urgent')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
                     newNotePriority === 'urgent'
-                      ? 'bg-red-500/20 text-red-300 border-red-400'
+                      ? 'bg-blue-900/50 text-cyan-100 border-blue-400'
                       : 'bg-stone-950 text-stone-400 border-stone-800'
                   }`}
                 >
-                  🔴 Urgent
+                  ⚡ Urgent
                 </button>
               </div>
 
               <button
                 type="submit"
                 disabled={addingNote || !newNoteContent.trim()}
-                className="px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-white font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
                 {addingNote ? 'Envoi...' : 'Poster au carnet de bord'}
@@ -1067,7 +1224,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
           {/* Notes Feed */}
           <div className="space-y-3">
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <FileText className="w-4 h-4 text-purple-400" />
+              <FileText className="w-4 h-4 text-cyan-400" />
               Carnet de bord & Sujets en préparation ({myHouse.editorialNotes?.length || 0})
             </h4>
 
@@ -1089,9 +1246,9 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                       key={note.id}
                       className={`p-4 rounded-2xl border space-y-2.5 ${
                         note.priority === 'urgent'
-                          ? 'bg-red-950/20 border-red-500/40'
+                          ? 'bg-blue-950/40 border-blue-400/50'
                           : note.priority === 'investigation'
-                          ? 'bg-purple-950/20 border-purple-500/40'
+                          ? 'bg-blue-950/20 border-cyan-500/40'
                           : 'bg-stone-900 border-stone-800'
                       }`}
                     >
@@ -1099,12 +1256,12 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                             note.priority === 'urgent'
-                              ? 'bg-red-500/20 text-red-300 border border-red-400/40'
+                              ? 'bg-blue-900/50 text-cyan-100 border border-blue-400/50'
                               : note.priority === 'investigation'
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
+                              ? 'bg-blue-600/30 text-cyan-200 border border-cyan-400/40'
                               : 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
                           }`}>
-                            {note.priority === 'urgent' ? '🔴 Urgent' : note.priority === 'investigation' ? '🟣 Enquête' : '🔵 Note interne'}
+                            {note.priority === 'urgent' ? '⚡ Urgent' : note.priority === 'investigation' ? '🔷 Enquête' : '🔵 Note interne'}
                           </span>
                           <span className="text-xs font-bold text-white">
                             {note.authorName}
@@ -1332,6 +1489,317 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
             </button>
           </div>
         </form>
+      )}
+
+      {/* 6. SUBTAB: DEDICATED NEWSROOM PUBLISHING WORKSPACE */}
+      {subTab === 'publish' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header Banner */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-cyan-950/50 via-blue-950/40 to-[#0a1420] border-2 border-cyan-500/40 shadow-[0_0_25px_rgba(0,243,255,0.15)] space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-black font-black shadow-md shrink-0">
+                  <PenTool className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg font-black text-white">
+                      Espace de Rédaction & Publication d'Articles
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-400/20 text-cyan-300 border border-cyan-400/30">
+                      Signature : {myHouse.name}
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-300 mt-0.5">
+                    Endroit officiel pour les journalistes de la maison : tout article rédigé ici est certifié et publié sous la responsabilité éditoriale de <strong>{myHouse.name}</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-xs font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Accréditation CSC Validée</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-black/40 border border-cyan-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-stone-300">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>
+                  Auteur titulaire : <strong className="text-white">{currentUser.name}</strong> ({isChef ? 'Chef de Rédaction' : 'Journaliste Titulaire'})
+                </span>
+              </div>
+              <div className="text-cyan-400/90 font-mono text-[11px]">
+                Organe de presse certifié PURGE-INFO (Quota: max 5 journalistes)
+              </div>
+            </div>
+          </div>
+
+          {/* Success Banner */}
+          {pubSuccessMsg && (
+            <div className="p-4 rounded-2xl bg-emerald-950/40 border-2 border-emerald-500/60 text-emerald-200 text-xs font-bold flex items-center gap-3 animate-fadeIn shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>{pubSuccessMsg}</span>
+            </div>
+          )}
+
+          {/* Publishing Form */}
+          <form onSubmit={handlePublishArticle} className="p-6 rounded-2xl bg-stone-900 border border-cyan-500/30 space-y-5 shadow-lg">
+            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-cyan-400" />
+                Rédiger une dépêche ou un article pour la Maison
+              </h4>
+
+              {onOpenCreateArticle && (
+                <button
+                  type="button"
+                  onClick={onOpenCreateArticle}
+                  className="text-xs text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Basculer sur l'Atelier Grand Format (Photos, Vidéos, Chapô) →</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {/* Left 2 Cols: Main Content */}
+              <div className="md:col-span-2 space-y-4">
+                {/* Title */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-200 mb-1.5">
+                    Titre de l'article *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Révélations sur le nouveau sommet économique international..."
+                    value={pubTitle}
+                    onChange={(e) => setPubTitle(e.target.value)}
+                    className="w-full px-4 py-2.5 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white placeholder-stone-500 focus:outline-none focus:border-cyan-400 transition"
+                  />
+                </div>
+
+                {/* Category & Tags Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-200 mb-1.5">
+                      Rubrique éditoriale *
+                    </label>
+                    <select
+                      required
+                      value={pubCategoryId}
+                      onChange={(e) => setPubCategoryId(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-stone-200 focus:outline-none focus:border-cyan-400 transition"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-stone-200 mb-1.5">
+                      Mots-clés / Tags (séparés par virgules)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Investigation, Politique, Justice"
+                      value={pubTags}
+                      onChange={(e) => setPubTags(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white placeholder-stone-500 focus:outline-none focus:border-cyan-400 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Short Summary */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-200 mb-1.5">
+                    Chapô / Résumé percutant
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Synthèse de l'information en 1 à 2 phrases pour accrocher les lecteurs..."
+                    value={pubSummary}
+                    onChange={(e) => setPubSummary(e.target.value)}
+                    className="w-full px-4 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white placeholder-stone-500 focus:outline-none focus:border-cyan-400 transition"
+                  />
+                </div>
+
+                {/* Main Content */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-200 mb-1.5">
+                    Contenu complet de l'article * (minimum 30 caractères)
+                  </label>
+                  <textarea
+                    rows={8}
+                    required
+                    placeholder="Rédigez ici votre article, dépêche vérifiée, enquête ou analyse de fond..."
+                    value={pubContent}
+                    onChange={(e) => setPubContent(e.target.value)}
+                    className="w-full px-4 py-3 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white placeholder-stone-500 focus:outline-none focus:border-cyan-400 font-sans leading-relaxed transition"
+                  />
+                  <div className="flex justify-between items-center text-[10px] text-stone-500 mt-1 font-mono">
+                    <span>{pubContent.length} caractères saisis</span>
+                    <span>Min. 30 caractères</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Visual Media & Official Seal */}
+              <div className="space-y-4">
+                {/* Cover Image */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-stone-200">
+                    Image de couverture (URL)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/..."
+                    value={pubCoverImage}
+                    onChange={(e) => setPubCoverImage(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-stone-950 border border-stone-700 text-white placeholder-stone-500 focus:outline-none focus:border-cyan-400 transition"
+                  />
+
+                  {/* Preset cover images */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-stone-400">Suggestions visuelles :</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPubCoverImage('https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1000&auto=format&fit=crop&q=80')}
+                        className="p-1.5 rounded-lg bg-stone-950 border border-stone-800 hover:border-cyan-500/50 text-[10px] text-stone-300 hover:text-cyan-300 text-left truncate transition"
+                      >
+                        Presse & Médias
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPubCoverImage('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1000&auto=format&fit=crop&q=80')}
+                        className="p-1.5 rounded-lg bg-stone-950 border border-stone-800 hover:border-cyan-500/50 text-[10px] text-stone-300 hover:text-cyan-300 text-left truncate transition"
+                      >
+                        Monde & Géopolitique
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPubCoverImage('https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1000&auto=format&fit=crop&q=80')}
+                        className="p-1.5 rounded-lg bg-stone-950 border border-stone-800 hover:border-cyan-500/50 text-[10px] text-stone-300 hover:text-cyan-300 text-left truncate transition"
+                      >
+                        Économie & Marchés
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPubCoverImage('https://images.unsplash.com/photo-1518770660439-4636190af475?w=1000&auto=format&fit=crop&q=80')}
+                        className="p-1.5 rounded-lg bg-stone-950 border border-stone-800 hover:border-cyan-500/50 text-[10px] text-stone-300 hover:text-cyan-300 text-left truncate transition"
+                      >
+                        Technologies & IA
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Image Preview */}
+                  <div className="h-28 w-full rounded-xl overflow-hidden border border-stone-800 bg-stone-950 relative">
+                    <img
+                      src={pubCoverImage.trim() || 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1000&auto=format&fit=crop&q=80'}
+                      alt="Aperçu couverture"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-2">
+                      <span className="text-[10px] text-stone-300 font-mono">Aperçu visuel</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Accreditation & Legal Box */}
+                <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 space-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
+                    <Shield className="w-4 h-4" />
+                    <span>Engagement Déontologique</span>
+                  </div>
+                  <p className="text-[11px] text-stone-400 leading-relaxed">
+                    Tout article publié engage la charte et la réputation de la maison <strong>{myHouse.name}</strong>. Assurez-vous de la vérification des sources.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Toolbar */}
+            <div className="pt-4 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-xs text-stone-400 flex items-center gap-2">
+                <Crown className="w-4 h-4 text-cyan-400" />
+                <span>Publié sous le label officiel : <strong className="text-white">{myHouse.name}</strong></span>
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <button
+                  type="submit"
+                  disabled={pubSubmitting}
+                  className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 disabled:opacity-50 text-black font-black text-xs shadow-[0_0_18px_rgba(0,243,255,0.4)] transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{pubSubmitting ? 'Publication en cours...' : `Publier au nom de ${myHouse.name}`}</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Recent Publications from the House */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-cyan-400" />
+                Derniers articles publiés par la rédaction ({houseArticles.length})
+              </h4>
+              <button
+                type="button"
+                onClick={() => setSubTab('articles')}
+                className="text-xs text-cyan-400 hover:text-cyan-300 font-bold"
+              >
+                Voir toute la liste →
+              </button>
+            </div>
+
+            {houseArticles.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-stone-900 border border-stone-800 text-center text-xs text-stone-400">
+                Aucun article publié pour l'instant. Utilisez le formulaire ci-dessus pour publier le premier article de la maison !
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {houseArticles.slice(0, 4).map((art) => (
+                  <div
+                    key={art.id}
+                    onClick={() => onOpenArticle?.(art)}
+                    className="p-3 rounded-xl bg-stone-900 hover:bg-stone-800/80 border border-stone-800 hover:border-cyan-500/40 flex items-center justify-between gap-3 cursor-pointer transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={art.coverImage}
+                        alt={art.title}
+                        className="w-12 h-12 rounded-xl object-cover border border-stone-700 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-mono font-bold text-cyan-400">
+                          {art.categoryName || 'Information'}
+                        </span>
+                        <h5 className="text-xs font-bold text-white truncate hover:text-cyan-300">
+                          {art.title}
+                        </h5>
+                        <p className="text-[10px] text-stone-400 truncate">
+                          Par {art.authorName}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-cyan-400 text-xs font-bold shrink-0">Lire →</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

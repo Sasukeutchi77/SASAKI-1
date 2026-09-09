@@ -301,7 +301,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             </p>
             <div className="w-48 bg-[#141933] border border-cyan-500/30 rounded-full h-2 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 h-full transition-all duration-200"
+                className="bg-gradient-to-r from-blue-600 to-cyan-400 h-full transition-all duration-200 shadow-[0_0_10px_rgba(0,210,255,0.5)]"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
