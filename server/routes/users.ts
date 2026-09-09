@@ -16,19 +16,38 @@ usersRouter.get('/journalists', (req: AuthenticatedRequest, res: Response) => {
   );
 
   const currentUserId = req.user?.id;
+  let hasChanges = false;
 
   const result = journalists.map((j) => {
     const followers = data.follows.filter((f) => f.targetId === j.id);
     const isFollowing = currentUserId
       ? data.follows.some((f) => f.followerId === currentUserId && f.targetId === j.id)
       : false;
+    const followersCount = j.followersCount ? Math.max(j.followersCount, followers.length) : followers.length;
+
+    // Automatic verification for journalists reaching >= 50 followers
+    if ((j.role === 'journalist' || j.role === 'admin') && followersCount >= 50 && !j.isVerified) {
+      j.isVerified = true;
+      j.verificationStatus = 'approved';
+      hasChanges = true;
+      data.articles.forEach((a) => {
+        if (a.authorId === j.id) {
+          a.isAuthorVerified = true;
+        }
+      });
+    }
+
     const { passwordHash, passwordSalt, ...safe } = j;
     return {
       ...safe,
-      followersCount: j.followersCount ? Math.max(j.followersCount, followers.length) : followers.length,
+      followersCount,
       isFollowing,
     };
   });
+
+  if (hasChanges) {
+    db.save();
+  }
 
   return res.json({ journalists: result });
 });
@@ -165,6 +184,68 @@ usersRouter.post('/:id/follow', requireAuth, likesRateLimiter, (req: Authenticat
     return res.status(400).json({ error: 'Vous ne pouvez pas vous suivre vous-même.' });
   }
 
+  // 1. Check if target is a media house
+  const targetHouse = (data.mediaHouses || []).find((h) => h.id === targetId || h.slug === targetId);
+  if (targetHouse) {
+    const existingIndex = data.follows.findIndex(
+      (f) => f.followerId === currentUserId && f.targetId === targetHouse.id
+    );
+
+    let isFollowing = false;
+    if (existingIndex !== -1) {
+      data.follows.splice(existingIndex, 1);
+      isFollowing = false;
+    } else {
+      data.follows.push({
+        id: `flw_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        followerId: currentUserId,
+        targetId: targetHouse.id,
+        createdAt: new Date().toISOString(),
+      });
+      isFollowing = true;
+
+      if (targetHouse.ownerId && targetHouse.ownerId !== currentUserId) {
+        data.notifications.unshift({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          userId: targetHouse.ownerId,
+          type: 'follow',
+          title: 'Nouvel abonné pour votre Maison de Presse',
+          message: `${req.user!.name} a commencé à suivre votre maison de presse "${targetHouse.name}".`,
+          link: `/houses/${targetHouse.id}`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    const followersCount = data.follows.filter((f) => f.targetId === targetHouse.id).length;
+    const membersCount = targetHouse.members ? targetHouse.members.length : (targetHouse.journalistsCount || 1);
+
+    // Auto-verify media house if reaching 100 followers OR 100 members
+    let newlyVerified = false;
+    if ((followersCount >= 100 || membersCount >= 100) && !targetHouse.isVerified) {
+      targetHouse.isVerified = true;
+      newlyVerified = true;
+
+      if (targetHouse.ownerId) {
+        data.notifications.unshift({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          userId: targetHouse.ownerId,
+          type: 'system',
+          title: 'Maison de Presse Certifiée (Badge Bleu TikTok) !',
+          message: `Félicitations ! Votre maison de presse "${targetHouse.name}" a atteint 100 abonnés. Elle a automatiquement obtenu le badge bleu officiel de certification !`,
+          link: `/houses/${targetHouse.id}`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    db.save();
+    return res.json({ isFollowing, followersCount, isVerified: targetHouse.isVerified, newlyVerified });
+  }
+
+  // 2. Check if target is a user / journalist
   const targetUser = data.users.find((u) => u.id === targetId || (u.mediaId && u.mediaId === targetId));
   if (!targetUser) {
     return res.status(404).json({ error: 'Profil introuvable.' });
@@ -200,10 +281,60 @@ usersRouter.post('/:id/follow', requireAuth, likesRateLimiter, (req: Authenticat
     });
   }
 
-  const followersCount = data.follows.filter((f) => f.targetId === targetUser.id).length;
+  const dbFollowersCount = data.follows.filter((f) => f.targetId === targetUser.id).length;
+  const effectiveFollowersCount = targetUser.followersCount ? Math.max(targetUser.followersCount, dbFollowersCount) : dbFollowersCount;
+
+  // Auto-verify journalist reaching 50 followers
+  let newlyVerified = false;
+  if ((targetUser.role === 'journalist' || targetUser.role === 'admin') && effectiveFollowersCount >= 50 && !targetUser.isVerified) {
+    targetUser.isVerified = true;
+    targetUser.verificationStatus = 'approved';
+    newlyVerified = true;
+    data.articles.forEach((a) => {
+      if (a.authorId === targetUser.id) {
+        a.isAuthorVerified = true;
+      }
+    });
+
+    data.notifications.unshift({
+      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: targetUser.id,
+      type: 'system',
+      title: 'Badge Bleu Obtenu (50 Abonnés) !',
+      message: 'Félicitations ! Vous venez d’atteindre le seuil de 50 abonnés. Votre profil est désormais officiellement certifié avec le badge bleu TikTok !',
+      link: `/profile/${targetUser.id}`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Check media house affiliation auto-verification
+  if (targetUser.mediaId) {
+    const house = (data.mediaHouses || []).find((h) => h.id === targetUser.mediaId);
+    if (house) {
+      const houseFollowers = data.follows.filter((f) => f.targetId === house.id || (house.ownerId && f.targetId === house.ownerId)).length;
+      const membersCount = house.members ? house.members.length : (house.journalistsCount || 1);
+      if ((houseFollowers >= 100 || membersCount >= 100) && !house.isVerified) {
+        house.isVerified = true;
+        if (house.ownerId) {
+          data.notifications.unshift({
+            id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            userId: house.ownerId,
+            type: 'system',
+            title: 'Maison de Presse Certifiée (Badge Bleu) !',
+            message: `Félicitations ! La maison de presse "${house.name}" a atteint 100 abonnés. Elle reçoit le badge bleu certifié officiel !`,
+            link: `/houses/${house.id}`,
+            read: false,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+    }
+  }
+
   db.save();
 
-  return res.json({ isFollowing, followersCount });
+  return res.json({ isFollowing, followersCount: effectiveFollowersCount, isVerified: targetUser.isVerified, newlyVerified });
 });
 
 // 8. Public profile by id (placed last so it doesn't intercept /journalists or /me/*)
@@ -215,9 +346,20 @@ usersRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
     return res.status(404).json({ error: 'Utilisateur ou média introuvable.' });
   }
 
-  const followersCount = data.follows.filter((f) => f.targetId === user.id || (user.mediaId && f.targetId === user.mediaId)).length;
+  const dbFollowersCount = data.follows.filter((f) => f.targetId === user.id || (user.mediaId && f.targetId === user.mediaId)).length;
   const followingCount = data.follows.filter((f) => f.followerId === user.id).length;
   const isFollowing = req.user ? data.follows.some((f) => f.followerId === req.user!.id && (f.targetId === user.id || (user.mediaId && f.targetId === user.mediaId))) : false;
+  const effectiveFollowersCount = user.followersCount ? Math.max(user.followersCount, dbFollowersCount) : dbFollowersCount;
+
+  // Auto-verify if journalist has >= 50 followers
+  if ((user.role === 'journalist' || user.role === 'admin') && effectiveFollowersCount >= 50 && !user.isVerified) {
+    user.isVerified = true;
+    user.verificationStatus = 'approved';
+    data.articles.forEach((a) => {
+      if (a.authorId === user.id) a.isAuthorVerified = true;
+    });
+    db.save();
+  }
 
   // Articles written by this author/media (only published for public)
   const isSelfOrAdmin = req.user && (req.user.id === user.id || req.user.role === 'admin');
@@ -231,7 +373,7 @@ usersRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
   return res.json({
     user: {
       ...safeUser,
-      followersCount: user.followersCount ? Math.max(user.followersCount, followersCount) : followersCount,
+      followersCount: effectiveFollowersCount,
       followingCount,
       articlesCount: userArticles.length,
       isFollowing,

@@ -16,12 +16,14 @@ import {
   Moon,
   Zap,
   Building2,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SoundToggleButton } from './SoundToggleButton';
 import { sfx } from '../services/soundEffects';
 import { realtime, RealtimeStatus } from '../services/realtime';
+import { VerifiedBadge } from './VerifiedBadge';
 
 interface HeaderProps {
   onSearchChange: (search: string) => void;
@@ -38,6 +40,7 @@ interface HeaderProps {
   onOpenMyProfile: () => void;
   onOpenMediaHouses?: () => void;
   onOpenMyHouse?: () => void;
+  onOpenTrustSystem?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -55,6 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMyProfile,
   onOpenMediaHouses,
   onOpenMyHouse,
+  onOpenTrustSystem,
 }) => {
   const { user, isAuthenticated, logout, unreadNotifs, bookmarksCount, quickSwitch } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -162,6 +166,19 @@ export const Header: React.FC<HeaderProps> = ({
                     À créer
                   </span>
                 )}
+              </button>
+            )}
+
+            {/* Système de Confiance & Vérification */}
+            {onOpenTrustSystem && (
+              <button
+                id="header-open-trust-system-btn"
+                onClick={onOpenTrustSystem}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 hover:border-emerald-400 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                title="Découvrir notre Système de Confiance & nos 3 Niveaux de Vérification"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Confiance & Vérification</span>
               </button>
             )}
           </div>
@@ -410,8 +427,8 @@ export const Header: React.FC<HeaderProps> = ({
                   />
                   <div className="hidden lg:flex flex-col text-left">
                     <span className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1 leading-tight">
-                      {user.name.split(' ')[0]}
-                      {user.isVerified && <CheckCircle2 className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />}
+                      <span>{user.name.split(' ')[0]}</span>
+                      {user.isVerified && <VerifiedBadge size="xs" type={user.role === 'admin' ? 'admin' : 'journalist'} />}
                     </span>
                     <span className="text-[10px] text-stone-500 dark:text-stone-400 capitalize">
                       {user.role === 'admin' ? 'Administrateur' : user.role === 'journalist' ? 'Journaliste' : 'Lecteur'}
@@ -423,8 +440,8 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 py-2 z-50 animate-in fade-in zoom-in-95">
                     <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
                       <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                        {user.name}
-                        {user.isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                        <span>{user.name}</span>
+                        {user.isVerified && <VerifiedBadge size="xs" type={user.role === 'admin' ? 'admin' : 'journalist'} />}
                       </div>
                       <div className="text-xs text-stone-500 dark:text-stone-400 truncate">{user.email}</div>
                       <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
@@ -504,6 +521,19 @@ export const Header: React.FC<HeaderProps> = ({
                         className="w-full text-left px-4 py-2 text-xs text-stone-300 hover:bg-cyan-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
                       >
                         <Building2 className="w-4 h-4 text-stone-400" /> Toutes les Maisons de Presse
+                      </button>
+                    )}
+
+                    {onOpenTrustSystem && (
+                      <button
+                        id="menu-open-trust-system-dropdown"
+                        onClick={() => {
+                          onOpenTrustSystem();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-emerald-400 hover:bg-emerald-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" /> Charte & Système de Confiance
                       </button>
                     )}
 

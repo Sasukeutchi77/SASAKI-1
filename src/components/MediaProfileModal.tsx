@@ -12,6 +12,7 @@ import {
   Phone,
   Mail,
 } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ArticleCard } from './ArticleCard';
@@ -98,6 +99,11 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
       const res = await api.toggleFollow(userId);
       setIsFollowing(res.isFollowing);
       setFollowersCount(res.followersCount);
+      if (res.isVerified !== undefined) {
+        setProfileUser((prev) => prev ? { ...prev, isVerified: res.isVerified } : null);
+      } else if (res.followersCount >= 50) {
+        setProfileUser((prev) => prev ? { ...prev, isVerified: true } : null);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -146,7 +152,7 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
                     <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
                       <span>{profileUser.mediaName || profileUser.name}</span>
                       {profileUser.isVerified && (
-                        <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0" title="Média / Journaliste certifié" />
+                        <VerifiedBadge size="sm" type={profileUser.mediaName ? 'media' : 'journalist'} showLabel label="Certifié" />
                       )}
                     </h1>
                     {profileUser.mediaName && profileUser.name !== profileUser.mediaName && (
@@ -298,13 +304,17 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-cyan-400/80 pt-1">
-                      <CheckCircle2 className={`w-4 h-4 ${profileUser.isVerified ? 'text-cyan-400' : 'text-stone-500'}`} />
+                      {profileUser.isVerified ? (
+                        <VerifiedBadge size="sm" type={profileUser.mediaName ? 'media' : 'journalist'} />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4 text-stone-500" />
+                      )}
                       <span>
-                        Statut d'accréditation :{' '}
+                        Statut de certification :{' '}
                         <strong className="text-white">
                           {profileUser.isVerified
-                            ? 'Vérifié officiel (Conseil de Presse)'
-                            : 'Enregistrement standard'}
+                            ? 'Certifié officiel (Badge bleu TikTok)'
+                            : `En attente (${followersCount}/50 abonnés pour auto-certification)`}
                         </strong>
                       </span>
                     </div>

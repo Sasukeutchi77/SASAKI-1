@@ -26,6 +26,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { MediaUploader } from './media/MediaUploader';
 import { getThumbnailUrl } from '../services/cloudinary';
+import { VerifiedBadge } from './VerifiedBadge';
 
 interface JournalistDashboardModalProps {
   onClose: () => void;
@@ -181,7 +182,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
               <h2 className="text-base font-black font-mono text-white flex items-center gap-1.5">
                 <span>Espace Journaliste & Rédaction</span>
                 {user?.isVerified && (
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400" title="Compte officiel vérifié" />
+                  <VerifiedBadge size="sm" type="journalist" />
                 )}
               </h2>
               <p className="text-xs text-cyan-400/70 font-mono">
@@ -425,10 +426,54 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
           ) : activeTab === 'verification' ? (
             /* TAB: VERIFICATION */
             <div className="max-w-xl space-y-6">
+              {/* Audience & Auto-certification Progress Card */}
+              <div className="p-5 rounded-2xl bg-[#101428] border border-cyan-500/40 space-y-3 shadow-[0_0_20px_rgba(0,243,255,0.1)]">
+                <div className="flex items-start gap-3">
+                  <VerifiedBadge size="md" type="journalist" />
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>Certification Officielle (Badge Bleu Style TikTok)</span>
+                      {user?.isVerified && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
+                          Actif
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-cyan-400/70 mt-0.5">
+                      Règle de la plateforme : tout journaliste atteignant <strong>50 abonnés</strong> obtient automatiquement son badge de certification officiel. L'administrateur peut également accorder la certification directement à tout moment.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#141933] rounded-xl border border-cyan-500/20 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-stone-300">Votre communauté :</span>
+                    <span className="text-cyan-300 font-bold">{user?.followersCount || 0} / 50 abonnés</span>
+                  </div>
+                  <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, Math.round(((user?.followersCount || 0) / 50) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="text-[11px] text-cyan-400/80 flex items-center justify-between">
+                    <span>
+                      {user?.isVerified
+                        ? '✓ Compte certifié'
+                        : (user?.followersCount || 0) >= 50
+                        ? '✓ Seuil de 50 abonnés atteint'
+                        : `Plus que ${Math.max(0, 50 - (user?.followersCount || 0))} abonnés pour la certification automatique`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {user?.isVerified ? (
                 <div className="p-6 rounded-2xl bg-[#101428] border border-cyan-500/40 text-cyan-300 shadow-[0_0_20px_rgba(0,243,255,0.15)]">
                   <div className="flex items-center gap-2 font-black font-mono text-lg text-white">
-                    <CheckCircle2 className="w-6 h-6 text-cyan-400" />
+                    <VerifiedBadge size="md" type="journalist" />
                     <span>Compte Journaliste / Média Certifié</span>
                   </div>
                   <p className="mt-2 text-xs text-slate-300 leading-relaxed font-mono">

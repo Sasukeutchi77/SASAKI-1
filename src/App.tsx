@@ -19,6 +19,7 @@ import { NotificationsModal } from './components/NotificationsModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { MediaHousesModal } from './components/MediaHousesModal';
+import { TrustSystemModal } from './components/TrustSystemModal';
 import { Article, Category } from './types';
 import { api } from './services/api';
 
@@ -44,6 +45,7 @@ export function AppContent() {
   const [showUserProfileModal, setShowUserProfileModal] = useState<boolean>(false);
   const [showMediaHousesModal, setShowMediaHousesModal] = useState<boolean>(false);
   const [mediaHousesTab, setMediaHousesTab] = useState<'explore' | 'my-house'>('explore');
+  const [showTrustSystemModal, setShowTrustSystemModal] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
@@ -207,6 +209,7 @@ export function AppContent() {
         onOpenMyProfile={() => setShowUserProfileModal(true)}
         onOpenMediaHouses={handleOpenMediaHouses}
         onOpenMyHouse={handleOpenMyHouse}
+        onOpenTrustSystem={() => setShowTrustSystemModal(true)}
       />
 
       {/* Security Alert Banner for Suspended Accounts */}
@@ -280,6 +283,7 @@ export function AppContent() {
             onOpenCategoryPage={navigateToCategory}
             onOpenMediaHouses={handleOpenMediaHouses}
             onOpenMyHouse={handleOpenMyHouse}
+            onOpenTrustSystem={() => setShowTrustSystemModal(true)}
           />
         )}
       </div>
@@ -341,6 +345,7 @@ export function AppContent() {
             setArticleToEdit(art);
             setShowCreateArticle(true);
           }}
+          onOpenTrustSystem={() => setShowTrustSystemModal(true)}
         />
       )}
 
@@ -453,6 +458,17 @@ export function AppContent() {
           onOpenCreateArticle={() => {
             setShowMediaHousesModal(false);
             setShowCreateArticle(true);
+          }}
+        />
+      )}
+
+      {/* 11. Trust System, Verification Levels & Deontological Charter Modal */}
+      {showTrustSystemModal && (
+        <TrustSystemModal
+          onClose={() => setShowTrustSystemModal(false)}
+          onOpenVerification={() => {
+            setShowTrustSystemModal(false);
+            setShowUserProfileModal(true);
           }}
         />
       )}

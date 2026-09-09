@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Article, Category, User } from '../types';
+import { Article, Category, User, MediaHouse } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ArticleCard } from '../components/ArticleCard';
@@ -23,7 +23,11 @@ import {
   ChevronDown,
   Loader2,
   Building2,
+  ShieldCheck,
+  Award,
+  ArrowRight,
 } from 'lucide-react';
+import { VerifiedBadge } from '../components/VerifiedBadge';
 
 interface HomeProps {
   onOpenArticle: (article: Article) => void;
@@ -34,6 +38,7 @@ interface HomeProps {
   onOpenCategoryPage?: (catSlug: string) => void;
   onOpenMediaHouses?: () => void;
   onOpenMyHouse?: () => void;
+  onOpenTrustSystem?: () => void;
   searchQuery: string;
   selectedCategory: string | null;
   onSelectCategory: (catSlug: string | null) => void;
@@ -50,6 +55,7 @@ export const Home: React.FC<HomeProps> = ({
   onOpenCategoryPage,
   onOpenMediaHouses,
   onOpenMyHouse,
+  onOpenTrustSystem,
   searchQuery,
   selectedCategory,
   onSelectCategory,
@@ -70,6 +76,7 @@ export const Home: React.FC<HomeProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null);
   const [topJournalists, setTopJournalists] = useState<User[]>([]);
+  const [popularMediaHouses, setPopularMediaHouses] = useState<MediaHouse[]>([]);
   const [popularTags, setPopularTags] = useState<{ tag: string; count: number }[]>([]);
   const [liveFlash, setLiveFlash] = useState<{ article: Article; time: string } | null>(null);
 
@@ -86,6 +93,9 @@ export const Home: React.FC<HomeProps> = ({
     });
     api.getJournalists().then((res) => {
       setTopJournalists(res.journalists);
+    });
+    api.getMediaHouses().then((res) => {
+      setPopularMediaHouses(res.mediaHouses || []);
     });
     api.getTags().then((res) => {
       setPopularTags(res.tags);
@@ -283,7 +293,12 @@ export const Home: React.FC<HomeProps> = ({
       setTopJournalists((prev) =>
         prev.map((j) =>
           j.id === journalistId
-            ? { ...j, isFollowing: res.isFollowing, followersCount: res.followersCount }
+            ? {
+                ...j,
+                isFollowing: res.isFollowing,
+                followersCount: res.followersCount,
+                isVerified: res.isVerified !== undefined ? res.isVerified : (res.followersCount >= 50 ? true : j.isVerified),
+              }
             : j
         )
       );
@@ -428,22 +443,10 @@ export const Home: React.FC<HomeProps> = ({
                       ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_15px_rgba(0,243,255,0.5)]'
                       : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
                   }`}
+                  title="À la une : Les informations les plus importantes du moment"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Pour vous</span>
-                </button>
-
-                <button
-                  id="tab-feed-trending"
-                  onClick={() => setFeedTab('trending')}
-                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    feedTab === 'trending'
-                      ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white shadow-[0_0_15px_rgba(240,38,211,0.5)]'
-                      : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
-                  }`}
-                >
-                  <Flame className="w-3.5 h-3.5" />
-                  <span>Tendances</span>
+                  <span>À la une</span>
                 </button>
 
                 <button
@@ -454,9 +457,24 @@ export const Home: React.FC<HomeProps> = ({
                       ? 'bg-gradient-to-r from-emerald-400 to-cyan-500 text-black shadow-[0_0_15px_rgba(0,255,157,0.5)]'
                       : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
                   }`}
+                  title="Dernières publications : Les articles récemment publiés"
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  <span>Dernières minutes</span>
+                  <span>Dernières publications</span>
+                </button>
+
+                <button
+                  id="tab-feed-trending"
+                  onClick={() => setFeedTab('trending')}
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    feedTab === 'trending'
+                      ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white shadow-[0_0_15px_rgba(240,38,211,0.5)]'
+                      : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
+                  }`}
+                  title="Articles populaires : Les articles les plus lus, likés ou commentés"
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                  <span>Articles populaires</span>
                 </button>
 
                 <button
@@ -473,6 +491,7 @@ export const Home: React.FC<HomeProps> = ({
                       ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_15px_rgba(0,243,255,0.5)]'
                       : 'text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/10'
                   }`}
+                  title="Abonnements : Articles des journalistes et rédactions que vous suivez"
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>Abonnements</span>
@@ -544,7 +563,7 @@ export const Home: React.FC<HomeProps> = ({
                         {featuredArticle.mediaName || featuredArticle.authorName}
                       </span>
                       {featuredArticle.isAuthorVerified && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+                        <VerifiedBadge size="xs" type={featuredArticle.mediaName ? 'media' : 'journalist'} />
                       )}
                     </div>
                     <span>•</span>
@@ -588,8 +607,9 @@ export const Home: React.FC<HomeProps> = ({
                               className="w-8 h-8 rounded-full object-cover"
                             />
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate">
-                                {j.mediaName || j.name}
+                              <p className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate flex items-center gap-1">
+                                <span>{j.mediaName || j.name}</span>
+                                {j.isVerified && <VerifiedBadge size="xs" type="journalist" />}
                               </p>
                               <p className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
                                 {j.followersCount || 0} abonnés
@@ -709,52 +729,134 @@ export const Home: React.FC<HomeProps> = ({
               </div>
             )}
 
-            {/* Maisons de Presse & Rédactions Shortcut */}
-            {onOpenMediaHouses && (
-              <div
-                onClick={onOpenMediaHouses}
-                className="group p-4 rounded-2xl bg-gradient-to-br from-[#0c1024] to-[#141b3a] border border-cyan-500/40 shadow-[0_0_20px_rgba(0,243,255,0.1)] hover:border-cyan-400 hover:shadow-[0_0_25px_rgba(0,243,255,0.25)] transition-all cursor-pointer relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-28 h-28 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-cyan-500/20 transition-all" />
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
-                      <Building2 className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="font-black text-xs text-white uppercase tracking-wider">
-                        Maisons de Presse
-                      </h4>
-                      <p className="text-[10px] text-cyan-400/70 font-mono">
-                        Collectifs & Rédactions (max 5)
-                      </p>
-                    </div>
+            {/* Trust System Explainer Card */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-950/40 via-[#0a1226] to-emerald-950/40 border border-cyan-500/40 shadow-[0_0_20px_rgba(0,243,255,0.1)] relative overflow-hidden">
+              <div className="flex items-start justify-between gap-3 mb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                    <ShieldCheck className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-                    Explorer
-                  </span>
+                  <div>
+                    <h4 className="font-black text-xs text-white uppercase tracking-wider">
+                      Système de Confiance
+                    </h4>
+                    <p className="text-[10px] text-cyan-400/70 font-mono">
+                      3 Niveaux de Vérification
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-stone-300 leading-relaxed">
-                  Découvrez les rédactions agréées, rejoignez un collectif ou fondez votre propre maison de journalistes.
-                </p>
-              </div>
-            )}
 
-            {/* Recommended & Verified Media */}
+                {onOpenTrustSystem && (
+                  <button
+                    onClick={onOpenTrustSystem}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 hover:bg-cyan-500/30 transition-all cursor-pointer shadow-[0_0_8px_rgba(0,243,255,0.2)]"
+                  >
+                    Découvrir
+                  </button>
+                )}
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Ici, pas de « faux journalistes » ni de fake news sans contrôle. Tous les articles sont signés, sourcés et vérifiés par des professionnels accrédités.
+              </p>
+
+              <div className="mt-3 grid grid-cols-3 gap-1.5 text-center font-mono">
+                <div className="p-1.5 rounded-lg bg-black/40 border border-cyan-500/20">
+                  <span className="text-[10px] font-bold text-cyan-300 block">Niv. 1</span>
+                  <span className="text-[9px] text-slate-400 block truncate">Journaliste</span>
+                </div>
+                <div className="p-1.5 rounded-lg bg-black/40 border border-emerald-500/20">
+                  <span className="text-[10px] font-bold text-emerald-300 block">Niv. 2</span>
+                  <span className="text-[9px] text-slate-400 block truncate">Maison Presse</span>
+                </div>
+                <div className="p-1.5 rounded-lg bg-black/40 border border-cyan-500/20">
+                  <span className="text-[10px] font-bold text-cyan-300 block">Niv. 3</span>
+                  <span className="text-[9px] text-slate-400 block truncate">Article Vérifié</span>
+                </div>
+              </div>
+
+              {onOpenTrustSystem && (
+                <button
+                  onClick={onOpenTrustSystem}
+                  className="mt-3 w-full py-1.5 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-xs font-bold text-cyan-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span>Consulter la Charte & Règles de Modération</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-cyan-400" />
+                </button>
+              )}
+            </div>
+
+            {/* Maisons de Presse Populaires */}
+            <div className="bg-[#0b0e1a]/90 rounded-2xl border border-cyan-500/30 p-4 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-emerald-400" />
+                  <span>Maisons de presse populaires</span>
+                </h3>
+                {onOpenMediaHouses && (
+                  <button
+                    onClick={onOpenMediaHouses}
+                    className="text-[11px] font-bold text-cyan-400 hover:text-cyan-200 cursor-pointer"
+                  >
+                    Voir tout
+                  </button>
+                )}
+              </div>
+
+              <div className="divide-y divide-cyan-500/10">
+                {popularMediaHouses.slice(0, 4).map((house) => (
+                  <div key={house.id} className="py-2.5 flex items-center justify-between gap-3">
+                    <div
+                      onClick={onOpenMediaHouses}
+                      className="flex items-center gap-2.5 text-left group min-w-0 cursor-pointer flex-1"
+                    >
+                      <img
+                        src={house.logo || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=150&auto=format&fit=crop&q=80'}
+                        alt={house.name}
+                        referrerPolicy="no-referrer"
+                        className="w-9 h-9 rounded-xl object-cover border border-cyan-500/40 group-hover:border-cyan-400 shrink-0 transition-all shadow-[0_0_8px_rgba(0,243,255,0.2)]"
+                      />
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-white group-hover:text-cyan-300 truncate flex items-center gap-1 transition-colors">
+                          <span>{house.name}</span>
+                          {house.isVerified && (
+                            <VerifiedBadge size="xs" type="media" />
+                          )}
+                        </div>
+                        <div className="text-[11px] text-cyan-400/60 font-mono truncate">
+                          {house.members?.length || house.journalistsCount || 1} journaliste(s) • {house.specialties?.[0] || 'Généraliste'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {onOpenMediaHouses && (
+                      <button
+                        onClick={onOpenMediaHouses}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-950/60 text-cyan-300 hover:bg-cyan-900/60 border border-cyan-500/30 transition-all shrink-0 cursor-pointer"
+                      >
+                        Consulter
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Journalistes à suivre */}
             <div className="bg-[#0b0e1a]/90 rounded-2xl border border-cyan-500/30 p-4 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
                   <TrendingUp className="w-4 h-4 text-cyan-400" />
-                  <span>Médias & Journalistes de référence</span>
+                  <span>Journalistes à suivre</span>
                 </h3>
               </div>
 
               <div className="divide-y divide-cyan-500/10">
                 {topJournalists.slice(0, 5).map((j) => (
-                  <div key={j.id} className="py-3 flex items-center justify-between gap-3">
+                  <div key={j.id} className="py-2.5 flex items-center justify-between gap-3">
                     <button
                       onClick={() => onOpenProfile(j.id)}
-                      className="flex items-center gap-2.5 text-left group min-w-0 cursor-pointer"
+                      className="flex items-center gap-2.5 text-left group min-w-0 cursor-pointer flex-1"
                     >
                       <img
                         src={j.avatar}
@@ -764,13 +866,13 @@ export const Home: React.FC<HomeProps> = ({
                       />
                       <div className="min-w-0">
                         <div className="font-bold text-xs text-white group-hover:text-cyan-300 truncate flex items-center gap-1 transition-colors">
-                          <span>{j.mediaName || j.name}</span>
+                          <span>{j.name}</span>
                           {j.isVerified && (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                            <VerifiedBadge size="xs" type="journalist" />
                           )}
                         </div>
                         <div className="text-[11px] text-cyan-400/60 font-mono truncate">
-                          {j.followersCount || 0} abonnés
+                          {j.mediaName || 'Reporter indépendant'} • {j.followersCount || 0} abonnés
                         </div>
                       </div>
                     </button>

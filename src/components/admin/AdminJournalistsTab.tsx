@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { VerificationRequest, User } from '../../types';
 import { api } from '../../services/api';
+import { VerifiedBadge } from '../VerifiedBadge';
 import { AdminConfirmDialog } from './AdminConfirmDialog';
 
 interface AdminJournalistsTabProps {
@@ -303,6 +304,7 @@ export const AdminJournalistsTab: React.FC<AdminJournalistsTabProps> = ({
                 <tr>
                   <th className="py-3 px-4">Journaliste</th>
                   <th className="py-3 px-4">Média</th>
+                  <th className="py-3 px-4">Abonnés</th>
                   <th className="py-3 px-4">Badge Officiel</th>
                   <th className="py-3 px-4">Articles</th>
                   <th className="py-3 px-4 text-right">Actions</th>
@@ -324,8 +326,8 @@ export const AdminJournalistsTab: React.FC<AdminJournalistsTabProps> = ({
                         />
                         <div>
                           <div className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                            {j.name}
-                            {j.isVerified && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
+                            <span>{j.name}</span>
+                            {j.isVerified && <VerifiedBadge size="xs" type="journalist" />}
                           </div>
                           <div className="text-xs text-gray-500">{j.email}</div>
                         </div>
@@ -337,13 +339,39 @@ export const AdminJournalistsTab: React.FC<AdminJournalistsTabProps> = ({
                     </td>
 
                     <td className="py-3 px-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-gray-900">
+                          {j.followersCount || 0} / 50 abonnés
+                        </span>
+                        {(j.followersCount || 0) >= 50 ? (
+                          <span className="text-[10px] text-cyan-600 font-semibold">
+                            Seuil atteint (≥50)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-gray-400">
+                            {50 - (j.followersCount || 0)} restant(s)
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          j.isVerified ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          j.isVerified ? 'bg-cyan-50 text-cyan-800 border border-cyan-200' : 'bg-gray-100 text-gray-600'
                         }`}
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {j.isVerified ? 'Vérifié' : 'Non vérifié'}
+                        {j.isVerified ? (
+                          <>
+                            <VerifiedBadge size="xs" type="journalist" />
+                            <span>Certifié</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />
+                            <span>Non vérifié</span>
+                          </>
+                        )}
                       </span>
                     </td>
 
@@ -355,10 +383,11 @@ export const AdminJournalistsTab: React.FC<AdminJournalistsTabProps> = ({
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleToggleJournalistBadge(j)}
+                          title="L'administrateur peut certifier ou révoquer le badge sans attendre le seuil de 50 abonnés"
                           className={`px-3 py-1 text-xs font-semibold rounded-lg border transition ${
                             j.isVerified
                               ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                              : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                              : 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100'
                           }`}
                         >
                           {j.isVerified ? 'Révoquer le badge' : 'Accorder le badge'}

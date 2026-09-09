@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { MediaHouse } from '../../types';
 import { api } from '../../services/api';
+import { VerifiedBadge } from '../VerifiedBadge';
 import { AdminConfirmDialog } from './AdminConfirmDialog';
 
 interface AdminMediaTabProps {
@@ -235,8 +236,8 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
                     />
                     <div>
                       <h4 className="font-bold text-gray-900 text-base flex items-center gap-1.5">
-                        {m.name}
-                        {m.isVerified && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
+                        <span>{m.name}</span>
+                        {m.isVerified && <VerifiedBadge size="xs" type="media" />}
                       </h4>
                       <p className="text-xs text-gray-500">@{m.slug}</p>
                     </div>
@@ -286,10 +287,17 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
                 </div>
 
                 {/* Counters */}
-                <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-center text-xs">
+                <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="bg-gray-50 p-2 rounded-xl">
                     <span className="block text-gray-400 text-[11px]">Journalistes</span>
                     <strong className="text-gray-900 font-bold">{m.journalistsCount || 0}</strong>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-xl">
+                    <span className="block text-gray-400 text-[11px]">Abonnés</span>
+                    <strong className="text-gray-900 font-bold">{m.followersCount || 0}/100</strong>
+                    <span className="block text-[9px] text-cyan-700">
+                      {(m.followersCount || 0) >= 100 ? 'Seuil atteint' : 'Seuil 100'}
+                    </span>
                   </div>
                   <div className="bg-gray-50 p-2 rounded-xl">
                     <span className="block text-gray-400 text-[11px]">Articles</span>
@@ -302,15 +310,24 @@ export const AdminMediaTab: React.FC<AdminMediaTabProps> = ({
               <div className="mt-5 pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
                 <button
                   onClick={() => handleToggleVerification(m)}
-                  title={m.isVerified ? 'Révoquer le badge officiel' : 'Attribuer le badge officiel'}
-                  className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1 transition ${
+                  title="L'administrateur peut certifier ou révoquer le badge sans attendre le seuil de 100 abonnés"
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition ${
                     m.isVerified
-                      ? 'bg-blue-50 text-blue-700 border-blue-200'
-                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:text-blue-600'
+                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                      : 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100'
                   }`}
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {m.isVerified ? 'Certifié' : 'Certifier'}
+                  {m.isVerified ? (
+                    <>
+                      <VerifiedBadge size="xs" type="media" />
+                      <span>Révoquer badge</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-cyan-600" />
+                      <span>Accorder badge</span>
+                    </>
+                  )}
                 </button>
 
                 <button

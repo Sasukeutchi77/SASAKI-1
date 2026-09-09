@@ -32,6 +32,8 @@ function sanitizeMember(u: User) {
 housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const { q } = req.query;
+  const currentUserId = req.user?.id;
+  let hasChanges = false;
 
   let houses = (data.mediaHouses || []).map((m) => {
     const memberIds = m.members && Array.isArray(m.members) ? m.members : [m.ownerId];
@@ -40,6 +42,19 @@ housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
       .map(sanitizeMember);
     const articles = data.articles.filter((a) => a.mediaId === m.id || (a.mediaName && a.mediaName.toLowerCase() === m.name.toLowerCase()));
 
+    const followers = data.follows.filter((f) => f.targetId === m.id || (m.ownerId && f.targetId === m.ownerId));
+    const isFollowing = currentUserId
+      ? data.follows.some((f) => f.followerId === currentUserId && (f.targetId === m.id || (m.ownerId && f.targetId === m.ownerId)))
+      : false;
+    const followersCount = m.followersCount ? Math.max(m.followersCount, followers.length) : followers.length;
+    const membersCount = memberIds.length;
+
+    // Auto-verify if >= 100 followers OR >= 100 members
+    if ((followersCount >= 100 || membersCount >= 100) && !m.isVerified) {
+      m.isVerified = true;
+      hasChanges = true;
+    }
+
     return {
       ...m,
       members: memberIds,
@@ -47,8 +62,14 @@ housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
       journalistsCount: memberIds.length,
       articlesCount: Math.max(m.articlesCount || 0, articles.length),
       maxJournalists: MAX_JOURNALISTS_PER_HOUSE,
+      followersCount,
+      isFollowing,
     };
   });
+
+  if (hasChanges) {
+    db.save();
+  }
 
   if (q) {
     const query = String(q).toLowerCase().trim();
@@ -150,12 +171,26 @@ housesRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
     return res.status(404).json({ error: 'Maison de journalistes introuvable.' });
   }
 
+  const currentUserId = req.user?.id;
   const memberIds = house.members && Array.isArray(house.members) ? house.members : [house.ownerId];
   const membersData = data.users
     .filter((u) => memberIds.includes(u.id))
     .map(sanitizeMember);
 
   const houseArticles = data.articles.filter((a) => a.mediaId === house.id && a.status === 'published');
+
+  const followers = data.follows.filter((f) => f.targetId === house.id || (house.ownerId && f.targetId === house.ownerId));
+  const isFollowing = currentUserId
+    ? data.follows.some((f) => f.followerId === currentUserId && (f.targetId === house.id || (house.ownerId && f.targetId === house.ownerId)))
+    : false;
+  const followersCount = house.followersCount ? Math.max(house.followersCount, followers.length) : followers.length;
+  const membersCount = memberIds.length;
+
+  // Auto-verify if >= 100 followers OR >= 100 members
+  if ((followersCount >= 100 || membersCount >= 100) && !house.isVerified) {
+    house.isVerified = true;
+    db.save();
+  }
 
   return res.json({
     house: {
@@ -165,9 +200,79 @@ housesRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
       journalistsCount: memberIds.length,
       articlesCount: houseArticles.length,
       maxJournalists: MAX_JOURNALISTS_PER_HOUSE,
+      followersCount,
+      isFollowing,
     },
     articles: houseArticles,
   });
+});
+
+// Follow / Unfollow a media house
+housesRouter.post('/:id/follow', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const currentUserId = req.user!.id;
+  const houseId = req.params.id;
+
+  const house = (data.mediaHouses || []).find((h) => h.id === houseId || h.slug === houseId);
+  if (!house) {
+    return res.status(404).json({ error: 'Maison de presse introuvable.' });
+  }
+
+  const existingIndex = data.follows.findIndex(
+    (f) => f.followerId === currentUserId && (f.targetId === house.id || (house.ownerId && f.targetId === house.ownerId))
+  );
+
+  let isFollowing = false;
+  if (existingIndex !== -1) {
+    data.follows.splice(existingIndex, 1);
+    isFollowing = false;
+  } else {
+    data.follows.push({
+      id: `flw_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      followerId: currentUserId,
+      targetId: house.id,
+      createdAt: new Date().toISOString(),
+    });
+    isFollowing = true;
+
+    if (house.ownerId && house.ownerId !== currentUserId) {
+      data.notifications.unshift({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: house.ownerId,
+        type: 'follow',
+        title: 'Nouvel abonné pour votre Maison de Presse',
+        message: `${req.user!.name} s'est abonné à votre rédaction "${house.name}".`,
+        link: `/houses/${house.id}`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  const followersCount = data.follows.filter((f) => f.targetId === house.id || (house.ownerId && f.targetId === house.ownerId)).length;
+  const membersCount = house.members ? house.members.length : (house.journalistsCount || 1);
+
+  // Auto-verify if >= 100 followers OR >= 100 members
+  let newlyVerified = false;
+  if ((followersCount >= 100 || membersCount >= 100) && !house.isVerified) {
+    house.isVerified = true;
+    newlyVerified = true;
+    if (house.ownerId) {
+      data.notifications.unshift({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: house.ownerId,
+        type: 'system',
+        title: 'Maison de Presse Certifiée (Badge Bleu TikTok) !',
+        message: `Félicitations ! Votre maison de presse "${house.name}" a atteint 100 abonnés / membres. Elle est désormais certifiée avec le badge bleu officiel !`,
+        link: `/houses/${house.id}`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  db.save();
+  return res.json({ isFollowing, followersCount, isVerified: house.isVerified, newlyVerified });
 });
 
 // 5. Create a new Media House (Chef role)

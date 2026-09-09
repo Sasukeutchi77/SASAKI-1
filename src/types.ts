@@ -123,6 +123,8 @@ export interface MediaHouse {
   }>;
   status: 'active' | 'suspended';
   isVerified: boolean;
+  followersCount?: number;
+  isFollowing?: boolean;
   journalistsCount?: number;
   articlesCount?: number;
   createdAt: string;

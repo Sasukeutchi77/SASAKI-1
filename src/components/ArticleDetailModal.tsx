@@ -32,6 +32,7 @@ import { VideoPlayer } from './media/VideoPlayer';
 import { AdminConfirmDialog } from './admin/AdminConfirmDialog';
 import { FactCheckBadge } from './FactCheckBadge';
 import { ArticlePoll } from './ArticlePoll';
+import { VerifiedBadge } from './VerifiedBadge';
 import { sfx } from '../services/soundEffects';
 import { realtime } from '../services/realtime';
 
@@ -111,6 +112,7 @@ interface ArticleDetailModalProps {
   onOpenEditArticle?: (article: Article) => void;
   onSelectTag?: (tag: string) => void;
   onOpenArticle?: (article: Article) => void;
+  onOpenTrustSystem?: () => void;
 }
 
 export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
@@ -122,6 +124,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   onOpenEditArticle,
   onSelectTag,
   onOpenArticle,
+  onOpenTrustSystem,
 }) => {
   const { user, isAuthenticated, refreshUser } = useAuth();
   const [article, setArticle] = useState<Article | null>(null);
@@ -858,9 +861,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <span>Transmis par :</span>
                 <strong className="text-white underline decoration-cyan-500">{article.authorName}</strong>
                 {article.isAuthorVerified && (
-                  <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold">
-                    JOURNALISTE ACCRÉDITÉ
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <VerifiedBadge size="sm" type={article.mediaName ? 'media' : 'journalist'} />
+                    <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold">
+                      {article.mediaName ? 'RÉDACTION CERTIFIÉE' : 'JOURNALISTE ACCRÉDITÉ'}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -1001,7 +1007,19 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   <div className="flex items-center gap-1.5 font-bold text-sm sm:text-base text-white group-hover:text-cyan-300 transition-colors">
                     <span>{article.mediaName || article.authorName}</span>
                     {article.isAuthorVerified && (
-                      <CheckCircle2 className="w-4 h-4 text-cyan-400" title="Compte officiel vérifié" />
+                      <span
+                        onClick={(e) => {
+                          if (onOpenTrustSystem) {
+                            e.stopPropagation();
+                            onOpenTrustSystem();
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#20D5EC]/15 text-cyan-300 border border-[#20D5EC]/40 hover:bg-[#20D5EC]/25 cursor-pointer shadow-[0_0_8px_rgba(32,213,236,0.3)] transition-all"
+                        title="Compte certifié (Badge bleu officiel) - Cliquez pour voir la charte"
+                      >
+                        <VerifiedBadge size="xs" type={article.mediaName ? 'media' : 'journalist'} />
+                        <span className="text-white text-[10px] uppercase tracking-wider font-semibold">Certifié</span>
+                      </span>
                     )}
                   </div>
                   <div className="text-xs text-cyan-400/60 font-mono">
@@ -1583,12 +1601,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       onChange={(e) => setReportReason(e.target.value)}
                       className="w-full p-2.5 text-xs bg-[#101428] border border-cyan-500/40 text-slate-100 rounded-lg focus:outline-none focus:border-cyan-400"
                     >
-                      <option value="Désinformation / Fausses nouvelles">Désinformation / Fausses nouvelles</option>
-                      <option value="Discours de haine ou discrimination">Discours de haine ou discrimination</option>
-                      <option value="Diffamation / Atteinte à l’honneur">Diffamation / Atteinte à l’honneur</option>
-                      <option value="Plagiat ou violation de droits">Plagiat ou violation de droits</option>
-                      <option value="Contenu à caractère violent ou choquant">Contenu à caractère violent ou choquant</option>
-                      <option value="Autre motif">Autre motif</option>
+                      <option value="Fausses informations volontairement diffusées (Fake news / Infox)">Fausses informations volontairement diffusées (Fake news / Infox)</option>
+                      <option value="Propos diffamatoires ou atteinte à l’honneur">Propos diffamatoires ou atteinte à l’honneur</option>
+                      <option value="Contenus illégaux ou incitation à la violence / haine">Contenus illégaux ou incitation à la violence / haine</option>
+                      <option value="Publication sans rapport avec le journalisme / Sensationnalisme">Publication sans rapport avec le journalisme / Sensationnalisme</option>
+                      <option value="Usurpation d’identité ou faux journaliste">Usurpation d’identité ou faux journaliste</option>
+                      <option value="Plagiat ou violation de droits d'auteur">Plagiat ou violation de droits d'auteur</option>
+                      <option value="Autre motif déontologique">Autre motif déontologique</option>
                     </select>
                   </div>
 

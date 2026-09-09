@@ -22,6 +22,7 @@ import { MediaHouse, User, Article } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { realtime } from '../services/realtime';
+import { VerifiedBadge } from './VerifiedBadge';
 
 const LOGO_PRESETS = [
   { name: 'Investigation', url: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=200&auto=format&fit=crop&q=80' },
@@ -290,6 +291,47 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
     }
   };
 
+  const handleFollowHouse = async (houseId: string) => {
+    if (!user) {
+      showMsg('error', 'Veuillez vous connecter pour vous abonner à cette maison de presse.');
+      return;
+    }
+    try {
+      const res = await api.followMediaHouse(houseId);
+      if (res.newlyVerified) {
+        showMsg('success', 'Félicitations ! Cette maison a franchi le cap des 100 abonnés et est désormais certifiée avec le badge bleu officiel !');
+      } else {
+        showMsg('success', res.isFollowing ? 'Vous suivez désormais cette maison de presse.' : 'Vous ne suivez plus cette maison de presse.');
+      }
+      setSelectedHouseDetail((prev) => {
+        if (!prev || prev.house.id !== houseId) return prev;
+        return {
+          ...prev,
+          house: {
+            ...prev.house,
+            isFollowing: res.isFollowing,
+            followersCount: res.followersCount,
+            isVerified: res.isVerified || prev.house.isVerified,
+          },
+        };
+      });
+      setHouses((prev) =>
+        prev.map((h) =>
+          h.id === houseId
+            ? {
+                ...h,
+                isFollowing: res.isFollowing,
+                followersCount: res.followersCount,
+                isVerified: res.isVerified || h.isVerified,
+              }
+            : h
+        )
+      );
+    } catch (err: any) {
+      showMsg('error', err.message || 'Erreur lors du suivi.');
+    }
+  };
+
   const handleDeleteHouse = async (houseId: string, houseName: string) => {
     const reason = prompt(
       `Pour confirmer la dissolution et suppression définitive de "${houseName}", veuillez indiquer un motif (ex: Fin des activités, restructuration) :`,
@@ -486,9 +528,9 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <h4 className="text-sm font-bold text-white group-hover:text-cyan-300 transition truncate flex items-center gap-1.5">
-                                {house.name}
+                                <span>{house.name}</span>
                                 {house.isVerified && (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                  <VerifiedBadge size="xs" type="media" />
                                 )}
                               </h4>
                               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 shrink-0">
@@ -558,19 +600,45 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                       className="w-16 h-16 rounded-2xl object-cover border-2 border-cyan-400 bg-black shadow-lg shrink-0"
                     />
                     <div>
-                      <h3 className="text-lg font-black text-white flex items-center gap-2">
-                        {selectedHouseDetail.house.name}
-                        {selectedHouseDetail.house.isVerified && (
-                          <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-black text-white flex items-center gap-2">
+                          <span>{selectedHouseDetail.house.name}</span>
+                          {selectedHouseDetail.house.isVerified && (
+                            <VerifiedBadge size="sm" type="media" />
+                          )}
+                        </h3>
+                        {selectedHouseDetail.house.isVerified ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-400/30">
+                            Média Certifié Officiel
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-stone-800 text-stone-400 border border-stone-700">
+                            Certification auto à 100 abonnés
+                          </span>
                         )}
-                      </h3>
-                      <p className="text-xs text-stone-400">
+                      </div>
+                      <p className="text-xs text-stone-400 mt-0.5">
                         Chef de rédaction : <strong className="text-amber-300">{selectedHouseDetail.house.ownerName}</strong>
                       </p>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                    <button
+                      onClick={() => handleFollowHouse(selectedHouseDetail.house.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-sans font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm ${
+                        selectedHouseDetail.house.isFollowing
+                          ? 'bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600'
+                          : 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:brightness-110 text-black shadow-[0_0_15px_rgba(0,243,255,0.3)]'
+                      }`}
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>
+                        {selectedHouseDetail.house.isFollowing ? 'Abonné' : "S'abonner"} (
+                        {selectedHouseDetail.house.followersCount || 0}/100)
+                      </span>
+                    </button>
+
                     <span className="px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold">
                       {selectedHouseDetail.house.membersData?.length || 1} / 5 Journalistes
                     </span>

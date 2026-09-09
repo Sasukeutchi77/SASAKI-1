@@ -373,9 +373,12 @@ export const api = {
   },
 
   async toggleFollow(id: string) {
-    return request<{ isFollowing: boolean; followersCount: number }>(`/api/users/${id}/follow`, {
-      method: 'POST',
-    });
+    return request<{ isFollowing: boolean; followersCount: number; isVerified: boolean; newlyVerified?: boolean }>(
+      `/api/users/${id}/follow`,
+      {
+        method: 'POST',
+      }
+    );
   },
 
   async getBookmarks() {
@@ -752,6 +755,15 @@ export const api = {
       method: 'DELETE',
       body: JSON.stringify({ reason }),
     });
+  },
+
+  async followMediaHouse(houseId: string) {
+    return request<{ isFollowing: boolean; followersCount: number; isVerified: boolean; newlyVerified?: boolean }>(
+      `/api/media-houses/${houseId}/follow`,
+      {
+        method: 'POST',
+      }
+    );
   },
 
   async getMasterAccounts() {

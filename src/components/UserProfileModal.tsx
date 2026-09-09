@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getOptimizedImageUrl, validateMediaFile } from '../services/cloudinary';
+import { VerifiedBadge } from './VerifiedBadge';
 
 interface UserProfileModalProps {
   onClose: () => void;
@@ -393,7 +394,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                     <h3 className="text-lg font-bold text-white">{user.name}</h3>
                     {user.isVerified && (
-                      <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0" title="Compte vérifié officiel" />
+                      <VerifiedBadge size="sm" type={user.role === 'admin' ? 'admin' : 'journalist'} />
                     )}
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${roleBadgeColor}`}>
                       {roleLabel}
@@ -602,6 +603,61 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
             )}
           </div>
 
+          {/* Section Statut Badge Bleu & Certification (Journalistes & Administrateurs) */}
+          {(user.role === 'journalist' || user.role === 'admin') && (
+            <div className="border border-cyan-500/30 bg-[#101428] rounded-2xl p-5 space-y-3 shadow-[0_0_20px_rgba(0,243,255,0.05)]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5">
+                  <VerifiedBadge size="md" type={user.role === 'admin' ? 'admin' : 'journalist'} />
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                      <span>Certification Officielle (Badge Bleu)</span>
+                      {user.isVerified && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
+                          Actif
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-xs text-cyan-400/70 mt-0.5">
+                      {user.isVerified
+                        ? 'Votre compte dispose du badge bleu officiel de certification. Ce badge vous distingue auprès des lecteurs et médias.'
+                        : 'Atteignez 50 abonnés pour être certifié automatiquement avec le badge bleu (style TikTok), ou recevez une accréditation directe par l’administration.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#141933] border border-cyan-500/20 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-stone-300">Audience abonnés :</span>
+                  <span className="text-cyan-300 font-bold">
+                    {user.followersCount || 0} / 50 abonnés
+                  </span>
+                </div>
+                <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, Math.round(((user.followersCount || 0) / 50) * 100))}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-stone-400">
+                  <span>
+                    {user.isVerified
+                      ? '✓ Compte certifié'
+                      : (user.followersCount || 0) >= 50
+                      ? '✓ Seuil de 50 abonnés atteint'
+                      : `Encore ${Math.max(0, 50 - (user.followersCount || 0))} abonnés requis`}
+                  </span>
+                  <span className="text-cyan-400/70 text-[10px]">
+                    Validation manuelle admin possible à tout moment
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Section Demande d'Accréditation Journaliste (si Lecteur / USER) */}
           {user.role === 'user' || user.role === 'reader' ? (
             <div className="border border-cyan-500/30 bg-[#101428] rounded-2xl p-5 space-y-3">
@@ -626,7 +682,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
                 </div>
               ) : user.verificationStatus === 'approved' ? (
                 <div className="p-3 bg-cyan-950/60 border border-cyan-500/40 rounded-xl flex items-center gap-2 text-xs text-cyan-200 font-bold">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <VerifiedBadge size="xs" type="journalist" />
                   <span>Votre compte a été vérifié avec succès par l'administration.</span>
                 </div>
               ) : !showAccreditationForm ? (

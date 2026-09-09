@@ -10,6 +10,7 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { ShareModal } from './ShareModal';
@@ -153,7 +154,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <div className="flex items-center gap-1 truncate max-w-[140px]">
               <span className="truncate font-medium">{article.mediaName || article.authorName}</span>
               {article.isAuthorVerified && (
-                <CheckCircle2 className="w-3 h-3 text-blue-600 shrink-0" />
+                <VerifiedBadge size="xs" type={article.mediaName ? 'media' : 'journalist'} />
               )}
             </div>
 
@@ -247,7 +248,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 {article.mediaName || article.authorName}
               </span>
               {article.isAuthorVerified && (
-                <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <VerifiedBadge size="sm" type={article.mediaName ? 'media' : 'journalist'} />
               )}
             </div>
 
@@ -316,7 +317,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               >
                 <span>{article.mediaName || article.authorName}</span>
                 {article.isAuthorVerified && (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+                  <VerifiedBadge size="sm" type={article.mediaName ? 'media' : 'journalist'} />
                 )}
               </button>
               <span>•</span>
@@ -422,7 +423,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 >
                   <span className="truncate">{article.mediaName || article.authorName}</span>
                   {article.isAuthorVerified && (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <VerifiedBadge size="sm" type={article.mediaName ? 'media' : 'journalist'} />
                   )}
                 </button>
                 <span>•</span>
@@ -528,7 +529,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 {article.mediaName || article.authorName}
               </span>
               {article.isAuthorVerified && (
-                <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" title="Média / Journaliste vérifié" />
+                <VerifiedBadge size="sm" type={article.mediaName ? 'media' : 'journalist'} />
               )}
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-cyan-400/60 font-mono">
