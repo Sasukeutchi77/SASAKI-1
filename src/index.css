@@ -16,10 +16,16 @@
     color-scheme: dark;
     /* Android ergonomics: eliminate double-tap zoom delay */
     touch-action: manipulation;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-[#040817] text-slate-100 antialiased min-h-screen selection:bg-blue-600/35 selection:text-cyan-200 transition-colors duration-150;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     background-color: #040817;
     background-image: 
       radial-gradient(ellipse 70% 45% at 50% -10%, rgba(29, 104, 255, 0.16) 0%, transparent 60%),
@@ -29,6 +35,15 @@
     /* Smooth native Android scroll feel with containment */
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  #root {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
   }
 
   .dark body {

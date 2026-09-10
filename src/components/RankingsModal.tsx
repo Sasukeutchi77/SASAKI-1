@@ -295,8 +295,8 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
         </div>
 
         {/* 2. Primary Navigation Tabs: Maisons | Journalistes | Articles */}
-        <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-cyan-500/20 pt-4">
-          <div className="inline-flex bg-[#060a1a] p-1.5 rounded-2xl border border-cyan-500/30 gap-1 shadow-inner">
+        <div className="mt-6 w-full max-w-full overflow-x-auto no-scrollbar border-t border-cyan-500/20 pt-4 pb-1">
+          <div className="inline-flex bg-[#060a1a] p-1.5 rounded-2xl border border-cyan-500/30 gap-1 shadow-inner min-w-max">
             <button
               id="ranking-tab-houses"
               onClick={() => {
@@ -1106,15 +1106,15 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
     return (
       <div
         id="rankings-full-page"
-        className="w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn"
+        className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-hidden"
       >
         {/* Sticky top breadcrumb & return header */}
-        <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-cyan-500/20 px-4 sm:px-8 py-3.5 transition-all">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+        <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-cyan-500/20 px-4 sm:px-8 py-3.5 transition-all w-full max-w-full">
+          <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 min-w-0">
             <button
               id="rankings-page-back-btn"
               onClick={onClose}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-950/40 hover:bg-blue-600/20 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-950/40 hover:bg-blue-600/20 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer shrink-0"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Retour à l'accueil</span>
@@ -1129,8 +1129,8 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-6 sm:pt-8">
-          <div className="rounded-3xl bg-gradient-to-b from-[#090e24] via-[#060a1a] to-[#040714] border border-cyan-500/40 shadow-[0_0_50px_rgba(0,210,255,0.15)] overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-8 pt-6 sm:pt-8 min-w-0">
+          <div className="w-full max-w-full rounded-3xl bg-gradient-to-b from-[#090e24] via-[#060a1a] to-[#040714] border border-cyan-500/40 shadow-[0_0_50px_rgba(0,210,255,0.15)] overflow-hidden">
             {rankingContent}
           </div>
         </div>

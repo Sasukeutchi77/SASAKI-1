@@ -337,8 +337,8 @@ export const Home: React.FC<HomeProps> = ({
     : articles;
 
   return (
-    <div className="min-h-screen bg-[#07080f] text-slate-100 pb-20 md:pb-12 cyber-grid">
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+    <div className="w-full min-h-screen bg-[#07080f] text-slate-100 pb-20 md:pb-12 cyber-grid overflow-x-hidden">
+      <main className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         {/* Live Real-time Breaking Flash Banner */}
         {liveFlash && (
           <div className="mb-5 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-red-950/90 via-[#12071a]/95 to-cyan-950/90 border border-red-500/60 shadow-[0_0_25px_rgba(239,68,68,0.3)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3 duration-300">
@@ -444,12 +444,12 @@ export const Home: React.FC<HomeProps> = ({
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-full">
           {/* Main Feed Column (8 cols on desktop) */}
-          <div className="lg:col-span-8 space-y-5">
+          <div className="lg:col-span-8 space-y-5 min-w-0 w-full max-w-full">
             {/* Feed Tabs Bar */}
-            <div className="bg-[#0b0e1a]/90 backdrop-blur-md rounded-2xl border border-cyan-500/30 p-1.5 flex items-center justify-between shadow-[0_0_20px_rgba(0,243,255,0.06)] transition-all">
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth w-full sm:w-auto">
+            <div className="bg-[#0b0e1a]/90 backdrop-blur-md rounded-2xl border border-cyan-500/30 p-1.5 flex items-center justify-between shadow-[0_0_20px_rgba(0,243,255,0.06)] transition-all w-full max-w-full min-w-0 overflow-hidden">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth w-full min-w-0">
                 <button
                   id="tab-feed-foryou"
                   onClick={() => setFeedTab('foryou')}

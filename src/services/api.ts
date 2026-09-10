@@ -31,7 +31,7 @@ export function clearToken(): void {
 }
 
 export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
+  let token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -43,15 +43,35 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
 
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     ...options,
     headers,
   });
 
-  const data = await response.json();
+  // If 401 Unauthorized, attempt to fetch a fresh token from active Firebase session and retry once
+  if (response.status === 401 && typeof window !== 'undefined') {
+    try {
+      const { auth } = await import('./firebase');
+      if (auth?.currentUser) {
+        const freshToken = await auth.currentUser.getIdToken(true);
+        if (freshToken) {
+          setToken(freshToken);
+          headers['Authorization'] = `Bearer ${freshToken}`;
+          response = await fetch(url, {
+            ...options,
+            headers,
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || `Erreur serveur (${response.status})`);
+    throw new Error((data && data.error) || `Erreur serveur (${response.status})`);
   }
 
   return data as T;

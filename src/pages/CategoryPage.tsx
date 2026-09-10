@@ -200,7 +200,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-20">
+    <div className="w-full max-w-full min-h-screen bg-stone-50 pb-20 overflow-x-hidden">
       {/* Category Header Hero */}
       <div className="bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -241,7 +241,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
 
           {/* Tags cloud in this category */}
           {categoryTags.length > 0 && (
-            <div className="mt-6 pt-4 border-t border-stone-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <div className="w-full max-w-full min-w-0 mt-6 pt-4 border-t border-stone-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
               <span className="text-xs font-bold text-stone-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
                 <Hash className="w-3.5 h-3.5" />
                 Sujets clés :

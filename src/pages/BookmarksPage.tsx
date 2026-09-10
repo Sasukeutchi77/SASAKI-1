@@ -108,10 +108,10 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
   }, [bookmarks, searchQuery, selectedCategory]);
 
   return (
-    <div className="w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn">
+    <div className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-hidden">
       {/* Top Header / Breadcrumb Bar */}
-      <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 px-4 sm:px-8 py-3.5 transition-all">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+      <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 px-4 sm:px-8 py-3.5 transition-all w-full max-w-full">
+        <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 min-w-0">
           <button
             id="bookmarks-page-back-btn"
             onClick={() => {
@@ -224,7 +224,7 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
 
             {/* Category Filter Dropdown / Pills on mobile */}
             {availableCategories.length > 0 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              <div className="w-full max-w-full min-w-0 flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                 <button
                   onClick={() => setSelectedCategory('all')}
                   className={`px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer touch-target ${

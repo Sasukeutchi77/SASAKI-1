@@ -59,20 +59,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUser = async () => {
     const currentToken = api.getToken();
     if (!currentToken) {
-      setUser(null);
-      setIsLoading(false);
-      return;
+      // Check if Firebase user is logged in
+      if (isFirebaseActive && firebaseAuth?.currentUser) {
+        try {
+          const freshToken = await firebaseAuth.currentUser.getIdToken();
+          api.setToken(freshToken);
+          setToken(freshToken);
+        } catch {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
     }
+
     try {
       const data = await api.getMe();
       setUser(data.user);
       setUnreadNotifs(data.unreadNotifs);
       setBookmarksCount(data.bookmarksCount);
-    } catch (err) {
-      console.warn('Session expirée ou invalide:', err);
-      api.clearToken();
-      setToken(null);
-      setUser(null);
+    } catch (err: any) {
+      console.warn('Session check warning:', err);
+      // Attempt token recovery via Firebase before clearing
+      if (isFirebaseActive && firebaseAuth?.currentUser) {
+        try {
+          const freshIdToken = await firebaseAuth.currentUser.getIdToken(true);
+          api.setToken(freshIdToken);
+          setToken(freshIdToken);
+          const data = await api.getMe();
+          setUser(data.user);
+          setUnreadNotifs(data.unreadNotifs);
+          setBookmarksCount(data.bookmarksCount);
+          return;
+        } catch {
+          // continue to cleanup
+        }
+      }
+      const errMsg = String(err?.message || err);
+      if (
+        errMsg.includes('401') ||
+        errMsg.includes('Non authentifié') ||
+        errMsg.includes('Authentification requise')
+      ) {
+        api.clearToken();
+        setToken(null);
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -243,7 +279,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 6. Update Profile
   const updateUserProfile = async (data: Partial<User>): Promise<User> => {
-    const res = await api.updateProfile(data);
+    // If token is missing but Firebase user is active, retrieve fresh token first
+    if (!api.getToken() && isFirebaseActive && firebaseAuth?.currentUser) {
+      try {
+        const freshToken = await firebaseAuth.currentUser.getIdToken();
+        api.setToken(freshToken);
+        setToken(freshToken);
+      } catch (e) {
+        console.warn('Failed to get fresh Firebase token before update:', e);
+      }
+    }
+
+    let res;
+    try {
+      res = await api.updateProfile(data);
+    } catch (err: any) {
+      // If 401 and Firebase user is active, force refresh token and retry
+      if (
+        isFirebaseActive &&
+        firebaseAuth?.currentUser &&
+        String(err?.message || err).includes('Authentification requise')
+      ) {
+        const freshToken = await firebaseAuth.currentUser.getIdToken(true);
+        api.setToken(freshToken);
+        setToken(freshToken);
+        res = await api.updateProfile(data);
+      } else {
+        throw err;
+      }
+    }
+
     setUser(res.user);
 
     // Sync to Firestore if Firebase is active

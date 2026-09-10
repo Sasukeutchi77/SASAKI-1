@@ -240,7 +240,7 @@ export function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07080f] text-slate-100 flex flex-col font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 flex flex-col font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
       {/* Top Header with brand, search bar, demo switcher, notifications */}
       <Header
         categories={categories}
@@ -295,7 +295,7 @@ export function AppContent() {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1" key={feedRefreshKey}>
+      <div className="flex-1 w-full max-w-full" key={feedRefreshKey}>
         {currentView === 'search' ? (
           <SearchPage
             initialQuery={searchQuery}

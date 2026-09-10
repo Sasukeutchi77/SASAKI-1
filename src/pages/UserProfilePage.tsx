@@ -239,9 +239,10 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
     setFeedback(null);
 
     try {
+      const cleanUsername = editUsername.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
       await updateUserProfile({
         name: editName.trim(),
-        username: editUsername.trim(),
+        username: cleanUsername || undefined,
         bio: editBio.trim(),
         phone: editPhone.trim(),
       });
@@ -254,7 +255,9 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
     } catch (err: any) {
       setFeedback({
         type: 'error',
-        message: err.message || 'Erreur lors de la mise à jour du profil.',
+        message:
+          err.message ||
+          'Erreur lors de la mise à jour du profil. Veuillez vérifier vos identifiants.',
       });
     } finally {
       setSaveLoading(false);
@@ -330,17 +333,17 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
     <div
       className={
         isFullScreen
-          ? 'fixed inset-0 z-50 overflow-y-auto bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn'
-          : 'w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn'
+          ? 'fixed inset-0 z-50 overflow-y-auto bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn w-full max-w-full overflow-x-hidden'
+          : 'w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-hidden'
       }
     >
       {/* Top Header / Breadcrumb Bar */}
       <div
-        className={`sticky z-30 bg-[#040817]/95 backdrop-blur-xl border-b border-blue-500/20 px-3 sm:px-8 py-2.5 sm:py-3 transition-all ${
+        className={`sticky z-30 bg-[#040817]/95 backdrop-blur-xl border-b border-blue-500/20 px-3 sm:px-8 py-2.5 sm:py-3 transition-all w-full max-w-full ${
           isFullScreen ? 'top-0' : 'top-16'
         }`}
       >
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+        <div className="w-full max-w-5xl mx-auto flex items-center justify-between gap-2 sm:gap-4 min-w-0">
           {/* Back button with responsive label that never wraps */}
           <button
             id="user-profile-back-btn"
@@ -423,7 +426,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-6">
+      <div className="w-full max-w-5xl mx-auto px-3 sm:px-8 pt-4 sm:pt-6 min-w-0">
         {/* Feedback Alert */}
         {feedback && (
           <div
@@ -659,9 +662,9 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   <span>{user.username || user.email.split('@')[0]}</span>
                 </span>
 
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#040817] border border-blue-500/25 text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#040817] border border-blue-500/25 text-slate-300 max-w-full">
                   <Mail className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                  <span>{user.email}</span>
+                  <span className="truncate">{user.email}</span>
                 </span>
 
                 {user.phone && (
@@ -685,7 +688,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
         </div>
 
         {/* Tab Navigation with guaranteed no-shrink and no-overlap */}
-        <div className="bg-[#050b1d] p-1.5 rounded-2xl border border-blue-500/25 flex items-center gap-2 mb-8 overflow-x-auto scrollbar-none shadow-inner">
+        <div className="w-full max-w-full bg-[#050b1d] p-1.5 rounded-2xl border border-blue-500/25 flex items-center gap-2 mb-8 overflow-x-auto no-scrollbar shadow-inner min-w-0">
           <button
             onClick={() => {
               sfx.playClick();

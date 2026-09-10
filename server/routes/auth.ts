@@ -181,19 +181,37 @@ authRouter.get('/me', requireAuth, (req: AuthenticatedRequest, res: Response) =>
 // Update Profile with sanitization and parameter protection
 authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
-  const { name, bio, avatar, avatarMedia, coverImage, coverMedia, mediaName, phone } = req.body;
+  const { name, username, bio, avatar, avatarMedia, coverImage, coverMedia, mediaName, phone } = req.body;
 
-  const user = db.getData().users.find((u) => u.id === req.user!.id);
-  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  const data = db.getData();
+  let user = data.users.find(
+    (u) =>
+      u.id === req.user!.id ||
+      (req.user!.email && u.email.toLowerCase() === req.user!.email.toLowerCase())
+  );
 
-  if (name !== undefined) {
+  if (!user) {
+    user = req.user;
+    data.users.push(user);
+  }
+
+  if (name !== undefined && typeof name === 'string') {
     const cleanName = sanitizeText(name, { maxLength: 60, allowNewlines: false });
     if (cleanName.length >= 2) {
       user.name = cleanName;
     }
   }
 
-  if (bio !== undefined) {
+  if (username !== undefined && typeof username === 'string') {
+    const cleanUsername = sanitizeText(username, { maxLength: 40, allowNewlines: false })
+      .toLowerCase()
+      .replace(/[^a-z0-9_.-]/g, '');
+    if (cleanUsername.length >= 2) {
+      user.username = cleanUsername;
+    }
+  }
+
+  if (bio !== undefined && typeof bio === 'string') {
     user.bio = sanitizeText(bio, { maxLength: 500 });
   }
 
@@ -208,6 +226,7 @@ authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Respons
   if (avatarMedia !== undefined && typeof avatarMedia === 'object') {
     if (avatarMedia.url && isValidUrl(avatarMedia.url)) {
       user.avatarMedia = avatarMedia;
+      user.avatar = avatarMedia.url;
     }
   }
 
@@ -222,19 +241,21 @@ authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Respons
   if (coverMedia !== undefined && typeof coverMedia === 'object') {
     if (coverMedia.url && isValidUrl(coverMedia.url)) {
       user.coverMedia = coverMedia;
+      user.coverImage = coverMedia.url;
     }
   }
 
-  if (phone !== undefined) {
+  if (phone !== undefined && typeof phone === 'string') {
     user.phone = sanitizeText(phone, { maxLength: 30, allowNewlines: false });
   }
 
-  if (user.role === 'journalist' && mediaName !== undefined) {
+  if (user.role === 'journalist' && mediaName !== undefined && typeof mediaName === 'string') {
     user.mediaName = sanitizeText(mediaName, { maxLength: 100, allowNewlines: false });
   }
 
   // Strictly protected fields (role, isVerified, verificationStatus, status, createdAt) are NEVER touched here
   db.save();
+  req.user = user;
 
   return res.json({
     message: 'Profil mis à jour avec succès.',
