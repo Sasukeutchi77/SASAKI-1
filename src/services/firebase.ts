@@ -223,8 +223,23 @@ export async function syncFirestoreUserProfile(
       if (additionalData.name) {
         updatePayload.name = additionalData.name;
       }
-      if (additionalData.avatar) {
+      if (additionalData.username !== undefined) {
+        updatePayload.username = additionalData.username;
+      }
+      if (additionalData.bio !== undefined) {
+        updatePayload.bio = additionalData.bio;
+      }
+      if (additionalData.phone !== undefined) {
+        updatePayload.phone = additionalData.phone;
+      }
+      if (additionalData.avatar !== undefined) {
         updatePayload.avatar = additionalData.avatar;
+      }
+      if (additionalData.coverImage !== undefined) {
+        updatePayload.coverImage = additionalData.coverImage;
+      }
+      if (additionalData.mediaName !== undefined) {
+        updatePayload.mediaName = additionalData.mediaName;
       }
       await updateDoc(userRef, updatePayload);
     }

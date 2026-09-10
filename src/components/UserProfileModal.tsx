@@ -171,13 +171,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
   // Save editable profile fields
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editName.trim() || editName.trim().length < 2) {
+      setFeedback({ type: 'error', message: 'Le nom doit comporter au moins 2 caractères.' });
+      return;
+    }
+
     setSaveLoading(true);
     setFeedback(null);
 
     try {
+      const cleanUsername = editUsername.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
       await updateUserProfile({
         name: editName.trim(),
-        username: editUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''),
+        username: cleanUsername || undefined,
         bio: editBio.trim(),
         phone: editPhone.trim(),
       });

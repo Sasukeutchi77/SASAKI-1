@@ -243,7 +243,7 @@ adminRouter.get('/master-accounts', (req: AuthenticatedRequest, res: Response) =
       lastLoginAt: u?.lastLoginAt,
     };
   });
-  return res.json({ masterAccounts: accounts, maxAccounts: 2 });
+  return res.json({ masterAccounts: accounts, maxAccounts: MASTER_ADMIN_EMAILS.length });
 });
 
 // Change user role (Strict: Only master admins can promote to journalist or demote to user)

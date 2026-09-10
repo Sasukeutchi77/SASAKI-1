@@ -195,18 +195,33 @@ authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Respons
     data.users.push(user);
   }
 
+  const oldName = user.name;
   if (name !== undefined && typeof name === 'string') {
     const cleanName = sanitizeText(name, { maxLength: 60, allowNewlines: false });
-    if (cleanName.length >= 2) {
-      user.name = cleanName;
+    if (cleanName.length < 2) {
+      return res.status(400).json({ error: 'Le nom doit comporter au moins 2 caractères.' });
     }
+    user.name = cleanName;
   }
 
   if (username !== undefined && typeof username === 'string') {
     const cleanUsername = sanitizeText(username, { maxLength: 40, allowNewlines: false })
       .toLowerCase()
       .replace(/[^a-z0-9_.-]/g, '');
-    if (cleanUsername.length >= 2) {
+    if (cleanUsername) {
+      if (cleanUsername.length < 2) {
+        return res.status(400).json({ error: "L'identifiant doit comporter au moins 2 caractères." });
+      }
+      const existing = data.users.find(
+        (u) =>
+          u.id !== user.id &&
+          u.email.toLowerCase() !== user.email.toLowerCase() &&
+          u.username &&
+          u.username.toLowerCase() === cleanUsername
+      );
+      if (existing) {
+        return res.status(400).json({ error: `L'identifiant @${cleanUsername} est déjà réservé par un autre compte.` });
+      }
       user.username = cleanUsername;
     }
   }
@@ -224,7 +239,7 @@ authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Respons
   }
 
   if (avatarMedia !== undefined && typeof avatarMedia === 'object') {
-    if (avatarMedia.url && isValidUrl(avatarMedia.url)) {
+    if (avatarMedia && avatarMedia.url && isValidUrl(avatarMedia.url)) {
       user.avatarMedia = avatarMedia;
       user.avatar = avatarMedia.url;
     }
@@ -239,7 +254,7 @@ authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Respons
   }
 
   if (coverMedia !== undefined && typeof coverMedia === 'object') {
-    if (coverMedia.url && isValidUrl(coverMedia.url)) {
+    if (coverMedia && coverMedia.url && isValidUrl(coverMedia.url)) {
       user.coverMedia = coverMedia;
       user.coverImage = coverMedia.url;
     }
@@ -249,8 +264,35 @@ authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Respons
     user.phone = sanitizeText(phone, { maxLength: 30, allowNewlines: false });
   }
 
-  if (user.role === 'journalist' && mediaName !== undefined && typeof mediaName === 'string') {
+  if (mediaName !== undefined && typeof mediaName === 'string') {
     user.mediaName = sanitizeText(mediaName, { maxLength: 100, allowNewlines: false });
+  }
+
+  // Update cached author name and avatar in user's articles and comments
+  if (user.name && user.name !== oldName) {
+    data.articles.forEach((a) => {
+      if (a.authorId === user.id) {
+        a.authorName = user.name;
+      }
+    });
+    data.comments.forEach((c) => {
+      if (c.userId === user.id) {
+        c.userName = user.name;
+      }
+    });
+  }
+
+  if (user.avatar) {
+    data.articles.forEach((a) => {
+      if (a.authorId === user.id) {
+        a.authorAvatar = user.avatar;
+      }
+    });
+    data.comments.forEach((c) => {
+      if (c.userId === user.id) {
+        c.userAvatar = user.avatar;
+      }
+    });
   }
 
   // Strictly protected fields (role, isVerified, verificationStatus, status, createdAt) are NEVER touched here
@@ -266,12 +308,18 @@ authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Respons
 // Remove Avatar
 authRouter.delete('/profile/avatar', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
-  const user = db.getData().users.find((u) => u.id === req.user!.id);
+  const data = db.getData();
+  const user = data.users.find(
+    (u) =>
+      u.id === req.user!.id ||
+      (req.user!.email && u.email.toLowerCase() === req.user!.email.toLowerCase())
+  );
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
   user.avatar = undefined;
   user.avatarMedia = undefined;
   db.save();
+  req.user = user;
 
   return res.json({
     message: 'Photo de profil retirée.',
@@ -282,12 +330,18 @@ authRouter.delete('/profile/avatar', requireAuth, (req: AuthenticatedRequest, re
 // Remove Cover Image
 authRouter.delete('/profile/cover', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
-  const user = db.getData().users.find((u) => u.id === req.user!.id);
+  const data = db.getData();
+  const user = data.users.find(
+    (u) =>
+      u.id === req.user!.id ||
+      (req.user!.email && u.email.toLowerCase() === req.user!.email.toLowerCase())
+  );
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
   user.coverImage = undefined;
   user.coverMedia = undefined;
   db.save();
+  req.user = user;
 
   return res.json({
     message: 'Image de couverture retirée.',

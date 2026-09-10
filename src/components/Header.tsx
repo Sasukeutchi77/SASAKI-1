@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-1.5 sm:gap-3 min-w-0">
           {/* Logo & Platform Name */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               id="brand-logo-btn"
               onClick={() => {
@@ -104,13 +104,13 @@ export const Header: React.FC<HeaderProps> = ({
                 if (onGoHome) onGoHome();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex items-center gap-1.5 sm:gap-2.5 text-left group cursor-pointer min-w-0"
+              className="flex items-center gap-1.5 sm:gap-2.5 text-left group cursor-pointer shrink-0"
             >
               <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 flex items-center justify-center text-white font-black text-base sm:text-xl shadow-[0_0_18px_rgba(29,104,255,0.6)] tracking-tight group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(0,210,255,0.8)] transition-all border border-white/25 shrink-0">
                 <span>P</span>
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-cyan-400 rounded-full ring-2 ring-[#040817] shadow-[0_0_8px_rgba(0,210,255,0.8)]" />
               </div>
-              <div className="min-w-0">
+              <div className="flex flex-col justify-center shrink-0">
                 <div className="flex items-center gap-1">
                   <span className="font-black text-base sm:text-xl tracking-tight text-white whitespace-nowrap">
                     purge<span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(0,210,255,0.8)]">-info</span>
@@ -120,8 +120,8 @@ export const Header: React.FC<HeaderProps> = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-blue-300/80 font-semibold font-mono whitespace-nowrap">
-                  <span>DEV:</span>
-                  <span className="text-cyan-400 font-extrabold tracking-tight drop-shadow-[0_0_8px_rgba(0,210,255,0.7)] truncate">
+                  <span className="text-blue-300/60">DEV:</span>
+                  <span className="text-cyan-400 font-extrabold tracking-tight drop-shadow-[0_0_8px_rgba(0,210,255,0.7)] whitespace-nowrap">
                     SASAKI-COMPAGNIE
                   </span>
                 </div>

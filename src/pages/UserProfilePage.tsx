@@ -76,6 +76,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
   const [editUsername, setEditUsername] = useState(user?.username || '');
   const [editBio, setEditBio] = useState(user?.bio || '');
   const [editPhone, setEditPhone] = useState(user?.phone || '');
+  const [editMediaName, setEditMediaName] = useState(user?.mediaName || '');
   const [saveLoading, setSaveLoading] = useState(false);
 
   // Avatar Upload State
@@ -108,6 +109,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
       setEditUsername(user.username || '');
       setEditBio(user.bio || '');
       setEditPhone(user.phone || '');
+      setEditMediaName(user.mediaName || '');
       setMediaName(user.mediaName || '');
     }
   }, [user]);
@@ -232,9 +234,28 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
     }
   };
 
+  // Remove cover image
+  const handleRemoveCover = async () => {
+    try {
+      await removeCover();
+      setFeedback({ type: 'success', message: 'Bannière de profil supprimée avec succès.' });
+      sfx.playMechanicalClick();
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Impossible de supprimer la bannière.' });
+    }
+  };
+
   // Save profile text info
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editName.trim() || editName.trim().length < 2) {
+      setFeedback({
+        type: 'error',
+        message: 'Le nom doit comporter au moins 2 caractères.',
+      });
+      return;
+    }
+
     setSaveLoading(true);
     setFeedback(null);
 
@@ -245,6 +266,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
         username: cleanUsername || undefined,
         bio: editBio.trim(),
         phone: editPhone.trim(),
+        mediaName: (user.role === 'journalist' || user.role === 'admin') ? editMediaName.trim() : undefined,
       });
       setIsEditing(false);
       setFeedback({
@@ -271,6 +293,22 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
       setFeedback({
         type: 'error',
         message: 'Veuillez renseigner le numéro d’accréditation et votre motivation professionnelle.',
+      });
+      return;
+    }
+
+    if (pressCardNumber.trim().length < 3) {
+      setFeedback({
+        type: 'error',
+        message: 'Le numéro de carte de presse doit comporter au moins 3 caractères.',
+      });
+      return;
+    }
+
+    if (motivation.trim().length < 15) {
+      setFeedback({
+        type: 'error',
+        message: 'Veuillez rédiger une motivation plus détaillée (minimum 15 caractères).',
       });
       return;
     }
@@ -494,7 +532,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
               {user.coverImage && (
                 <button
-                  onClick={removeCover}
+                  onClick={handleRemoveCover}
                   className="p-1.5 rounded-xl bg-black/70 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition cursor-pointer"
                   title="Supprimer la bannière"
                 >
@@ -788,6 +826,21 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   />
                 </div>
 
+                {(user.role === 'journalist' || user.role === 'admin') && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      Maison de presse ou affiliation journalistique
+                    </label>
+                    <input
+                      type="text"
+                      value={editMediaName}
+                      onChange={(e) => setEditMediaName(e.target.value)}
+                      placeholder="Ex: Le Canard Enchaîné, Indépendant, Purge Investigations..."
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#040817] border border-blue-500/40 text-sm text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">
                     Biographie & Présentation professionnelle
@@ -843,6 +896,14 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   <span className="text-slate-400 block mb-1">Téléphone</span>
                   <span className="font-bold text-white text-sm">{user.phone || 'Non renseigné'}</span>
                 </div>
+                {(user.role === 'journalist' || user.role === 'admin' || user.mediaName) && (
+                  <div className="p-4 rounded-2xl bg-[#040817]/60 border border-blue-500/20 md:col-span-2">
+                    <span className="text-slate-400 block mb-1">Maison de presse / Affiliation</span>
+                    <span className="font-bold text-cyan-300 text-sm">
+                      {user.mediaName || 'Journaliste Indépendant'}
+                    </span>
+                  </div>
+                )}
                 <div className="p-4 rounded-2xl bg-[#040817]/60 border border-blue-500/20 md:col-span-2">
                   <span className="text-slate-400 block mb-1">Biographie</span>
                   <p className="text-slate-200 text-sm leading-relaxed">

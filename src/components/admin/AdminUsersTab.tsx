@@ -111,6 +111,71 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      {/* Master Administrators Official Registry Card */}
+      <div className="bg-gradient-to-r from-amber-500/10 via-cyan-500/10 to-blue-500/10 border border-amber-500/30 rounded-2xl p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-400 flex items-center justify-center shrink-0">
+              <Crown className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-amber-300 font-mono flex items-center gap-2">
+                <span>Comptes Principaux Administrateurs Officiels</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                  {MASTER_ACCOUNTS.length} comptes détenteurs
+                </span>
+              </h3>
+              <p className="text-xs text-slate-300">
+                Seules ces 4 adresses email détiennent le rôle Super Administrateur et l'accès complet à la console de gestion.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {MASTER_ACCOUNTS.map((admEmail) => {
+            const foundUser = users.find((u) => u.email.toLowerCase() === admEmail.toLowerCase());
+            return (
+              <div
+                key={admEmail}
+                className="bg-slate-900/80 border border-amber-500/30 hover:border-amber-400/60 rounded-xl p-3 flex items-center gap-3 transition"
+              >
+                <div className="relative shrink-0">
+                  <img
+                    src={
+                      foundUser?.avatar ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        foundUser?.name || admEmail.split('@')[0]
+                      )}&background=f59e0b&color=000`
+                    }
+                    alt={admEmail}
+                    className="w-10 h-10 rounded-full object-cover border border-amber-400/50"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[9px] font-black">
+                    ★
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-slate-100 truncate">
+                    {foundUser?.name || admEmail.split('@')[0]}
+                  </div>
+                  <div className="text-[11px] font-mono text-amber-300/90 truncate font-semibold" title={admEmail}>
+                    {admEmail}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[10px] text-emerald-400 font-medium">
+                      {foundUser ? 'Super Admin Actif' : 'Pré-autorisé'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Filters & Search Toolbar */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
