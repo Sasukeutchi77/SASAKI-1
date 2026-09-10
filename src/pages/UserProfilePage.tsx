@@ -24,6 +24,12 @@ import {
   Award,
   Layers,
   Share2,
+  Info,
+  Maximize2,
+  Minimize2,
+  X,
+  ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getOptimizedImageUrl, validateMediaFile } from '../services/cloudinary';
@@ -35,6 +41,7 @@ interface UserProfilePageProps {
   onOpenAuth: () => void;
   onOpenMyHouse?: () => void;
   onOpenBookmarks?: () => void;
+  onOpenTrustSystem?: () => void;
 }
 
 export const UserProfilePage: React.FC<UserProfilePageProps> = ({
@@ -42,6 +49,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
   onOpenAuth,
   onOpenMyHouse,
   onOpenBookmarks,
+  onOpenTrustSystem,
 }) => {
   const {
     user,
@@ -88,6 +96,10 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
   // Feedback Messages
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Dedicated Open Modals & View States
+  const [showRoleModal, setShowRoleModal] = useState<boolean>(false);
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -315,45 +327,103 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
       : 'bg-[#090e24] text-blue-300 border-blue-500/30 shadow-[0_0_8px_rgba(0,180,255,0.1)]';
 
   return (
-    <div className="w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn">
+    <div
+      className={
+        isFullScreen
+          ? 'fixed inset-0 z-50 overflow-y-auto bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn'
+          : 'w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn'
+      }
+    >
       {/* Top Header / Breadcrumb Bar */}
-      <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 px-4 sm:px-8 py-3.5 transition-all">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+      <div
+        className={`sticky z-30 bg-[#040817]/95 backdrop-blur-xl border-b border-blue-500/20 px-3 sm:px-8 py-2.5 sm:py-3 transition-all ${
+          isFullScreen ? 'top-0' : 'top-16'
+        }`}
+      >
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+          {/* Back button with responsive label that never wraps */}
           <button
             id="user-profile-back-btn"
             onClick={() => {
               sfx.playClick();
-              onBack();
+              if (isFullScreen) {
+                setIsFullScreen(false);
+              } else {
+                onBack();
+              }
             }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-950/40 hover:bg-blue-600/20 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer touch-target interactive-pop"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-blue-950/50 hover:bg-blue-600/25 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer touch-target shrink-0"
+            title="Revenir à l'accueil"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Retour à l'accueil</span>
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap font-bold">
+              <span className="hidden sm:inline">Retour à l'accueil</span>
+              <span className="sm:hidden">Accueil</span>
+            </span>
           </button>
 
-          <div className="flex items-center gap-3">
-            <span
-              className={`px-2.5 py-1 rounded-full text-xs font-bold font-mono border uppercase tracking-wider ${roleBadgeColor}`}
-            >
-              {roleLabel}
+          {/* Interactive Role Badge - opens dedicated details modal */}
+          <button
+            id="user-profile-role-badge-btn"
+            onClick={() => {
+              sfx.playClick();
+              setShowRoleModal(true);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold font-mono border uppercase tracking-wider whitespace-nowrap cursor-pointer hover:scale-105 active:scale-95 transition-all touch-target shadow-sm shrink-0 ${roleBadgeColor}`}
+            title="Appuyer pour voir tous les détails et privilèges de votre statut"
+          >
+            <Shield className="w-3.5 h-3.5 shrink-0" />
+            <span className="whitespace-nowrap">
+              {user.role === 'admin'
+                ? 'Administrateur'
+                : user.role === 'journalist'
+                ? 'Journaliste'
+                : 'Lecteur Citoyen'}
             </span>
+            <Info className="w-3 h-3 shrink-0 opacity-80" />
+          </button>
+
+          {/* Controls: Fullscreen toggle + Logout */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              id="user-profile-fullscreen-btn"
+              onClick={() => {
+                sfx.playClick();
+                setIsFullScreen(!isFullScreen);
+              }}
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer touch-target flex items-center gap-1.5 ${
+                isFullScreen
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/50 shadow-[0_0_12px_rgba(0,210,255,0.3)]'
+                  : 'bg-[#080d22] text-slate-300 hover:text-white border-blue-500/30 hover:border-cyan-400/40'
+              }`}
+              title={isFullScreen ? 'Quitter le mode plein écran' : 'Ouvrir en plein écran'}
+            >
+              {isFullScreen ? (
+                <Minimize2 className="w-3.5 h-3.5 text-cyan-400" />
+              ) : (
+                <Maximize2 className="w-3.5 h-3.5 text-blue-400" />
+              )}
+              <span className="hidden md:inline">{isFullScreen ? 'Réduire' : 'Plein écran'}</span>
+            </button>
 
             <button
+              id="user-profile-logout-btn"
               onClick={() => {
                 sfx.playMechanicalClick();
                 logout();
                 onBack();
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#080d22] hover:bg-blue-950/70 text-blue-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition cursor-pointer touch-target shadow-[0_0_8px_rgba(0,100,255,0.1)]"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#080d22] hover:bg-red-950/50 text-blue-300 hover:text-red-300 border border-blue-500/30 hover:border-red-500/40 text-xs font-bold transition cursor-pointer touch-target shadow-[0_0_8px_rgba(0,100,255,0.1)] shrink-0"
+              title="Se déconnecter de votre compte"
             >
-              <LogOut className="w-3.5 h-3.5 text-blue-400" />
+              <LogOut className="w-3.5 h-3.5 text-blue-400 hover:text-red-400" />
               <span className="hidden sm:inline">Déconnexion</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-6 sm:pt-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-6">
         {/* Feedback Alert */}
         {feedback && (
           <div
@@ -381,7 +451,7 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
         {/* Hero Card with Cover Banner + Overlapping Avatar */}
         <div className="relative rounded-3xl overflow-hidden bg-gradient-to-b from-[#0b142c] to-[#040817] border border-blue-500/30 shadow-[0_0_50px_rgba(29,104,255,0.15)] mb-8">
           {/* Cover Banner */}
-          <div className="relative w-full h-48 sm:h-64 bg-gradient-to-r from-blue-950 via-[#040817] to-cyan-950 overflow-hidden group">
+          <div className="relative w-full h-36 sm:h-56 bg-gradient-to-r from-blue-950 via-[#040817] to-cyan-950 overflow-hidden group">
             {user.coverImage ? (
               <img
                 src={getOptimizedImageUrl(user.coverImage, { width: 1400, quality: 'auto' })}
@@ -971,6 +1041,151 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
           </div>
         )}
       </div>
+
+      {/* 4. Complete Role & Status Details Modal */}
+      {showRoleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="relative w-full max-w-lg bg-[#0a0f24] border border-cyan-500/40 rounded-3xl shadow-[0_0_50px_rgba(0,210,255,0.25)] overflow-hidden flex flex-col my-4 max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="bg-[#0e1638] border-b border-cyan-500/30 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <Shield className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-sm sm:text-base font-bold tracking-wider uppercase text-white font-mono">
+                  Statut & Privilèges Citoyens
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowRoleModal(false)}
+                className="p-1.5 text-cyan-400/70 hover:text-cyan-200 hover:bg-cyan-500/20 rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6 text-sm">
+              {/* Role Header Card */}
+              <div className="p-4 rounded-2xl bg-[#060a1c] border border-blue-500/30 flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-blue-950/80 border border-cyan-500/40 flex items-center justify-center shrink-0 text-cyan-300 shadow-[0_0_15px_rgba(0,210,255,0.2)]">
+                  {user.role === 'admin' ? (
+                    <Award className="w-7 h-7 text-cyan-400" />
+                  ) : user.role === 'journalist' ? (
+                    <FileText className="w-7 h-7 text-cyan-400" />
+                  ) : (
+                    <UserIcon className="w-7 h-7 text-cyan-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase tracking-wider bg-blue-950/80 text-cyan-300 border border-blue-500/30 mb-1">
+                    {roleLabel}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {user.role === 'admin'
+                      ? 'Administrateur Central de la Régulation'
+                      : user.role === 'journalist'
+                      ? (user.mediaName ? `Journaliste chez ${user.mediaName}` : 'Journaliste Indépendant Accrédité')
+                      : 'Membre Citoyen vérifié de Purge-Info'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Rights & Powers list */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300 mb-3 font-mono flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Vos Pouvoirs et Privilèges
+                </h4>
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/20 flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-slate-200 text-xs block">Lecture Complète & Illimitée</span>
+                      <span className="text-[11px] text-slate-400">Accès direct sans restriction à tous les scoops, enquêtes et révélations.</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/20 flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-slate-200 text-xs block">Participation Citoyenne & Débat</span>
+                      <span className="text-[11px] text-slate-400">Droit de commenter les publications et d'attribuer des votes d'approbation.</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/20 flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-slate-200 text-xs block">Favoris & Suivi des Maisons</span>
+                      <span className="text-[11px] text-slate-400">Archivage illimité de vos dossiers préférés et suivi des journalistes favoris.</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/20 flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-slate-200 text-xs block">Signalement & Vigilance Civique</span>
+                      <span className="text-[11px] text-slate-400">Pouvoir d'alerter la modération en cas de fake news ou manipulation.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reader upgrade to journalist CTA */}
+              {user.role === 'reader' && (
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-950/70 to-[#0d1b3e] border border-cyan-500/30 space-y-3">
+                  <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs">
+                    <Award className="w-4 h-4 text-cyan-400" />
+                    <span>Envie d'enquêter et de publier vos articles ?</span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Les citoyens peuvent demander une accréditation officielle pour rejoindre une maison de presse ou publier en tant que journaliste d'investigation.
+                  </p>
+                  <button
+                    onClick={() => {
+                      sfx.playClick();
+                      setShowRoleModal(false);
+                      setActiveTab('accreditation');
+                      const elem = document.getElementById('tab-content-accreditation');
+                      if (elem) {
+                        elem.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(29,104,255,0.4)] transition cursor-pointer"
+                  >
+                    <span>Ouvrir la Demande d'Accréditation Presse</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Trust System Link */}
+              {onOpenTrustSystem && (
+                <button
+                  onClick={() => {
+                    sfx.playClick();
+                    setShowRoleModal(false);
+                    onOpenTrustSystem();
+                  }}
+                  className="w-full py-2 px-4 rounded-xl bg-[#090e24] hover:bg-blue-950/60 text-cyan-300 border border-blue-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <Shield className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Consulter la Charte Déontologique et de Confiance</span>
+                </button>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-[#0e1638] border-t border-cyan-500/20 px-6 py-3.5 flex justify-end shrink-0">
+              <button
+                onClick={() => setShowRoleModal(false)}
+                className="px-5 py-2 rounded-xl bg-blue-950/60 hover:bg-blue-600/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

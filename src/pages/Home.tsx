@@ -26,8 +26,12 @@ import {
   ShieldCheck,
   Award,
   ArrowRight,
+  Trophy,
+  Crown,
+  Medal,
 } from 'lucide-react';
 import { VerifiedBadge } from '../components/VerifiedBadge';
+import { RankingsModal } from '../components/RankingsModal';
 
 interface HomeProps {
   onOpenArticle: (article: Article) => void;
@@ -39,6 +43,7 @@ interface HomeProps {
   onOpenMediaHouses?: () => void;
   onOpenMyHouse?: () => void;
   onOpenTrustSystem?: () => void;
+  onOpenRankings?: () => void;
   searchQuery: string;
   selectedCategory: string | null;
   onSelectCategory: (catSlug: string | null) => void;
@@ -56,6 +61,7 @@ export const Home: React.FC<HomeProps> = ({
   onOpenMediaHouses,
   onOpenMyHouse,
   onOpenTrustSystem,
+  onOpenRankings,
   searchQuery,
   selectedCategory,
   onSelectCategory,
@@ -75,10 +81,11 @@ export const Home: React.FC<HomeProps> = ({
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null);
-  const [topJournalists, setTopJournalists] = useState<User[]>([]);
-  const [popularMediaHouses, setPopularMediaHouses] = useState<MediaHouse[]>([]);
+  const [topJournalists, setTopJournalists] = useState<any[]>([]);
+  const [popularMediaHouses, setPopularMediaHouses] = useState<any[]>([]);
   const [popularTags, setPopularTags] = useState<{ tag: string; count: number }[]>([]);
   const [liveFlash, setLiveFlash] = useState<{ article: Article; time: string } | null>(null);
+  const [showRankingsModal, setShowRankingsModal] = useState<boolean>(false);
 
   // Pagination states
   const [page, setPage] = useState<number>(1);
@@ -91,12 +98,20 @@ export const Home: React.FC<HomeProps> = ({
     api.getCategories().then((res) => {
       setCategories(res.categories);
     });
-    api.getJournalists().then((res) => {
-      setTopJournalists(res.journalists);
-    });
-    api.getMediaHouses().then((res) => {
-      setPopularMediaHouses(res.mediaHouses || []);
-    });
+    api.getTop7Journalists()
+      .then((res) => {
+        setTopJournalists(res.topJournalists || []);
+      })
+      .catch(() => {
+        api.getJournalists().then((res) => setTopJournalists(res.journalists || []));
+      });
+    api.getTop7Houses()
+      .then((res) => {
+        setPopularMediaHouses(res.topHouses || []);
+      })
+      .catch(() => {
+        api.getMediaHouses().then((res) => setPopularMediaHouses(res.mediaHouses || []));
+      });
     api.getTags().then((res) => {
       setPopularTags(res.tags);
     });
@@ -786,119 +801,170 @@ export const Home: React.FC<HomeProps> = ({
               )}
             </div>
 
-            {/* Maisons de Presse Populaires */}
+            {/* Top 7 Maisons de Presse Populaires */}
             <div className="bg-[#0b0e1a]/90 rounded-2xl border border-cyan-500/30 p-4 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4 text-emerald-400" />
-                  <span>Maisons de presse populaires</span>
-                </h3>
-                {onOpenMediaHouses && (
-                  <button
-                    onClick={onOpenMediaHouses}
-                    className="text-[11px] font-bold text-cyan-400 hover:text-cyan-200 cursor-pointer"
-                  >
-                    Voir tout
-                  </button>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <div className="p-1 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                    <Trophy className="w-3.5 h-3.5" />
+                  </div>
+                  <h3 className="font-extrabold text-sm text-white">
+                    Top 7 Maisons de Presse
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowRankingsModal(true)}
+                  className="text-[11px] font-bold text-yellow-400 hover:text-yellow-200 cursor-pointer flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30 transition-colors"
+                >
+                  <span>Palmarès</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
               </div>
 
               <div className="divide-y divide-cyan-500/10">
-                {popularMediaHouses.slice(0, 4).map((house) => (
-                  <div key={house.id} className="py-2.5 flex items-center justify-between gap-3">
-                    <div
-                      onClick={onOpenMediaHouses}
-                      className="flex items-center gap-2.5 text-left group min-w-0 cursor-pointer flex-1"
-                    >
-                      <img
-                        src={house.logo || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=150&auto=format&fit=crop&q=80'}
-                        alt={house.name}
-                        referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-xl object-cover border border-cyan-500/40 group-hover:border-cyan-400 shrink-0 transition-all shadow-[0_0_8px_rgba(0,243,255,0.2)]"
-                      />
-                      <div className="min-w-0">
-                        <div className="font-bold text-xs text-white group-hover:text-cyan-300 truncate flex items-center gap-1 transition-colors">
-                          <span>{house.name}</span>
-                          {house.isVerified && (
-                            <VerifiedBadge size="xs" type="media" />
-                          )}
-                        </div>
-                        <div className="text-[11px] text-cyan-400/60 font-mono truncate">
-                          {((user && (house.ownerId === user.id || (house.members && house.members.includes(user.id)))) || user?.role === 'admin') && (house.journalistsCount || house.members?.length)
-                            ? `${house.journalistsCount || house.members?.length} journaliste(s) • `
-                            : 'Rédaction accréditée • '}
-                          {house.specialties?.[0] || 'Généraliste'}
+                {popularMediaHouses.slice(0, 7).map((house, idx) => {
+                  const rank = idx + 1;
+                  const rankBadgeColor =
+                    rank === 1
+                      ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/40 shadow-[0_0_8px_rgba(234,179,8,0.3)]'
+                      : rank === 2
+                      ? 'bg-slate-300/20 text-slate-200 border-slate-300/40'
+                      : rank === 3
+                      ? 'bg-amber-700/20 text-amber-300 border-amber-600/40'
+                      : 'bg-cyan-950/60 text-cyan-400 border-cyan-500/20';
+
+                  return (
+                    <div key={house.id} className="py-2 flex items-center justify-between gap-2.5">
+                      <div
+                        onClick={() => onOpenMediaHouses && onOpenMediaHouses()}
+                        className="flex items-center gap-2 text-left group min-w-0 cursor-pointer flex-1"
+                      >
+                        <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black border shrink-0 ${rankBadgeColor}`}>
+                          #{rank}
+                        </span>
+
+                        <img
+                          src={house.logo || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=150&auto=format&fit=crop&q=80'}
+                          alt={house.name}
+                          referrerPolicy="no-referrer"
+                          className="w-8 h-8 rounded-lg object-cover border border-cyan-500/40 group-hover:border-cyan-400 shrink-0 transition-all"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-xs text-white group-hover:text-cyan-300 truncate flex items-center gap-1 transition-colors">
+                            <span>{house.name}</span>
+                            {house.isVerified && (
+                              <VerifiedBadge size="xs" type="media" />
+                            )}
+                          </div>
+                          <div className="text-[10px] text-cyan-400/70 font-mono truncate">
+                            {house.followersCount || 0} abonnés • {house.specialties?.[0] || 'Généraliste'}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {onOpenMediaHouses && (
-                      <button
-                        onClick={onOpenMediaHouses}
-                        className="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-950/60 text-cyan-300 hover:bg-cyan-900/60 border border-cyan-500/30 transition-all shrink-0 cursor-pointer"
-                      >
-                        Consulter
-                      </button>
-                    )}
-                  </div>
-                ))}
+                      {onOpenMediaHouses && (
+                        <button
+                          onClick={onOpenMediaHouses}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/60 text-cyan-300 hover:bg-cyan-900/60 border border-cyan-500/30 transition-all shrink-0 cursor-pointer"
+                        >
+                          Consulter
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Journalistes à suivre */}
+            {/* Top 7 Journalistes Suivis */}
             <div className="bg-[#0b0e1a]/90 rounded-2xl border border-cyan-500/30 p-4 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-cyan-400" />
-                  <span>Journalistes à suivre</span>
-                </h3>
+                <div className="flex items-center gap-1.5">
+                  <div className="p-1 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                  </div>
+                  <h3 className="font-extrabold text-sm text-white">
+                    Top 7 Journalistes
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowRankingsModal(true)}
+                  className="text-[11px] font-bold text-cyan-400 hover:text-cyan-200 cursor-pointer flex items-center gap-1 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30 transition-colors"
+                >
+                  <span>Palmarès</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
               </div>
 
               <div className="divide-y divide-cyan-500/10">
-                {topJournalists.slice(0, 5).map((j) => (
-                  <div key={j.id} className="py-2.5 flex items-center justify-between gap-3">
-                    <button
-                      onClick={() => onOpenProfile(j.id)}
-                      className="flex items-center gap-2.5 text-left group min-w-0 cursor-pointer flex-1"
-                    >
-                      <img
-                        src={j.avatar}
-                        alt={j.name}
-                        referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-full object-cover border border-cyan-500/40 group-hover:border-cyan-400 group-hover:shadow-[0_0_10px_rgba(0,243,255,0.5)] shrink-0 transition-all"
-                      />
-                      <div className="min-w-0">
-                        <div className="font-bold text-xs text-white group-hover:text-cyan-300 truncate flex items-center gap-1 transition-colors">
-                          <span>{j.name}</span>
-                          {j.isVerified && (
-                            <VerifiedBadge size="xs" type={j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'admin' : 'journalist'} isVerified={j.isVerified} role={j.role} />
-                          )}
-                        </div>
-                        <div className="text-[11px] text-cyan-400/60 font-mono truncate">
-                          {j.mediaName || (j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'Administrateur' : 'Reporter indépendant')} • {j.followersCount || 0} abonnés
-                        </div>
-                      </div>
-                    </button>
-
-                    {user?.id !== j.id && (
-                      <button
-                        onClick={(e) => handleToggleFollow(j.id, e)}
-                        className={`p-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                          j.isFollowing
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                            : 'bg-cyan-950/60 text-cyan-400 hover:bg-cyan-900/60 border border-cyan-500/30'
-                        }`}
-                        title={j.isFollowing ? 'Abonné' : "S'abonner"}
-                      >
-                        {j.isFollowing ? (
-                          <UserCheck className="w-4 h-4" />
-                        ) : (
-                          <UserPlus className="w-4 h-4" />
-                        )}
-                      </button>
-                    )}
+                {topJournalists.length === 0 ? (
+                  <div className="py-4 text-center text-xs text-slate-400">
+                    <p className="font-semibold text-slate-300">Aucun journaliste classé</p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Les journalistes accrédités apparaîtront ici dès leurs premières publications.
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  topJournalists.slice(0, 7).map((j, idx) => {
+                  const rank = idx + 1;
+                  const rankBadgeColor =
+                    rank === 1
+                      ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/40 shadow-[0_0_8px_rgba(234,179,8,0.3)]'
+                      : rank === 2
+                      ? 'bg-slate-300/20 text-slate-200 border-slate-300/40'
+                      : rank === 3
+                      ? 'bg-amber-700/20 text-amber-300 border-amber-600/40'
+                      : 'bg-cyan-950/60 text-cyan-400 border-cyan-500/20';
+
+                  return (
+                    <div key={j.id} className="py-2 flex items-center justify-between gap-2.5">
+                      <button
+                        onClick={() => onOpenProfile(j.id)}
+                        className="flex items-center gap-2 text-left group min-w-0 cursor-pointer flex-1"
+                      >
+                        <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black border shrink-0 ${rankBadgeColor}`}>
+                          #{rank}
+                        </span>
+
+                        <img
+                          src={j.avatar}
+                          alt={j.name}
+                          referrerPolicy="no-referrer"
+                          className="w-8 h-8 rounded-full object-cover border border-cyan-500/40 group-hover:border-cyan-400 shrink-0 transition-all"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-xs text-white group-hover:text-cyan-300 truncate flex items-center gap-1 transition-colors">
+                            <span>{j.name}</span>
+                            {j.isVerified && (
+                              <VerifiedBadge size="xs" type={j.role === 'admin' || j.name?.toLowerCase().includes('admin') ? 'admin' : 'journalist'} isVerified={j.isVerified} role={j.role} />
+                            )}
+                          </div>
+                          <div className="text-[10px] text-cyan-400/70 font-mono truncate">
+                            {j.followersCount || 0} abonnés • {j.mediaName || (j.role === 'admin' ? 'Administration' : 'Reporter')}
+                          </div>
+                        </div>
+                      </button>
+
+                      {user?.id !== j.id && (
+                        <button
+                          onClick={(e) => handleToggleFollow(j.id, e)}
+                          className={`p-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                            j.isFollowing
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'bg-cyan-950/60 text-cyan-400 hover:bg-cyan-900/60 border border-cyan-500/30'
+                          }`}
+                          title={j.isFollowing ? 'Abonné' : "S'abonner"}
+                        >
+                          {j.isFollowing ? (
+                            <UserCheck className="w-3.5 h-3.5" />
+                          ) : (
+                            <UserPlus className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  );
+                }))}
               </div>
             </div>
 
@@ -968,6 +1034,17 @@ export const Home: React.FC<HomeProps> = ({
           </aside>
         </div>
       </main>
+
+      {/* Rankings Modal (Palmarès & Classement des Top 7) */}
+      {showRankingsModal && (
+        <RankingsModal
+          isOpen={showRankingsModal}
+          onClose={() => setShowRankingsModal(false)}
+          onOpenProfile={onOpenProfile}
+          onOpenMediaHouses={onOpenMediaHouses}
+          onOpenAuth={onOpenAuth}
+        />
+      )}
     </div>
   );
 };

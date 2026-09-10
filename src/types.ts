@@ -343,3 +343,39 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+
+export type RankingBadgeTier = 'gold' | 'silver' | 'bronze' | 'elite';
+
+export interface TopMediaHouse extends MediaHouse {
+  rank: number;
+  popularityScore: number;
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  badgeTier: RankingBadgeTier;
+  badgeLabel: string;
+  recentArticleTitle?: string;
+  recentArticleId?: string;
+  trend: 'up' | 'stable' | 'hot';
+}
+
+export interface TopJournalist extends User {
+  rank: number;
+  popularityScore: number;
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  badgeTier: RankingBadgeTier;
+  badgeLabel: string;
+  recentArticleTitle?: string;
+  recentArticleId?: string;
+  trend: 'up' | 'stable' | 'hot';
+}
+
+export interface RankingsResponse {
+  topHouses: TopMediaHouse[];
+  topJournalists: TopJournalist[];
+  totalHousesCount: number;
+  totalJournalistsCount: number;
+  lastUpdated: string;
+}

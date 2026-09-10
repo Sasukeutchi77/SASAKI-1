@@ -88,6 +88,104 @@ housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   return res.json({ mediaHouses: houses });
 });
 
+// Top 7 Media Houses by Popularity
+housesRouter.get(['/top-7', '/top'], (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const currentUserId = req.user?.id;
+
+  const rankedHouses = (data.mediaHouses || [])
+    .filter((h) => h.status !== 'suspended')
+    .map((h) => {
+      const articles = data.articles.filter(
+        (a) =>
+          a.status === 'published' &&
+          (a.mediaId === h.id || (a.mediaName && a.mediaName.toLowerCase() === h.name.toLowerCase()))
+      );
+
+      const totalViews = articles.reduce((sum, a) => sum + (a.viewsCount || 0), 0);
+      const totalLikes = articles.reduce((sum, a) => sum + (a.likesCount || 0), 0);
+      const totalComments = articles.reduce((sum, a) => sum + (a.commentsCount || 0), 0);
+
+      const follows = data.follows.filter((f) => f.targetId === h.id || (h.ownerId && f.targetId === h.ownerId));
+      const followersCount = h.followersCount ? Math.max(h.followersCount, follows.length) : follows.length;
+      const isFollowing = currentUserId
+        ? data.follows.some((f) => f.followerId === currentUserId && (f.targetId === h.id || (h.ownerId && f.targetId === h.ownerId)))
+        : false;
+
+      const articlesCount = Math.max(h.articlesCount || 0, articles.length);
+      const memberCount = h.members?.length || 1;
+
+      // Popularity score formula
+      const popularityScore =
+        followersCount * 12 +
+        articlesCount * 25 +
+        totalViews * 1 +
+        totalLikes * 6 +
+        totalComments * 4 +
+        (h.isVerified ? 120 : 0);
+
+      // Most recent published article
+      const sortedArticles = [...articles].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const recentArticle = sortedArticles[0];
+
+      return {
+        ...h,
+        articlesCount,
+        followersCount,
+        isFollowing,
+        journalistsCount: memberCount,
+        totalViews,
+        totalLikes,
+        totalComments,
+        popularityScore,
+        recentArticleTitle: recentArticle?.title,
+        recentArticleId: recentArticle?.id,
+      };
+    })
+    .sort((a, b) => b.popularityScore - a.popularityScore)
+    .slice(0, 7)
+    .map((h, index) => {
+      const rank = index + 1;
+      let badgeTier: 'gold' | 'silver' | 'bronze' | 'elite' = 'elite';
+      let badgeLabel = 'Élite de l’Information';
+      let trend: 'up' | 'stable' | 'hot' = 'stable';
+
+      if (rank === 1) {
+        badgeTier = 'gold';
+        badgeLabel = 'Or • Rédaction Suprême';
+        trend = 'hot';
+      } else if (rank === 2) {
+        badgeTier = 'silver';
+        badgeLabel = 'Argent • Grand Réseau';
+        trend = 'up';
+      } else if (rank === 3) {
+        badgeTier = 'bronze';
+        badgeLabel = 'Bronze • Tribune Majeure';
+        trend = 'up';
+      } else {
+        badgeTier = 'elite';
+        badgeLabel = `Rang #${rank} • Presse Accréditée`;
+        trend = index % 2 === 0 ? 'up' : 'stable';
+      }
+
+      return {
+        ...h,
+        rank,
+        badgeTier,
+        badgeLabel,
+        trend,
+      };
+    });
+
+  return res.json({
+    topHouses: rankedHouses,
+    total: rankedHouses.length,
+    lastUpdated: new Date().toISOString(),
+  });
+});
+
 // 2. Get current journalist's active house (My House)
 housesRouter.get('/my-house', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();

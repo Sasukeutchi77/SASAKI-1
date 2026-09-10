@@ -17,6 +17,7 @@ import {
   Zap,
   Building2,
   ShieldCheck,
+  Trophy,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -54,6 +55,8 @@ interface HeaderProps {
   onOpenMediaHouses?: () => void;
   onOpenMyHouse?: () => void;
   onOpenTrustSystem?: () => void;
+  onOpenRankings?: () => void;
+  showCategories?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -75,6 +78,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMediaHouses,
   onOpenMyHouse,
   onOpenTrustSystem,
+  onOpenRankings,
+  showCategories = true,
 }) => {
   const { user, isAuthenticated, logout, unreadNotifs, bookmarksCount } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -160,6 +165,19 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Ouvrir la recherche avancée & découverte"
               >
                 Explorer
+              </button>
+            )}
+
+            {/* Top 7 Classement button (Desktop only, mobile uses bottom nav bar) */}
+            {onOpenRankings && (
+              <button
+                id="header-open-rankings-btn"
+                onClick={onOpenRankings}
+                className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black text-yellow-300 hover:text-yellow-200 bg-gradient-to-r from-yellow-500/20 to-amber-600/20 hover:from-yellow-500/30 hover:to-amber-600/30 border border-yellow-400/50 hover:border-yellow-300 rounded-full shrink-0 transition-all cursor-pointer shadow-[0_0_15px_rgba(234,179,8,0.25)]"
+                title="Découvrir le Classement Officiel des Top 7 Maisons et Journalistes"
+              >
+                <Trophy className="w-3.5 h-3.5 text-yellow-400 stroke-[2.5]" />
+                <span>Classement</span>
               </button>
             )}
 
@@ -536,45 +554,47 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Official Categories Navigation Bar */}
-      <nav aria-label="Rubriques officielles" className="border-t border-blue-500/20 bg-[#030612]/90 backdrop-blur-md shadow-inner overflow-x-auto no-scrollbar">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-1.5 py-2 min-w-max">
-          <button
-            id="nav-category-all"
-            onClick={() => {
-              sfx.playClick();
-              if (onSelectCategory) onSelectCategory(null);
-              if (onGoHome) onGoHome();
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
-              !selectedCategory || selectedCategory === 'all'
-                ? 'bg-gradient-to-r from-blue-600/40 to-cyan-500/40 text-cyan-200 border border-cyan-400/60 shadow-[0_0_12px_rgba(0,210,255,0.35)]'
-                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
-            }`}
-          >
-            Accueil
-          </button>
-          {(categories && categories.length > 0 ? categories : OFFICIAL_CATEGORIES_DEFAULT).map((cat) => {
-            const isActive = selectedCategory === cat.slug || selectedCategory === cat.id;
-            return (
-              <button
-                key={cat.id || cat.slug}
-                id={`nav-category-${cat.slug}`}
-                onClick={() => {
-                  sfx.playClick();
-                  if (onSelectCategory) onSelectCategory(cat.slug);
-                }}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_16px_rgba(0,210,255,0.5)] border border-cyan-300/60 scale-[1.02]'
-                    : 'text-slate-300 hover:text-cyan-300 hover:bg-blue-500/10 border border-transparent'
-                }`}
-              >
-                <span>{cat.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {showCategories && (
+        <nav aria-label="Rubriques officielles" className="border-t border-blue-500/20 bg-[#030612]/90 backdrop-blur-md shadow-inner overflow-x-auto no-scrollbar">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-1.5 py-2 min-w-max">
+            <button
+              id="nav-category-all"
+              onClick={() => {
+                sfx.playClick();
+                if (onSelectCategory) onSelectCategory(null);
+                if (onGoHome) onGoHome();
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+                !selectedCategory || selectedCategory === 'all'
+                  ? 'bg-gradient-to-r from-blue-600/40 to-cyan-500/40 text-cyan-200 border border-cyan-400/60 shadow-[0_0_12px_rgba(0,210,255,0.35)]'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              Accueil
+            </button>
+            {(categories && categories.length > 0 ? categories : OFFICIAL_CATEGORIES_DEFAULT).map((cat) => {
+              const isActive = selectedCategory === cat.slug || selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id || cat.slug}
+                  id={`nav-category-${cat.slug}`}
+                  onClick={() => {
+                    sfx.playClick();
+                    if (onSelectCategory) onSelectCategory(cat.slug);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_16px_rgba(0,210,255,0.5)] border border-cyan-300/60 scale-[1.02]'
+                      : 'text-slate-300 hover:text-cyan-300 hover:bg-blue-500/10 border border-transparent'
+                  }`}
+                >
+                  <span>{cat.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </header>
   );
 };

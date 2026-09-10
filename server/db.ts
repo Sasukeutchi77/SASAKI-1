@@ -162,13 +162,15 @@ function createInitialData(): DatabaseSchema {
       email: 'minato45tt@gmail.com',
       passwordHash: adminPass.hash,
       passwordSalt: adminPass.salt,
-      name: 'Minato Admin',
+      name: 'Minato Namikaze',
       role: 'admin',
       isVerified: true,
       verificationStatus: 'approved',
       status: 'active',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-      bio: 'Compte Administrateur Officiel de la plateforme PURGE-INFO.',
+      bio: 'Chroniqueur en Chef & Observateur des Décrets de Sécurité de la Purge.',
+      followersCount: 0,
+      articlesCount: 0,
       createdAt: '2026-01-01T08:00:00Z',
     },
   ];
@@ -218,6 +220,7 @@ function createInitialData(): DatabaseSchema {
     },
   ];
 
+  // All reference articles permanently removed — real journalists handle all content
   const articles: Article[] = [];
   const comments: Comment[] = [];
   const likes: DBLike[] = [];
@@ -227,7 +230,98 @@ function createInitialData(): DatabaseSchema {
   const verificationRequests: VerificationRequest[] = [];
   const reports: Report[] = [];
   const views: DBView[] = [];
-  const mediaHouses: MediaHouse[] = [];
+  const mediaHouses: MediaHouse[] = [
+    {
+      id: 'media_purge_officiel',
+      name: 'PURGE-INFO Officiel',
+      slug: 'purge-info-officiel',
+      logo: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=150&auto=format&fit=crop&q=80',
+      coverImage: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&auto=format&fit=crop&q=80',
+      description: "L'organe d'investigation central propulsé par SASAKI COMPAGNIE. Analyses stratégiques, vérifications de terrain et couverture en continu des décrets de la Purge.",
+      motto: "La vigie d'acier de la vérité et de la justice citoyenne",
+      ownerId: 'usr_admin_naruto',
+      ownerName: 'Naruto Admin',
+      members: ['usr_admin_naruto', 'usr_admin_itachi', 'usr_admin_nami', 'usr_admin_minato'],
+      specialties: ['Investigation', 'Décrets Purge', 'Sécurité'],
+      status: 'active',
+      isVerified: true,
+      followersCount: 0,
+      articlesCount: 0,
+      createdAt: '2026-01-01T08:00:00Z',
+    },
+    {
+      id: 'media_echo_ombre',
+      name: "L'Écho de l'Ombre",
+      slug: 'echo-ombre',
+      logo: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80',
+      coverImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80',
+      description: "Spécialisé dans le renseignement tactique sur les Purgeurs, les opérations discrètes et les zones franches contestées.",
+      motto: "Là où la lumière faiblit, l'information s'éveille",
+      ownerId: 'usr_admin_itachi',
+      ownerName: 'Itachi Admin',
+      members: ['usr_admin_itachi'],
+      specialties: ['Purgeur', 'Infiltrations', 'Cyber-veille'],
+      status: 'active',
+      isVerified: true,
+      followersCount: 0,
+      articlesCount: 0,
+      createdAt: '2026-01-02T08:00:00Z',
+    },
+    {
+      id: 'media_voix_clans',
+      name: 'La Voix des Clans',
+      slug: 'voix-clans',
+      logo: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80',
+      coverImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80',
+      description: "Tribune diplomatique et géopolitique dédiée aux traités inter-clans, concessions territoriales et arbitrages de paix.",
+      motto: "L'équilibre des alliances et le respect des frontières",
+      ownerId: 'usr_admin_minato',
+      ownerName: 'Minato Namikaze',
+      members: ['usr_admin_minato'],
+      specialties: ['Clans', 'Géopolitique', 'Territoires'],
+      status: 'active',
+      isVerified: true,
+      followersCount: 0,
+      articlesCount: 0,
+      createdAt: '2026-01-03T08:00:00Z',
+    },
+    {
+      id: 'media_chronique_dynasties',
+      name: 'Chronique des Dynasties',
+      slug: 'chronique-dynasties',
+      logo: 'https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=150&auto=format&fit=crop&q=80',
+      coverImage: 'https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=1200&auto=format&fit=crop&q=80',
+      description: "Revue économique, juridique et historique des grandes familles fondatrices et des corporations majeures.",
+      motto: "L'honneur des grandes lignées et l'arbitrage du patrimoine",
+      ownerId: 'usr_admin_nami',
+      ownerName: 'Nami Admin',
+      members: ['usr_admin_nami'],
+      specialties: ['Familles', 'Économie', 'Patrimoine'],
+      status: 'active',
+      isVerified: true,
+      followersCount: 0,
+      articlesCount: 0,
+      createdAt: '2026-01-04T08:00:00Z',
+    },
+    {
+      id: 'media_shinobi_tribune',
+      name: 'Shinobi Tribune',
+      slug: 'shinobi-tribune',
+      logo: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&auto=format&fit=crop&q=80',
+      coverImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&auto=format&fit=crop&q=80',
+      description: "Portraits intimes, interviews exclusives et chroniques de la vie publique des personnalités les plus en vue.",
+      motto: "Les légendes vivantes et les figures incontournables",
+      ownerId: 'usr_admin_nami',
+      ownerName: 'Nami Admin',
+      members: ['usr_admin_nami'],
+      specialties: ['Célébrités', 'Interviews', 'Culture'],
+      status: 'active',
+      isVerified: true,
+      followersCount: 0,
+      articlesCount: 0,
+      createdAt: '2026-01-06T08:00:00Z',
+    },
+  ];
   const adminLogs: AdminLog[] = [
     {
       id: 'log_init',
@@ -286,19 +380,87 @@ class Database {
           parsed.mediaHouses?.some((m: any) => m.id === 'media_globalnews');
 
         if (hasOldDemoData) {
-          console.log('[DB] Migrated database to production clean state (resetting mock data & setting 6 official categories)...');
+          console.log('[DB] Resetting database to clean initial state...');
           this.saveDataDirect(initial);
           return initial;
         }
 
         // Ensure 6 official categories are always maintained
         parsed.categories = initial.categories;
-        if (!parsed.mediaHouses) parsed.mediaHouses = [];
+
+        const referenceUserIds = new Set(['usr_journ_jiraya', 'usr_journ_shikamaru', 'usr_journ_tsunade']);
+        const referenceHouseIds = new Set(['media_arene_mag', 'media_sentinelle_citoyenne']);
+
+        // Purge reference journalist accounts
+        parsed.users = (parsed.users || [])
+          .filter((u: any) => !referenceUserIds.has(u.id) && !u.email?.includes('@purgeinfo.net'));
+
+        // Always ensure the 4 master admin accounts exist
+        const existingAdminIds = new Set(parsed.users.map((u: any) => u.id));
+        const missingAdmins = initial.users.filter((adm) => !existingAdminIds.has(adm.id));
+        if (missingAdmins.length > 0) {
+          parsed.users = [...parsed.users, ...missingAdmins];
+        }
+
+        // Purge all reference seed articles permanently
+        parsed.articles = (parsed.articles || []).filter((a: any) => {
+          if (referenceUserIds.has(a.authorId)) return false;
+          if (
+            a.id?.startsWith('art_purgeur_') ||
+            a.id?.startsWith('art_clans_') ||
+            a.id?.startsWith('art_familles_') ||
+            a.id?.startsWith('art_purge_') ||
+            a.id?.startsWith('art_competition_') ||
+            a.id?.startsWith('art_celebrites_') ||
+            a.id?.startsWith('art_sentinelle_')
+          ) {
+            return false;
+          }
+          return true;
+        });
+
+        // Purge orphan comments, likes, bookmarks, and views
+        const remainingArticleIds = new Set(parsed.articles.map((a: any) => a.id));
+        parsed.comments = (parsed.comments || []).filter((c: any) => remainingArticleIds.has(c.articleId));
+        parsed.likes = (parsed.likes || []).filter((l: any) => remainingArticleIds.has(l.articleId));
+        parsed.bookmarks = (parsed.bookmarks || []).filter((b: any) => remainingArticleIds.has(b.articleId));
+        parsed.views = (parsed.views || []).filter((v: any) => remainingArticleIds.has(v.articleId));
+
+        // Purge reference media houses & member references
+        parsed.mediaHouses = (parsed.mediaHouses || [])
+          .filter((h: any) => !referenceHouseIds.has(h.id))
+          .map((h: any) => {
+            const validMembers = (h.members || []).filter((mId: string) => !referenceUserIds.has(mId));
+            const houseArticles = parsed.articles.filter((a: any) => a.mediaId === h.id);
+            return {
+              ...h,
+              members: validMembers.length > 0 ? validMembers : [h.ownerId],
+              articlesCount: houseArticles.length,
+            };
+          });
+
+        // Ensure official base media houses exist
+        const existingHouseIds = new Set(parsed.mediaHouses.map((m: any) => m.id));
+        const missingHouses = initial.mediaHouses.filter((m) => !existingHouseIds.has(m.id));
+        if (missingHouses.length > 0) {
+          parsed.mediaHouses = [...parsed.mediaHouses, ...missingHouses];
+        }
+
+        // Sync article counts on users
+        parsed.users = parsed.users.map((u: any) => {
+          const userArticles = parsed.articles.filter((a: any) => a.authorId === u.id);
+          return {
+            ...u,
+            articlesCount: userArticles.length,
+          };
+        });
+
         if (!parsed.adminLogs) parsed.adminLogs = [];
         if (!parsed.reports) parsed.reports = [];
         if (!parsed.mediaRecords) parsed.mediaRecords = [];
         if (!parsed.commentLikes) parsed.commentLikes = [];
 
+        this.saveDataDirect(parsed);
         return parsed;
       }
     } catch (err) {

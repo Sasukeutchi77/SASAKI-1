@@ -52,6 +52,106 @@ usersRouter.get('/journalists', (req: AuthenticatedRequest, res: Response) => {
   return res.json({ journalists: result });
 });
 
+// Top 7 Journalists by Popularity
+usersRouter.get(['/top-7-journalists', '/top-journalists'], (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const currentUserId = req.user?.id;
+
+  const journalists = data.users.filter(
+    (u) => (u.role === 'journalist' || u.role === 'admin') && u.status === 'active'
+  );
+
+  const rankedJournalists = journalists
+    .map((j) => {
+      const articles = data.articles.filter(
+        (a) =>
+          a.status === 'published' &&
+          (a.authorId === j.id || (a.authorName && a.authorName.toLowerCase() === j.name.toLowerCase()))
+      );
+
+      const totalViews = articles.reduce((sum, a) => sum + (a.viewsCount || 0), 0);
+      const totalLikes = articles.reduce((sum, a) => sum + (a.likesCount || 0), 0);
+      const totalComments = articles.reduce((sum, a) => sum + (a.commentsCount || 0), 0);
+
+      const follows = data.follows.filter((f) => f.targetId === j.id);
+      const followersCount = j.followersCount ? Math.max(j.followersCount, follows.length) : follows.length;
+      const isFollowing = currentUserId
+        ? data.follows.some((f) => f.followerId === currentUserId && f.targetId === j.id)
+        : false;
+
+      const articlesCount = Math.max(j.articlesCount || 0, articles.length);
+
+      // Popularity score formula
+      const popularityScore =
+        followersCount * 15 +
+        articlesCount * 20 +
+        totalViews * 1 +
+        totalLikes * 6 +
+        totalComments * 3 +
+        (j.isVerified ? 100 : 0);
+
+      // Most recent published article
+      const sortedArticles = [...articles].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const recentArticle = sortedArticles[0];
+
+      const { passwordHash, passwordSalt, ...safe } = j;
+      return {
+        ...safe,
+        articlesCount,
+        followersCount,
+        isFollowing,
+        totalViews,
+        totalLikes,
+        totalComments,
+        popularityScore,
+        recentArticleTitle: recentArticle?.title,
+        recentArticleId: recentArticle?.id,
+      };
+    })
+    .sort((a, b) => b.popularityScore - a.popularityScore)
+    .slice(0, 7)
+    .map((j, index) => {
+      const rank = index + 1;
+      let badgeTier: 'gold' | 'silver' | 'bronze' | 'elite' = 'elite';
+      let badgeLabel = 'Plume d’Élite';
+      let trend: 'up' | 'stable' | 'hot' = 'stable';
+
+      if (rank === 1) {
+        badgeTier = 'gold';
+        badgeLabel = 'Or • Plume Suprême';
+        trend = 'hot';
+      } else if (rank === 2) {
+        badgeTier = 'silver';
+        badgeLabel = 'Argent • Grand Enquêteur';
+        trend = 'up';
+      } else if (rank === 3) {
+        badgeTier = 'bronze';
+        badgeLabel = 'Bronze • Reporter d’Honneur';
+        trend = 'up';
+      } else {
+        badgeTier = 'elite';
+        badgeLabel = `Rang #${rank} • Reporter de Terrain`;
+        trend = index % 2 === 0 ? 'up' : 'stable';
+      }
+
+      return {
+        ...j,
+        rank,
+        badgeTier,
+        badgeLabel,
+        trend,
+      };
+    });
+
+  return res.json({
+    topJournalists: rankedJournalists,
+    total: rankedJournalists.length,
+    lastUpdated: new Date().toISOString(),
+  });
+});
+
 // 2. Bookmarks list of current user
 usersRouter.get('/me/bookmarks', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();

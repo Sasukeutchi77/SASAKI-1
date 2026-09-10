@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Compass, Bookmark, Users, User, Plus, Building2 } from 'lucide-react';
+import { Home, Trophy, Compass, Bookmark, Users, User, Plus, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { sfx } from '../services/soundEffects';
 
@@ -15,6 +15,7 @@ interface MobileNavProps {
   onOpenAuth: () => void;
   onOpenAdmin?: () => void;
   onOpenMyHouse?: () => void;
+  onOpenRankings?: () => void;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({
@@ -26,6 +27,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   onOpenMyProfile,
   onOpenAuth,
   onOpenMyHouse,
+  onOpenRankings,
 }) => {
   const { user, isAuthenticated, bookmarksCount } = useAuth();
   const isJournalistOrAdmin = isAuthenticated && (user?.role === 'journalist' || user?.role === 'admin');
@@ -52,7 +54,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         id="mobile-bottom-navigation"
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#040817]/95 backdrop-blur-xl border-t border-blue-500/25 shadow-[0_-8px_30px_rgba(0,10,35,0.85)] safe-area-bottom transition-all"
       >
-        <div className={`grid ${isJournalistOrAdmin ? 'grid-cols-6' : 'grid-cols-5'} h-16 px-1 items-center max-w-md mx-auto`}>
+        <div className="grid grid-cols-6 h-16 px-1 items-center max-w-lg mx-auto">
           {/* 1. Accueil */}
           <button
             id="mobile-nav-home"
@@ -80,7 +82,38 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             </span>
           </button>
 
-          {/* 2. Explorer */}
+          {/* 2. Classement (Top 7) */}
+          <button
+            id="mobile-nav-rankings"
+            onClick={() => {
+              sfx.playClick();
+              if (onOpenRankings) {
+                onOpenRankings();
+              } else {
+                onTabChange('rankings');
+              }
+            }}
+            className={`flex flex-col items-center justify-center h-full py-1 text-[11px] font-bold transition-all touch-target cursor-pointer interactive-pop ${
+              activeTab === 'rankings'
+                ? 'text-white'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <div
+              className={`p-1.5 rounded-xl transition-all ${
+                activeTab === 'rankings'
+                  ? 'bg-gradient-to-r from-yellow-500/25 to-amber-500/25 border border-yellow-400/50 shadow-[0_0_15px_rgba(234,179,8,0.45)] text-yellow-300'
+                  : ''
+              }`}
+            >
+              <Trophy className={`w-5 h-5 ${activeTab === 'rankings' ? 'text-yellow-300' : 'text-yellow-400/80'}`} />
+            </div>
+            <span className={`leading-tight mt-0.5 text-[10px] tracking-tight ${activeTab === 'rankings' ? 'text-yellow-300 font-extrabold' : ''}`}>
+              Classement
+            </span>
+          </button>
+
+          {/* 3. Explorer */}
           <button
             id="mobile-nav-explore"
             onClick={() => {
@@ -111,7 +144,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             </span>
           </button>
 
-          {/* 3. Abonnements */}
+          {/* 4. Abonnements */}
           <button
             id="mobile-nav-following"
             onClick={() => {
@@ -138,40 +171,6 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             </span>
           </button>
 
-          {/* 4. Ma Maison (Journalistes & Administrateurs) */}
-          {isJournalistOrAdmin && (
-            <button
-              id="mobile-nav-my-house"
-              onClick={() => {
-                sfx.playClick();
-                if (onOpenMyHouse) {
-                  onOpenMyHouse();
-                }
-              }}
-              className={`flex flex-col items-center justify-center h-full py-1 text-[10px] font-bold transition-all touch-target cursor-pointer interactive-pop ${
-                activeTab === 'my-house'
-                  ? 'text-white'
-                  : 'text-blue-300/80 hover:text-blue-100'
-              }`}
-            >
-              <div
-                className={`relative p-1.5 rounded-xl transition-all ${
-                  activeTab === 'my-house'
-                    ? 'bg-blue-600/35 border border-cyan-400 shadow-[0_0_15px_rgba(0,210,255,0.5)]'
-                    : 'bg-blue-950/40 border border-blue-500/25'
-                }`}
-              >
-                <Building2 className="w-5 h-5 text-cyan-400" />
-                {!user?.mediaId && !user?.mediaName && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-yellow-400 rounded-full animate-ping" />
-                )}
-              </div>
-              <span className="leading-tight mt-0.5 text-[10px] text-cyan-300 whitespace-nowrap font-bold">
-                Maison
-              </span>
-            </button>
-          )}
-
           {/* 5. Favoris avec badge jaune lumineux */}
           <button
             id="mobile-nav-bookmarks"
@@ -197,7 +196,9 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                 </span>
               )}
             </div>
-            <span className="leading-tight mt-0.5 text-[10px] tracking-tight">Favoris</span>
+            <span className={`leading-tight mt-0.5 text-[10px] tracking-tight ${activeTab === 'bookmarks' ? 'text-cyan-300 font-extrabold' : ''}`}>
+              Favoris
+            </span>
           </button>
 
           {/* 6. Profil */}
@@ -237,8 +238,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                 </div>
               )}
             </div>
-            <span className="leading-tight mt-0.5 text-[10px] tracking-tight">
-              {isAuthenticated ? 'Profil' : 'Compte'}
+            <span className={`leading-tight mt-0.5 text-[10px] tracking-tight ${activeTab === 'profile' ? 'text-cyan-300 font-extrabold' : ''}`}>
+              Compte
             </span>
           </button>
         </div>

@@ -20,6 +20,7 @@ import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { MediaHousesModal } from './components/MediaHousesModal';
 import { TrustSystemModal } from './components/TrustSystemModal';
+import { RankingsModal } from './components/RankingsModal';
 import { BookmarksPage } from './pages/BookmarksPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { MediaHousesPage } from './pages/MediaHousesPage';
@@ -51,6 +52,7 @@ export function AppContent() {
   const [showMediaHousesModal, setShowMediaHousesModal] = useState<boolean>(false);
   const [mediaHousesTab, setMediaHousesTab] = useState<'explore' | 'my-house'>('explore');
   const [showTrustSystemModal, setShowTrustSystemModal] = useState<boolean>(false);
+  const [showRankingsModal, setShowRankingsModal] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
@@ -260,6 +262,8 @@ export function AppContent() {
         onOpenMediaHouses={handleOpenMediaHouses}
         onOpenMyHouse={handleOpenMyHouse}
         onOpenTrustSystem={() => setShowTrustSystemModal(true)}
+        onOpenRankings={() => setShowRankingsModal(true)}
+        showCategories={currentView === 'feed' || currentView === 'category'}
       />
 
       {/* Security Alert Banner for Suspended Accounts */}
@@ -336,6 +340,7 @@ export function AppContent() {
             onOpenAuth={() => handleOpenAuth('login')}
             onOpenMyHouse={handleOpenMyHouse}
             onOpenBookmarks={handleOpenBookmarks}
+            onOpenTrustSystem={() => setShowTrustSystemModal(true)}
           />
         ) : (
           <Home
@@ -359,6 +364,7 @@ export function AppContent() {
             onOpenMediaHouses={handleOpenMediaHouses}
             onOpenMyHouse={handleOpenMyHouse}
             onOpenTrustSystem={() => setShowTrustSystemModal(true)}
+            onOpenRankings={() => setShowRankingsModal(true)}
           />
         )}
       </div>
@@ -366,7 +372,9 @@ export function AppContent() {
       {/* Mobile Navigation Bar (Optimized for Android / Mobile screens) */}
       <MobileNav
         activeTab={
-          currentView === 'search'
+          showRankingsModal
+            ? 'rankings'
+            : currentView === 'search'
             ? 'search'
             : currentView === 'houses'
             ? mediaHousesTab === 'my-house'
@@ -380,7 +388,9 @@ export function AppContent() {
         }
         onTabChange={(tab) => {
           setMobileTab(tab);
-          if (tab === 'trending' || tab === 'search') {
+          if (tab === 'rankings') {
+            setShowRankingsModal(true);
+          } else if (tab === 'trending' || tab === 'search') {
             navigateToSearch();
           } else if (tab === 'feed') {
             navigateToHome();
@@ -396,6 +406,10 @@ export function AppContent() {
           } else if (tab === 'profile') {
             handleOpenMyProfile();
           }
+        }}
+        onOpenRankings={() => {
+          setMobileTab('rankings');
+          setShowRankingsModal(true);
         }}
         onOpenSearch={() => navigateToSearch()}
         onOpenCreateArticle={() => {
@@ -564,6 +578,23 @@ export function AppContent() {
             setShowTrustSystemModal(false);
             handleOpenMyProfile();
           }}
+        />
+      )}
+
+      {/* 12. Top 7 Official Rankings Modal */}
+      {showRankingsModal && (
+        <RankingsModal
+          isOpen={showRankingsModal}
+          onClose={() => {
+            setShowRankingsModal(false);
+            if (mobileTab === 'rankings') {
+              setMobileTab(currentView === 'home' ? 'feed' : currentView);
+            }
+          }}
+          onOpenArticle={handleOpenArticle}
+          onOpenProfile={(userId) => setProfileUserId(userId)}
+          onOpenMediaHouses={handleOpenMediaHouses}
+          onOpenAuth={() => handleOpenAuth('login')}
         />
       )}
 

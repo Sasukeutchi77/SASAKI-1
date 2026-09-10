@@ -10,6 +10,9 @@ import {
   MediaHouse,
   AdminLog,
   MediaRecord,
+  TopMediaHouse,
+  TopJournalist,
+  RankingsResponse,
 } from '../types';
 
 const TOKEN_KEY = 'purge_info_token';
@@ -378,6 +381,10 @@ export const api = {
         method: 'POST',
       }
     );
+  },
+
+  async followUser(id: string) {
+    return this.toggleFollow(id);
   },
 
   async getBookmarks() {
@@ -778,5 +785,37 @@ export const api = {
       }[];
       maxAccounts: number;
     }>('/api/admin/master-accounts');
+  },
+
+  // Rankings API (Top 7 Houses & Journalists)
+  async getTop7Houses() {
+    return request<{
+      topHouses: TopMediaHouse[];
+      total: number;
+      lastUpdated: string;
+    }>('/api/media-houses/top-7');
+  },
+
+  async getTop7Journalists() {
+    return request<{
+      topJournalists: TopJournalist[];
+      total: number;
+      lastUpdated: string;
+    }>('/api/users/top-7-journalists');
+  },
+
+  async getTopRankings(): Promise<RankingsResponse> {
+    const [housesRes, journalistsRes] = await Promise.all([
+      request<{ topHouses: TopMediaHouse[]; total: number; lastUpdated: string }>('/api/media-houses/top-7'),
+      request<{ topJournalists: TopJournalist[]; total: number; lastUpdated: string }>('/api/users/top-7-journalists'),
+    ]);
+
+    return {
+      topHouses: housesRes.topHouses,
+      topJournalists: journalistsRes.topJournalists,
+      totalHousesCount: housesRes.total,
+      totalJournalistsCount: journalistsRes.total,
+      lastUpdated: housesRes.lastUpdated || new Date().toISOString(),
+    };
   },
 };

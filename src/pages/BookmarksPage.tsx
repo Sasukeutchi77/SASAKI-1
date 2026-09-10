@@ -118,10 +118,14 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
               sfx.playClick();
               onBack();
             }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-950/40 hover:bg-blue-600/20 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer touch-target interactive-pop"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-blue-950/50 hover:bg-blue-600/25 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer touch-target interactive-pop shrink-0"
+            title="Revenir à l'accueil"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Retour à l'accueil</span>
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap font-bold">
+              <span className="hidden sm:inline">Retour à l'accueil</span>
+              <span className="sm:hidden">Accueil</span>
+            </span>
           </button>
 
           <div className="flex items-center gap-2">
