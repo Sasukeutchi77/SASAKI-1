@@ -146,7 +146,7 @@ export const AdminLogsTab: React.FC<AdminLogsTabProps> = ({ onFlash }) => {
                 logs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50/60 transition text-xs">
                     <td className="py-3 px-4 whitespace-nowrap text-gray-500 font-mono text-[11px]">
-                      {new Date(log.createdAt).toLocaleDateString('fr-FR', {
+                      {new Date(log.createdAt || log.timestamp).toLocaleDateString('fr-FR', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric',

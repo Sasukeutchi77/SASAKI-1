@@ -242,8 +242,24 @@ export const TopRankingsSection: React.FC<TopRankingsSectionProps> = ({
           <span className="text-xs font-mono tracking-wider">Calcul des scores et synchronisation...</span>
         </div>
       ) : currentList.length === 0 ? (
-        <div className="py-10 text-center text-slate-400 text-xs">
-          Aucun classement disponible pour le moment.
+        <div className="py-12 px-4 rounded-xl border border-dashed border-slate-800 bg-slate-900/40 text-center flex flex-col items-center justify-center">
+          {activeTab === 'houses' ? (
+            <>
+              <Building2 className="w-10 h-10 text-cyan-400/30 mb-2" />
+              <p className="text-sm font-semibold text-slate-200">Aucune maison de presse classée</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                Seules les rédactions officielles créées par les journalistes accrédités figureront ici selon leur audience et leurs publications réelles.
+              </p>
+            </>
+          ) : (
+            <>
+              <Users className="w-10 h-10 text-cyan-400/30 mb-2" />
+              <p className="text-sm font-semibold text-slate-200">Aucun journaliste accrédité classé</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                Seuls les vrais journalistes accrédités de la plateforme apparaîtront au palmarès au fur et à mesure de leurs publications et abonnés réels.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="mt-6 space-y-6">

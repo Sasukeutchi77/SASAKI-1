@@ -21,7 +21,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { VerifiedBadge } from '../components/VerifiedBadge';
-import { Article, Category, User } from '../types';
+import { Article, Category, User, UserRole } from '../types';
 import { api } from '../services/api';
 import { searchHistory } from '../services/searchHistory';
 import { ArticleCard } from '../components/ArticleCard';
@@ -119,7 +119,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   // Instant suggestions state
   const [suggestions, setSuggestions] = useState<{
     articles: { id: string; title: string; categoryName: string; coverImage: string; authorName: string }[];
-    journalists: { id: string; name: string; avatar?: string; mediaName?: string; isVerified?: boolean }[];
+    journalists: { id: string; name: string; avatar?: string; mediaName?: string; isVerified?: boolean; role?: string }[];
     media: { id: string; name: string; logo?: string; isVerified?: boolean }[];
     categories: { id: string; name: string; slug: string; articleCount: number }[];
     tags: { tag: string; count: number }[];
@@ -522,7 +522,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                           Journalistes & Rédactions
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                          {suggestions.journalists.map((j) => (
+                          {suggestions.journalists.map((j: any) => (
                             <button
                               key={j.id}
                               id={`suggest-j-${j.id}`}

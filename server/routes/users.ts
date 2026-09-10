@@ -12,7 +12,7 @@ export const usersRouter = Router();
 usersRouter.get('/journalists', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const journalists = data.users.filter(
-    (u) => (u.role === 'journalist' || u.role === 'admin') && u.status === 'active'
+    (u) => u.role === 'journalist' && u.status === 'active'
   );
 
   const currentUserId = req.user?.id;
@@ -23,10 +23,10 @@ usersRouter.get('/journalists', (req: AuthenticatedRequest, res: Response) => {
     const isFollowing = currentUserId
       ? data.follows.some((f) => f.followerId === currentUserId && f.targetId === j.id)
       : false;
-    const followersCount = j.followersCount ? Math.max(j.followersCount, followers.length) : followers.length;
+    const followersCount = followers.length;
 
     // Automatic verification for journalists reaching >= 50 followers
-    if ((j.role === 'journalist' || j.role === 'admin') && followersCount >= 50 && !j.isVerified) {
+    if (j.role === 'journalist' && followersCount >= 50 && !j.isVerified) {
       j.isVerified = true;
       j.verificationStatus = 'approved';
       hasChanges = true;
@@ -52,13 +52,13 @@ usersRouter.get('/journalists', (req: AuthenticatedRequest, res: Response) => {
   return res.json({ journalists: result });
 });
 
-// Top 7 Journalists by Popularity
+// Top 7 Journalists by Popularity (Real accredited journalists only)
 usersRouter.get(['/top-7-journalists', '/top-journalists'], (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const currentUserId = req.user?.id;
 
   const journalists = data.users.filter(
-    (u) => (u.role === 'journalist' || u.role === 'admin') && u.status === 'active'
+    (u) => u.role === 'journalist' && u.status === 'active'
   );
 
   const rankedJournalists = journalists
@@ -74,17 +74,17 @@ usersRouter.get(['/top-7-journalists', '/top-journalists'], (req: AuthenticatedR
       const totalComments = articles.reduce((sum, a) => sum + (a.commentsCount || 0), 0);
 
       const follows = data.follows.filter((f) => f.targetId === j.id);
-      const followersCount = j.followersCount ? Math.max(j.followersCount, follows.length) : follows.length;
+      const followersCount = follows.length;
       const isFollowing = currentUserId
         ? data.follows.some((f) => f.followerId === currentUserId && f.targetId === j.id)
         : false;
 
-      const articlesCount = Math.max(j.articlesCount || 0, articles.length);
+      const articlesCount = articles.length;
 
-      // Popularity score formula
+      // Popularity score formula based strictly on real activity
       const popularityScore =
         followersCount * 15 +
-        articlesCount * 20 +
+        articlesCount * 25 +
         totalViews * 1 +
         totalLikes * 6 +
         totalComments * 3 +

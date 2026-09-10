@@ -50,7 +50,7 @@ housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
     const isFollowing = currentUserId
       ? data.follows.some((f) => f.followerId === currentUserId && (f.targetId === m.id || (m.ownerId && f.targetId === m.ownerId)))
       : false;
-    const followersCount = m.followersCount ? Math.max(m.followersCount, followers.length) : followers.length;
+    const followersCount = followers.length;
     const membersCount = memberIds.length;
 
     // Auto-verify if >= 100 followers OR >= 100 members
@@ -64,7 +64,7 @@ housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
       members: canSeeHouseJournalists ? memberIds : undefined,
       membersData,
       journalistsCount: canSeeHouseJournalists ? memberIds.length : undefined,
-      articlesCount: Math.max(m.articlesCount || 0, articles.length),
+      articlesCount: articles.length,
       maxJournalists: canSeeHouseJournalists ? MAX_JOURNALISTS_PER_HOUSE : undefined,
       followersCount,
       isFollowing,
@@ -88,7 +88,7 @@ housesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   return res.json({ mediaHouses: houses });
 });
 
-// Top 7 Media Houses by Popularity
+// Top 7 Media Houses by Popularity (Real accredited media houses only)
 housesRouter.get(['/top-7', '/top'], (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const currentUserId = req.user?.id;
@@ -107,12 +107,12 @@ housesRouter.get(['/top-7', '/top'], (req: AuthenticatedRequest, res: Response) 
       const totalComments = articles.reduce((sum, a) => sum + (a.commentsCount || 0), 0);
 
       const follows = data.follows.filter((f) => f.targetId === h.id || (h.ownerId && f.targetId === h.ownerId));
-      const followersCount = h.followersCount ? Math.max(h.followersCount, follows.length) : follows.length;
+      const followersCount = follows.length;
       const isFollowing = currentUserId
         ? data.follows.some((f) => f.followerId === currentUserId && (f.targetId === h.id || (h.ownerId && f.targetId === h.ownerId)))
         : false;
 
-      const articlesCount = Math.max(h.articlesCount || 0, articles.length);
+      const articlesCount = articles.length;
       const memberCount = h.members?.length || 1;
 
       // Popularity score formula

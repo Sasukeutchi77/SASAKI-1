@@ -148,6 +148,8 @@ export const AdminCommentsTab: React.FC<AdminCommentsTabProps> = ({ onFlash }) =
         <div className="space-y-3">
           {comments.map((c) => {
             const isHidden = c.status === 'hidden';
+            const displayName = c.authorName || c.userName || 'Utilisateur';
+            const displayAvatar = c.authorAvatar || c.userAvatar;
             return (
               <div
                 key={c.id}
@@ -158,16 +160,16 @@ export const AdminCommentsTab: React.FC<AdminCommentsTabProps> = ({ onFlash }) =
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <img
                     src={
-                      c.authorAvatar ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName)}&background=059669&color=fff`
+                      displayAvatar ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=059669&color=fff`
                     }
-                    alt={c.authorName}
+                    alt={displayName}
                     className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-100"
                     referrerPolicy="no-referrer"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-gray-900 text-sm">{c.authorName}</span>
+                      <span className="font-bold text-gray-900 text-sm">{displayName}</span>
                       <span className="text-[11px] text-gray-400">
                         {new Date(c.createdAt).toLocaleDateString('fr-FR', {
                           day: 'numeric',

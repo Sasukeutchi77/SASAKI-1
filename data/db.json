@@ -15,8 +15,7 @@
       "createdAt": "2026-01-01T08:00:00Z",
       "articlesCount": 0,
       "username": "naruto_admin",
-      "phone": "+33 6 12 34 56 78",
-      "mediaName": "Purge Central Press"
+      "phone": "+33 6 12 34 56 78"
     },
     {
       "id": "usr_admin_itachi",
@@ -135,131 +134,7 @@
   "verificationRequests": [],
   "reports": [],
   "views": [],
-  "mediaHouses": [
-    {
-      "id": "media_purge_officiel",
-      "name": "PURGE-INFO Officiel",
-      "slug": "purge-info-officiel",
-      "logo": "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=150&auto=format&fit=crop&q=80",
-      "coverImage": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&auto=format&fit=crop&q=80",
-      "description": "L'organe d'investigation central propulsé par SASAKI COMPAGNIE. Analyses stratégiques, vérifications de terrain et couverture en continu des décrets de la Purge.",
-      "motto": "La vigie d'acier de la vérité et de la justice citoyenne",
-      "ownerId": "usr_admin_naruto",
-      "ownerName": "Naruto Admin",
-      "members": [
-        "usr_admin_naruto",
-        "usr_admin_itachi",
-        "usr_admin_nami",
-        "usr_admin_minato"
-      ],
-      "specialties": [
-        "Investigation",
-        "Décrets Purge",
-        "Sécurité"
-      ],
-      "status": "active",
-      "isVerified": true,
-      "followersCount": 3450,
-      "articlesCount": 0,
-      "createdAt": "2026-01-01T08:00:00Z"
-    },
-    {
-      "id": "media_echo_ombre",
-      "name": "L'Écho de l'Ombre",
-      "slug": "echo-ombre",
-      "logo": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80",
-      "coverImage": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80",
-      "description": "Spécialisé dans le renseignement tactique sur les Purgeurs, les opérations discrètes et les zones franches contestées.",
-      "motto": "Là où la lumière faiblit, l'information s'éveille",
-      "ownerId": "usr_admin_itachi",
-      "ownerName": "Itachi Admin",
-      "members": [
-        "usr_admin_itachi"
-      ],
-      "specialties": [
-        "Purgeur",
-        "Infiltrations",
-        "Cyber-veille"
-      ],
-      "status": "active",
-      "isVerified": true,
-      "followersCount": 2890,
-      "articlesCount": 0,
-      "createdAt": "2026-01-02T08:00:00Z"
-    },
-    {
-      "id": "media_voix_clans",
-      "name": "La Voix des Clans",
-      "slug": "voix-clans",
-      "logo": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150&auto=format&fit=crop&q=80",
-      "coverImage": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80",
-      "description": "Tribune diplomatique et géopolitique dédiée aux traités inter-clans, concessions territoriales et arbitrages de paix.",
-      "motto": "L'équilibre des alliances et le respect des frontières",
-      "ownerId": "usr_admin_minato",
-      "ownerName": "Minato Namikaze",
-      "members": [
-        "usr_admin_minato"
-      ],
-      "specialties": [
-        "Clans",
-        "Géopolitique",
-        "Territoires"
-      ],
-      "status": "active",
-      "isVerified": true,
-      "followersCount": 2310,
-      "articlesCount": 0,
-      "createdAt": "2026-01-03T08:00:00Z"
-    },
-    {
-      "id": "media_chronique_dynasties",
-      "name": "Chronique des Dynasties",
-      "slug": "chronique-dynasties",
-      "logo": "https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=150&auto=format&fit=crop&q=80",
-      "coverImage": "https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=1200&auto=format&fit=crop&q=80",
-      "description": "Revue économique, juridique et historique des grandes familles fondatrices et des corporations majeures.",
-      "motto": "L'honneur des grandes lignées et l'arbitrage du patrimoine",
-      "ownerId": "usr_admin_nami",
-      "ownerName": "Nami Admin",
-      "members": [
-        "usr_admin_nami"
-      ],
-      "specialties": [
-        "Familles",
-        "Économie",
-        "Patrimoine"
-      ],
-      "status": "active",
-      "isVerified": true,
-      "followersCount": 1980,
-      "articlesCount": 0,
-      "createdAt": "2026-01-04T08:00:00Z"
-    },
-    {
-      "id": "media_shinobi_tribune",
-      "name": "Shinobi Tribune",
-      "slug": "shinobi-tribune",
-      "logo": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&auto=format&fit=crop&q=80",
-      "coverImage": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&auto=format&fit=crop&q=80",
-      "description": "Portraits intimes, interviews exclusives et chroniques de la vie publique des personnalités les plus en vue.",
-      "motto": "Les légendes vivantes et les figures incontournables",
-      "ownerId": "usr_admin_nami",
-      "ownerName": "Nami Admin",
-      "members": [
-        "usr_admin_nami"
-      ],
-      "specialties": [
-        "Célébrités",
-        "Interviews",
-        "Culture"
-      ],
-      "status": "active",
-      "isVerified": true,
-      "followersCount": 1420,
-      "articlesCount": 0,
-      "createdAt": "2026-01-06T08:00:00Z"
-    }
-  ],
+  "mediaHouses": [],
   "adminLogs": [
     {
       "id": "log_init",

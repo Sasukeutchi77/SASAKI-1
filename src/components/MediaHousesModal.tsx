@@ -764,7 +764,9 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                                 <div className="text-xs font-bold text-white truncate flex items-center gap-1">
                                   {m.name}
                                   {isTheChef && (
-                                    <Crown className="w-3 h-3 text-amber-400 shrink-0" title="Chef de la maison" />
+                                    <span title="Chef de la maison" className="inline-flex items-center shrink-0">
+                                      <Crown className="w-3 h-3 text-amber-400" />
+                                    </span>
                                   )}
                                 </div>
                                 <div className="text-[10px] text-stone-400 truncate">

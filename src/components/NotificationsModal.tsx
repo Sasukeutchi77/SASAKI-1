@@ -67,7 +67,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             <h2 className="text-base font-black font-mono tracking-wide text-white">Vos Notifications</h2>
           </div>
           <div className="flex items-center gap-2">
-            {notifications.some((n) => !n.isRead) && (
+            {notifications.some((n) => !(n.read ?? n.isRead)) && (
               <button
                 onClick={handleMarkAllRead}
                 className="text-xs font-bold font-mono text-cyan-400 hover:text-cyan-200 flex items-center gap-1 cursor-pointer transition-colors"
@@ -98,42 +98,46 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  onClick={() => {
-                    if (notif.targetId && onOpenArticleId) {
-                      onOpenArticleId(notif.targetId);
-                      onClose();
-                    }
-                  }}
-                  className={`p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
-                    notif.isRead
-                      ? 'bg-[#101428] border-cyan-500/20 opacity-80 hover:opacity-100 hover:border-cyan-500/40'
-                      : 'bg-[#101938] border-cyan-500/40 shadow-[0_0_12px_rgba(0,243,255,0.12)]'
-                  }`}
-                >
-                  <div className="p-2 rounded-full bg-[#141933] border border-cyan-500/30 shrink-0">
-                    {getIcon(notif.type)}
+              {notifications.map((notif) => {
+                const isRead = notif.read ?? notif.isRead ?? false;
+                const targetArticleId = notif.targetId || (notif.link?.startsWith('#article-') ? notif.link.replace('#article-', '') : undefined);
+                return (
+                  <div
+                    key={notif.id}
+                    onClick={() => {
+                      if (targetArticleId && onOpenArticleId) {
+                        onOpenArticleId(targetArticleId);
+                        onClose();
+                      }
+                    }}
+                    className={`p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
+                      isRead
+                        ? 'bg-[#101428] border-cyan-500/20 opacity-80 hover:opacity-100 hover:border-cyan-500/40'
+                        : 'bg-[#101938] border-cyan-500/40 shadow-[0_0_12px_rgba(0,243,255,0.12)]'
+                    }`}
+                  >
+                    <div className="p-2 rounded-full bg-[#141933] border border-cyan-500/30 shrink-0">
+                      {getIcon(notif.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm text-slate-100 leading-snug">
+                        {notif.message}
+                      </p>
+                      <span className="text-[10px] text-cyan-400/60 font-mono mt-1 block">
+                        {new Date(notif.createdAt).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                    {!isRead && (
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f3ff] mt-1.5 shrink-0" />
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-slate-100 leading-snug">
-                      {notif.message}
-                    </p>
-                    <span className="text-[10px] text-cyan-400/60 font-mono mt-1 block">
-                      {new Date(notif.createdAt).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-                  {!notif.isRead && (
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f3ff] mt-1.5 shrink-0" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

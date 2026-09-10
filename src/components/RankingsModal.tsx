@@ -485,10 +485,12 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
             <div className="py-16 text-center text-slate-400 text-sm px-4">
               <Building2 className="w-12 h-12 mx-auto mb-3 text-cyan-500/30" />
               <p className="font-semibold text-slate-200">
-                {searchQuery ? 'Aucune maison de presse trouvée.' : 'Aucune maison de presse disponible.'}
+                {searchQuery ? 'Aucune maison de presse trouvée.' : 'Aucune maison de presse classée pour le moment.'}
               </p>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                {searchQuery ? 'Modifiez votre mot-clé de recherche.' : 'Les maisons accréditées apparaîtront ici.'}
+                {searchQuery
+                  ? 'Modifiez votre mot-clé de recherche.'
+                  : 'Seules les rédactions officielles créées par les journalistes accrédités figureront ici selon leur audience et leurs publications réelles.'}
               </p>
             </div>
           ) : (
@@ -726,12 +728,12 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
             <div className="py-16 text-center text-slate-400 text-sm px-4">
               <Users className="w-12 h-12 mx-auto mb-3 text-cyan-500/30" />
               <p className="font-semibold text-slate-200">
-                {searchQuery ? 'Aucun journaliste trouvé.' : 'Aucun journaliste accrédité classé.'}
+                {searchQuery ? 'Aucun journaliste trouvé.' : 'Aucun journaliste accrédité classé pour le moment.'}
               </p>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                 {searchQuery
                   ? 'Essayez avec un autre nom.'
-                  : 'Les journalistes apparaîtront dès leurs premières publications vérifiées.'}
+                  : 'Seuls les vrais journalistes accrédités de la plateforme apparaîtront au palmarès au fur et à mesure de leurs publications et abonnés réels.'}
               </p>
             </div>
           ) : (

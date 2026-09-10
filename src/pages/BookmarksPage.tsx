@@ -85,7 +85,8 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
     bookmarks.forEach((b) => {
-      if (b.category) cats.add(b.category);
+      const cat = b.category || b.categoryName;
+      if (cat) cats.add(cat);
     });
     return Array.from(cats);
   }, [bookmarks]);
@@ -93,15 +94,17 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
   // Filtered bookmarks
   const filteredBookmarks = useMemo(() => {
     return bookmarks.filter((art) => {
+      const summaryText = art.excerpt || art.summary || '';
+      const catName = art.category || art.categoryName || '';
       const matchesSearch =
         !searchQuery.trim() ||
         art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        art.excerpt?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        summaryText.toLowerCase().includes(searchQuery.toLowerCase()) ||
         art.authorName.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesCat =
         selectedCategory === 'all' ||
-        art.category?.toLowerCase() === selectedCategory.toLowerCase();
+        catName.toLowerCase() === selectedCategory.toLowerCase();
 
       return matchesSearch && matchesCat;
     });
@@ -236,7 +239,7 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
                   Tous ({bookmarks.length})
                 </button>
                 {availableCategories.map((cat) => {
-                  const count = bookmarks.filter((b) => b.category === cat).length;
+                  const count = bookmarks.filter((b) => (b.category || b.categoryName) === cat).length;
                   return (
                     <button
                       key={cat}
@@ -313,9 +316,9 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
               >
                 {/* Media Image / Thumbnail */}
                 <div className="relative h-48 w-full overflow-hidden bg-slate-900">
-                  {article.imageUrl ? (
+                  {(article.imageUrl || article.coverImage) ? (
                     <img
-                      src={article.imageUrl}
+                      src={article.imageUrl || article.coverImage}
                       alt={article.title}
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -329,9 +332,9 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
                   <div className="absolute inset-0 bg-gradient-to-t from-[#040817] via-transparent to-transparent opacity-80" />
 
                   {/* Category Badge */}
-                  {article.category && (
+                  {(article.category || article.categoryName) && (
                     <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-600/90 text-white backdrop-blur-md shadow-md border border-white/20">
-                      {article.category}
+                      {article.category || article.categoryName}
                     </span>
                   )}
 
@@ -384,10 +387,10 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
                       {article.title}
                     </h2>
 
-                    {/* Excerpt */}
-                    {article.excerpt && (
+                    {/* Excerpt / Summary */}
+                    {(article.excerpt || article.summary) && (
                       <p className="text-xs text-slate-300 line-clamp-2 mt-2 leading-relaxed">
-                        {article.excerpt}
+                        {article.excerpt || article.summary}
                       </p>
                     )}
                   </div>
@@ -424,9 +427,9 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
                 }}
                 className="group p-4 rounded-2xl bg-[#0b142c]/80 hover:bg-[#0b142c] border border-blue-500/20 hover:border-cyan-400/50 transition-all flex items-center gap-4 cursor-pointer"
               >
-                {article.imageUrl && (
+                {(article.imageUrl || article.coverImage) && (
                   <img
-                    src={article.imageUrl}
+                    src={article.imageUrl || article.coverImage}
                     alt={article.title}
                     referrerPolicy="no-referrer"
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover shrink-0 border border-blue-500/30"
@@ -434,9 +437,9 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mb-1">
-                    {article.category && (
+                    {(article.category || article.categoryName) && (
                       <span className="px-2 py-0.5 rounded bg-blue-600/30 text-cyan-300 border border-blue-400/30 uppercase text-[9px] font-bold">
-                        {article.category}
+                        {article.category || article.categoryName}
                       </span>
                     )}
                     <span>{new Date(article.createdAt).toLocaleDateString('fr-FR')}</span>
@@ -446,9 +449,9 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
                   <h2 className="text-sm sm:text-base font-bold text-white line-clamp-1 group-hover:text-cyan-300 transition-colors">
                     {article.title}
                   </h2>
-                  {article.excerpt && (
+                  {(article.excerpt || article.summary) && (
                     <p className="text-xs text-slate-300 line-clamp-1 mt-1 hidden sm:block">
-                      {article.excerpt}
+                      {article.excerpt || article.summary}
                     </p>
                   )}
                 </div>

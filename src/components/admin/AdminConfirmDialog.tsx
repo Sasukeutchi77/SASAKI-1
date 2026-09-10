@@ -8,6 +8,8 @@ interface AdminConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   isDestructive?: boolean;
+  confirmVariant?: string;
+  isLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   children?: React.ReactNode;
@@ -20,11 +22,14 @@ export const AdminConfirmDialog: React.FC<AdminConfirmDialogProps> = ({
   confirmLabel = 'Confirmer',
   cancelLabel = 'Annuler',
   isDestructive = true,
+  confirmVariant,
+  isLoading = false,
   onConfirm,
   onCancel,
   children,
 }) => {
   if (!isOpen) return null;
+  const isDanger = confirmVariant ? confirmVariant === 'danger' : isDestructive;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
@@ -61,16 +66,18 @@ export const AdminConfirmDialog: React.FC<AdminConfirmDialogProps> = ({
           <div className="mt-6 flex items-center justify-end gap-3">
             <button
               type="button"
+              disabled={isLoading}
               onClick={onCancel}
-              className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+              className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition disabled:opacity-50"
             >
               {cancelLabel}
             </button>
             <button
               type="button"
+              disabled={isLoading}
               onClick={onConfirm}
-              className={`px-5 py-2 text-sm font-semibold text-white rounded-xl transition shadow-sm ${
-                isDestructive
+              className={`px-5 py-2 text-sm font-semibold text-white rounded-xl transition shadow-sm disabled:opacity-50 ${
+                isDanger
                   ? 'bg-red-600 hover:bg-red-700 shadow-red-200'
                   : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'
               }`}

@@ -53,6 +53,7 @@ export interface MediaRecord {
   width?: number;
   height?: number;
   duration?: number;
+  bytes?: number;
   altText?: string;
   caption?: string;
   ownerId: string;
@@ -134,12 +135,14 @@ export interface AdminLog {
   id: string;
   adminId: string;
   adminName: string;
+  adminEmail?: string;
   action: string;
   targetType: 'user' | 'journalist' | 'media' | 'article' | 'comment' | 'category' | 'report' | 'system';
   targetId: string;
   targetTitle?: string;
   details?: string;
   timestamp: string;
+  createdAt?: string;
 }
 
 export interface Category {
@@ -238,6 +241,10 @@ export interface Article {
   videoThumbnail?: string;
   categoryId: string;
   categoryName: string;
+  category?: string;
+  excerpt?: string;
+  imageUrl?: string;
+  publishedAt?: string;
   tags: string[];
   status: ArticleStatus;
   viewsCount: number;
@@ -258,6 +265,8 @@ export interface Comment {
   userId: string;
   userName: string;
   userAvatar?: string;
+  authorName?: string;
+  authorAvatar?: string;
   userRole: UserRole;
   isUserVerified?: boolean;
   parentId?: string;
@@ -278,7 +287,9 @@ export interface Notification {
   title: string;
   message: string;
   link?: string;
+  targetId?: string;
   read: boolean;
+  isRead?: boolean;
   createdAt: string;
 }
 

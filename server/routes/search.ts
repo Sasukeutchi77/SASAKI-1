@@ -113,7 +113,7 @@ searchRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
 
   // --- 2. Journalists Search ---
   const activeJournalists = data.users.filter(
-    (u) => (u.role === 'journalist' || u.accountType === 'journalist' || u.role === 'admin') && u.status === 'active'
+    (u) => (u.role === 'journalist' || u.accountType === 'journalist') && u.status === 'active'
   );
 
   let matchingJournalists = activeJournalists;
@@ -313,7 +313,7 @@ searchRouter.get('/suggestions', (req: AuthenticatedRequest, res: Response) => {
 
   // Journalists suggestions (top 3)
   const journalists = data.users
-    .filter((u) => (u.role === 'journalist' || u.role === 'admin') && u.status === 'active' && u.name.toLowerCase().includes(q))
+    .filter((u) => u.role === 'journalist' && u.status === 'active' && u.name.toLowerCase().includes(q))
     .slice(0, 3)
     .map((u) => ({
       id: u.id,
@@ -423,7 +423,7 @@ searchRouter.get('/discovery', (req: AuthenticatedRequest, res: Response) => {
 
   // 3. Popular journalists
   const popularJournalists = data.users
-    .filter((u) => (u.role === 'journalist' || u.role === 'admin') && u.status === 'active')
+    .filter((u) => u.role === 'journalist' && u.status === 'active')
     .map((j) => {
       const followers = data.follows.filter((f) => f.targetId === j.id);
       const articlesCount = publishedArticles.filter((a) => a.authorId === j.id).length;
@@ -431,7 +431,7 @@ searchRouter.get('/discovery', (req: AuthenticatedRequest, res: Response) => {
       const { passwordHash, passwordSalt, ...safe } = j;
       return {
         ...safe,
-        followersCount: j.followersCount ? Math.max(j.followersCount, followers.length) : followers.length,
+        followersCount: followers.length,
         articlesCount,
         isFollowing,
       };

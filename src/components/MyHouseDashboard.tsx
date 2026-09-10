@@ -894,7 +894,11 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
                           {member.name}
-                          {isChefMember && <Crown className="w-4 h-4 text-cyan-400 shrink-0" title="Chef de Rédaction" />}
+                          {isChefMember && (
+                            <span title="Chef de Rédaction" className="inline-flex items-center shrink-0">
+                              <Crown className="w-4 h-4 text-cyan-400" />
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-stone-400 truncate">{member.email}</div>
                         <div className="mt-1">

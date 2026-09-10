@@ -263,10 +263,9 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                           <div className="flex items-center gap-1.5 font-bold text-gray-900 text-sm">
                             <span className="truncate">{u.name}</span>
                             {u.isVerified && (
-                              <CheckCircle2
-                                className="w-4 h-4 text-blue-500 shrink-0"
-                                title="Badge officiel CSC / Vérifié"
-                              />
+                              <span title="Badge officiel CSC / Vérifié" className="inline-flex items-center shrink-0">
+                                <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                              </span>
                             )}
                           </div>
                           <div className="text-xs text-gray-500 truncate">{u.email}</div>
