@@ -4,6 +4,7 @@ import { AuthenticatedRequest, requireAdmin } from '../auth';
 import { AdminLog, MediaHouse, Category } from '../../src/types';
 import { setFirebaseCustomUserClaims } from '../firebaseAdmin';
 import { isMasterAdmin, MASTER_ADMIN_EMAILS } from '../config/masterAccounts';
+import { realtimeHub } from '../realtime';
 
 export const adminRouter = Router();
 
@@ -623,6 +624,16 @@ adminRouter.put('/articles/:id/status', (req: AuthenticatedRequest, res: Respons
   );
 
   db.save();
+
+  // Real-time synchronization: broadcast to all connected readers & media houses
+  if (status === 'published') {
+    realtimeHub.broadcast('article:created', article);
+    realtimeHub.broadcast('article:updated', article);
+  } else {
+    realtimeHub.broadcast('article:deleted', { articleId: article.id, categoryId: article.categoryId });
+    realtimeHub.broadcast('article:updated', article);
+  }
+
   return res.json({ message: `Statut de l’article mis à jour : ${status}.`, article });
 });
 
@@ -635,6 +646,9 @@ adminRouter.delete('/articles/:id', (req: AuthenticatedRequest, res: Response) =
   if (!article) {
     return res.status(404).json({ error: 'Article introuvable.' });
   }
+
+  const categoryId = article.categoryId;
+  const articleId = article.id;
 
   if (hardDelete === 'true') {
     const idx = data.articles.findIndex((a) => a.id === req.params.id);
@@ -666,7 +680,18 @@ adminRouter.delete('/articles/:id', (req: AuthenticatedRequest, res: Response) =
     );
   }
 
+  // Update house article count if applicable
+  const house = (data.mediaHouses || []).find((m) => m.id === article.mediaId);
+  if (house) {
+    house.articlesCount = Math.max(0, (house.articlesCount || 1) - 1);
+    realtimeHub.broadcast('mediaHouse:updated', house);
+  }
+
   db.save();
+
+  // Real-time synchronization broadcast of article deletion
+  realtimeHub.broadcast('article:deleted', { articleId, categoryId });
+
   return res.json({ message: 'Article supprimé avec succès.' });
 });
 

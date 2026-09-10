@@ -22,14 +22,24 @@ import {
 } from 'firebase/firestore';
 import { User, UserRole } from '../types';
 
+const getClientEnv = (key: string): string => {
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
+    return (import.meta as any).env[key];
+  }
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key] as string;
+  }
+  return '';
+};
+
 // Environment variables for Firebase Client SDK
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  apiKey: getClientEnv('VITE_FIREBASE_API_KEY'),
+  authDomain: getClientEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: getClientEnv('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: getClientEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getClientEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getClientEnv('VITE_FIREBASE_APP_ID'),
 };
 
 export const isFirebaseConfigured = (): boolean => {

@@ -240,7 +240,7 @@ export function AppContent() {
   };
 
   return (
-    <div className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 flex flex-col font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
+    <div className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 flex flex-col font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-clip">
       {/* Top Header with brand, search bar, demo switcher, notifications */}
       <Header
         categories={categories}
@@ -274,7 +274,7 @@ export function AppContent() {
         onOpenMyHouse={handleOpenMyHouse}
         onOpenTrustSystem={() => setShowTrustSystemModal(true)}
         onOpenRankings={handleOpenRankings}
-        showCategories={currentView === 'feed' || currentView === 'category'}
+        showCategories={currentView === 'home' || currentView === 'category'}
       />
 
       {/* Security Alert Banner for Suspended Accounts */}
@@ -365,6 +365,7 @@ export function AppContent() {
           <Home
             searchQuery={searchQuery}
             selectedCategory={selectedCategory}
+            refreshTrigger={feedRefreshKey}
             onSelectCategory={(cat) => {
               setSelectedTag(null);
               setSelectedCategory(cat);
@@ -589,11 +590,10 @@ export function AppContent() {
       {/* 11. Trust System, Verification Levels & Deontological Charter Modal */}
       {showTrustSystemModal && (
         <TrustSystemModal
+          isOpen={showTrustSystemModal}
           onClose={() => setShowTrustSystemModal(false)}
-          onOpenVerification={() => {
-            setShowTrustSystemModal(false);
-            handleOpenMyProfile();
-          }}
+          onOpenMediaHouses={handleOpenMediaHouses}
+          onOpenAuth={() => handleOpenAuth('login')}
         />
       )}
 

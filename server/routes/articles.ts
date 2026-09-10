@@ -129,13 +129,16 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
       list = []; // Unauthenticated following feed is empty
     }
   } else if (feed === 'trending') {
-    // Trending: Activity with time-decay (views*1 + likes*4 + comments*6) / (ageHours + 2)^1.35
+    // Trending: Freshness boost + engagement with time-decay
     list.sort((a, b) => {
-      const ageHoursA = Math.max(0.1, (now - new Date(a.createdAt).getTime()) / 3600000);
-      const ageHoursB = Math.max(0.1, (now - new Date(b.createdAt).getTime()) / 3600000);
-      const scoreA = (a.viewsCount + a.likesCount * 4 + a.commentsCount * 6) / Math.pow(ageHoursA + 2, 1.35);
-      const scoreB = (b.viewsCount + b.likesCount * 4 + b.commentsCount * 6) / Math.pow(ageHoursB + 2, 1.35);
-      return scoreB - scoreA;
+      const ageHoursA = Math.max(0.05, (now - new Date(a.createdAt).getTime()) / 3600000);
+      const ageHoursB = Math.max(0.05, (now - new Date(b.createdAt).getTime()) / 3600000);
+      const freshA = 12 / Math.pow(ageHoursA + 0.8, 1.2);
+      const freshB = 12 / Math.pow(ageHoursB + 0.8, 1.2);
+      const scoreA = freshA + (a.viewsCount + a.likesCount * 4 + a.commentsCount * 6) / Math.pow(ageHoursA + 2, 1.35);
+      const scoreB = freshB + (b.viewsCount + b.likesCount * 4 + b.commentsCount * 6) / Math.pow(ageHoursB + 2, 1.35);
+      if (Math.abs(scoreB - scoreA) > 0.001) return scoreB - scoreA;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   } else if (feed === 'foryou') {
     // "Pour vous" personalized recommendation
@@ -155,24 +158,31 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
         const catAffinityA = preferredCategoryIds.has(a.categoryId) ? 30 : 0;
         const catAffinityB = preferredCategoryIds.has(b.categoryId) ? 30 : 0;
 
-        const ageHoursA = Math.max(0.1, (now - new Date(a.createdAt).getTime()) / 3600000);
-        const ageHoursB = Math.max(0.1, (now - new Date(b.createdAt).getTime()) / 3600000);
+        const ageHoursA = Math.max(0.05, (now - new Date(a.createdAt).getTime()) / 3600000);
+        const ageHoursB = Math.max(0.05, (now - new Date(b.createdAt).getTime()) / 3600000);
+
+        const freshA = 16 / Math.pow(ageHoursA + 0.6, 1.15);
+        const freshB = 16 / Math.pow(ageHoursB + 0.6, 1.15);
 
         const engA = (a.viewsCount * 0.5 + a.likesCount * 3 + a.commentsCount * 5) / Math.pow(ageHoursA + 2, 1.15);
         const engB = (b.viewsCount * 0.5 + b.likesCount * 3 + b.commentsCount * 5) / Math.pow(ageHoursB + 2, 1.15);
 
-        const scoreA = isFollowedA + catAffinityA + engA;
-        const scoreB = isFollowedB + catAffinityB + engB;
-        return scoreB - scoreA;
+        const scoreA = isFollowedA + catAffinityA + freshA + engA;
+        const scoreB = isFollowedB + catAffinityB + freshB + engB;
+        if (Math.abs(scoreB - scoreA) > 0.001) return scoreB - scoreA;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
     } else {
-      // Default: Blend of high quality and recency
+      // Default: Blend of freshness, quality and recency for unauthenticated readers
       list.sort((a, b) => {
-        const ageHoursA = Math.max(0.1, (now - new Date(a.createdAt).getTime()) / 3600000);
-        const ageHoursB = Math.max(0.1, (now - new Date(b.createdAt).getTime()) / 3600000);
-        const scoreA = (a.viewsCount + a.likesCount * 3 + a.commentsCount * 4) / Math.pow(ageHoursA + 2, 1.25);
-        const scoreB = (b.viewsCount + b.likesCount * 3 + b.commentsCount * 4) / Math.pow(ageHoursB + 2, 1.25);
-        return scoreB - scoreA;
+        const ageHoursA = Math.max(0.05, (now - new Date(a.createdAt).getTime()) / 3600000);
+        const ageHoursB = Math.max(0.05, (now - new Date(b.createdAt).getTime()) / 3600000);
+        const freshA = 16 / Math.pow(ageHoursA + 0.6, 1.15);
+        const freshB = 16 / Math.pow(ageHoursB + 0.6, 1.15);
+        const scoreA = freshA + (a.viewsCount + a.likesCount * 3 + a.commentsCount * 4) / Math.pow(ageHoursA + 2, 1.25);
+        const scoreB = freshB + (b.viewsCount + b.likesCount * 3 + b.commentsCount * 4) / Math.pow(ageHoursB + 2, 1.25);
+        if (Math.abs(scoreB - scoreA) > 0.001) return scoreB - scoreA;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
     }
   } else {
@@ -505,6 +515,8 @@ articlesRouter.put('/:id', requireJournalistOrAdmin, (req: AuthenticatedRequest,
     return res.status(403).json({ error: 'Vous n’êtes pas autorisé à modifier cet article.' });
   }
 
+  const prevStatus = article.status;
+
   const {
     title,
     summary,
@@ -562,6 +574,14 @@ articlesRouter.put('/:id', requireJournalistOrAdmin, (req: AuthenticatedRequest,
   }
 
   db.save();
+
+  // If status transitioned to 'published', broadcast article:created as well as article:updated
+  if (prevStatus !== 'published' && article.status === 'published') {
+    realtimeHub.broadcast('article:created', article);
+  } else if (prevStatus === 'published' && article.status !== 'published') {
+    realtimeHub.broadcast('article:deleted', { articleId: article.id, categoryId: article.categoryId });
+  }
+
   realtimeHub.broadcast('article:updated', article);
   return res.json({ message: 'Article mis à jour avec succès.', article });
 });

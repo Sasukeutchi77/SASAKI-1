@@ -2,18 +2,25 @@
 
 let audioCtx: AudioContext | null = null;
 
-function getAudioContext(): AudioContext | null {
+function getAudioContext(requireRunning = false): AudioContext | null {
   if (typeof window === 'undefined') return null;
-  if (!audioCtx) {
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (AudioContextClass) {
-      audioCtx = new AudioContextClass();
+  try {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
     }
+    if (audioCtx && audioCtx.state === 'suspended' && !requireRunning) {
+      audioCtx.resume().catch(() => {});
+    }
+    if (requireRunning && audioCtx?.state !== 'running') {
+      return null;
+    }
+    return audioCtx;
+  } catch {
+    return null;
   }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
-  }
-  return audioCtx;
 }
 
 export const sfx = {
@@ -229,7 +236,7 @@ export const sfx = {
   playNotificationDing() {
     if (!this.isEnabled()) return;
     try {
-      const ctx = getAudioContext();
+      const ctx = getAudioContext(true);
       if (!ctx) return;
 
       const notes = [

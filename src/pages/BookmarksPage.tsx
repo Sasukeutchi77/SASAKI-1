@@ -108,7 +108,7 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
   }, [bookmarks, searchQuery, selectedCategory]);
 
   return (
-    <div className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-hidden">
+    <div className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-clip">
       {/* Top Header / Breadcrumb Bar */}
       <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 px-4 sm:px-8 py-3.5 transition-all w-full max-w-full">
         <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 min-w-0">

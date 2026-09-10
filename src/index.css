@@ -14,36 +14,28 @@
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
     color-scheme: dark;
-    /* Android ergonomics: eliminate double-tap zoom delay */
-    touch-action: manipulation;
     width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    min-height: 100%;
   }
 
   body {
     @apply bg-[#040817] text-slate-100 antialiased min-h-screen selection:bg-blue-600/35 selection:text-cyan-200 transition-colors duration-150;
     width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    min-height: 100%;
+    overflow-x: clip;
     background-color: #040817;
     background-image: 
       radial-gradient(ellipse 70% 45% at 50% -10%, rgba(29, 104, 255, 0.16) 0%, transparent 60%),
       radial-gradient(circle at 85% 25%, rgba(0, 210, 255, 0.07) 0%, transparent 45%),
       radial-gradient(circle at 15% 70%, rgba(29, 78, 216, 0.05) 0%, transparent 50%);
-    background-attachment: fixed;
-    /* Smooth native Android scroll feel with containment */
-    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
   }
 
   #root {
     width: 100%;
-    max-width: 100%;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow-x: hidden;
   }
 
   .dark body {

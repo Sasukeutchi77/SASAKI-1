@@ -15,6 +15,7 @@ class RealtimeService {
   private lastEventTimestamp = Date.now() - 120000;
   private processedEventIds = new Set<string>();
   private isExplicitlyClosed = false;
+  private isCatchingUp = false;
 
   constructor() {
     // Listen for tab focus/visibility change to catch up on any missed articles/comments
@@ -28,8 +29,16 @@ class RealtimeService {
         }
       });
       window.addEventListener('online', () => {
+        this.catchUp();
         this.connect();
       });
+
+      // Background periodic synchronization heartbeat to guarantee no missed publications
+      setInterval(() => {
+        if (document.visibilityState === 'visible' || this.status !== 'connected') {
+          this.catchUp();
+        }
+      }, 20000);
     }
   }
 
@@ -140,6 +149,7 @@ class RealtimeService {
         if (this.status !== 'connected') {
           this.setStatus('connected');
         }
+        this.catchUp();
       };
 
       this.sse.onmessage = (event) => {
@@ -181,9 +191,9 @@ class RealtimeService {
     if (data.id) {
       if (this.processedEventIds.has(data.id)) return;
       this.processedEventIds.add(data.id);
-      if (this.processedEventIds.size > 200) {
-        // Clean old IDs
-        const first = Array.from(this.processedEventIds).slice(0, 50);
+      if (this.processedEventIds.size > 1000) {
+        // Clean oldest IDs
+        const first = Array.from(this.processedEventIds).slice(0, 200);
         first.forEach((id) => this.processedEventIds.delete(id));
       }
     }
@@ -221,6 +231,8 @@ class RealtimeService {
    * Catch up on any events missed while disconnected or backgrounded
    */
   public async catchUp() {
+    if (this.isCatchingUp) return;
+    this.isCatchingUp = true;
     try {
       const since = this.lastEventTimestamp > 0 ? this.lastEventTimestamp : Date.now() - 60000;
       const res = await fetch(`/api/sync/latest?since=${since}`);
@@ -236,6 +248,8 @@ class RealtimeService {
       }
     } catch {
       // Ignored
+    } finally {
+      this.isCatchingUp = false;
     }
   }
 

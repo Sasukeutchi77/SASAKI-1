@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Article, Category, User, MediaHouse } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -49,6 +49,7 @@ interface HomeProps {
   onSelectCategory: (catSlug: string | null) => void;
   selectedTag?: string | null;
   onSelectTag?: (tag: string | null) => void;
+  refreshTrigger?: number;
 }
 
 export const Home: React.FC<HomeProps> = ({
@@ -67,6 +68,7 @@ export const Home: React.FC<HomeProps> = ({
   onSelectCategory,
   selectedTag: externalTag,
   onSelectTag: externalSetTag,
+  refreshTrigger,
 }) => {
   const { user, isAuthenticated } = useAuth();
   const [feedTab, setFeedTab] = useState<'foryou' | 'trending' | 'latest' | 'following'>('foryou');
@@ -157,7 +159,21 @@ export const Home: React.FC<HomeProps> = ({
 
   useEffect(() => {
     fetchInitialArticles();
-  }, [feedTab, selectedCategory, selectedTag, searchQuery, isAuthenticated]);
+  }, [feedTab, selectedCategory, selectedTag, searchQuery, isAuthenticated, refreshTrigger]);
+
+  // Synchronized refs to keep realtime listeners rock-solid without tearing down on every re-render
+  const selectedCategoryRef = useRef(selectedCategory);
+  selectedCategoryRef.current = selectedCategory;
+  const selectedTagRef = useRef(selectedTag);
+  selectedTagRef.current = selectedTag;
+  const searchQueryRef = useRef(searchQuery);
+  searchQueryRef.current = searchQuery;
+  const categoriesRef = useRef(categories);
+  categoriesRef.current = categories;
+  const feedTabRef = useRef(feedTab);
+  feedTabRef.current = feedTab;
+  const userRef = useRef(user);
+  userRef.current = user;
 
   // Real-time synchronization for published articles, updates, likes, views and comments
   useEffect(() => {
@@ -165,27 +181,58 @@ export const Home: React.FC<HomeProps> = ({
     const unsubArticleCreated = realtime.on('article:created', (newArt: Article) => {
       if (!newArt || !newArt.id) return;
 
+      const curCategory = selectedCategoryRef.current;
+      const curTag = selectedTagRef.current;
+      const curSearch = searchQueryRef.current;
+      const curFeedTab = feedTabRef.current;
+      const curUser = userRef.current;
+      const curCategories = categoriesRef.current;
+
       // Check if it matches active filters
-      const catObj = categories.find((c) => c.slug === selectedCategory || c.id === selectedCategory);
+      const catObj = curCategories.find((c) => c.slug === curCategory || c.id === curCategory);
       const matchesCategory =
-        !selectedCategory ||
-        selectedCategory === 'all' ||
-        newArt.categoryId === selectedCategory ||
+        !curCategory ||
+        curCategory === 'all' ||
+        newArt.categoryId === curCategory ||
         (catObj && (newArt.categoryId === catObj.id || newArt.categoryId === catObj.slug));
 
-      const matchesTag = !selectedTag || (newArt.tags && newArt.tags.includes(selectedTag));
-      const matchesSearch =
-        !searchQuery ||
-        newArt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (newArt.summary && newArt.summary.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (newArt.mediaName && newArt.mediaName.toLowerCase().includes(searchQuery.toLowerCase()));
+      const cleanSelectedTag = curTag ? curTag.replace(/^#/, '').toLowerCase().trim() : null;
+      const matchesTag =
+        !cleanSelectedTag ||
+        (newArt.tags &&
+          newArt.tags.some((t) => t.replace(/^#/, '').toLowerCase().trim() === cleanSelectedTag));
 
-      if (matchesCategory && matchesTag && matchesSearch) {
+      const q = curSearch ? curSearch.toLowerCase().trim() : '';
+      const matchesSearch =
+        !q ||
+        (newArt.title && newArt.title.toLowerCase().includes(q)) ||
+        (newArt.summary && newArt.summary.toLowerCase().includes(q)) ||
+        (newArt.content && newArt.content.toLowerCase().includes(q)) ||
+        (newArt.authorName && newArt.authorName.toLowerCase().includes(q)) ||
+        (newArt.mediaName && newArt.mediaName.toLowerCase().includes(q)) ||
+        (newArt.tags && newArt.tags.some((t) => t.toLowerCase().includes(q)));
+
+      // If viewing following tab, only show if user follows author/house or is author
+      let matchesFeedTab = true;
+      if (curFeedTab === 'following') {
+        matchesFeedTab = !!curUser && (curUser.id === newArt.authorId || false);
+      }
+
+      if (matchesCategory && matchesTag && matchesSearch && matchesFeedTab) {
         setArticles((prev) => {
           if (prev.some((a) => a.id === newArt.id)) return prev;
           return [newArt, ...prev];
         });
       }
+
+      // Update category article counts
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.id === newArt.categoryId || c.slug === newArt.categoryId
+            ? { ...c, articleCount: (c.articleCount || 0) + 1 }
+            : c
+        )
+      );
 
       setFeaturedArticle((prev) => prev || newArt);
 
@@ -195,15 +242,58 @@ export const Home: React.FC<HomeProps> = ({
         time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
       });
 
-      // Play soft alert tone
+      // Play soft alert tone (safe on mobile)
       sfx.playNotificationDing();
     });
 
-    // 2. When an article is updated
+    // 2. When an article is updated (or newly published from draft)
     const unsubArticleUpdated = realtime.on('article:updated', (updatedArt: Article) => {
       if (!updatedArt || !updatedArt.id) return;
-      setArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
-      setFeaturedArticle((prev) => (prev && prev.id === updatedArt.id ? { ...prev, ...updatedArt } : prev));
+
+      if (updatedArt.status === 'published') {
+        const curCategory = selectedCategoryRef.current;
+        const curTag = selectedTagRef.current;
+        const curSearch = searchQueryRef.current;
+        const curCategories = categoriesRef.current;
+
+        const catObj = curCategories.find((c) => c.slug === curCategory || c.id === curCategory);
+        const matchesCategory =
+          !curCategory ||
+          curCategory === 'all' ||
+          updatedArt.categoryId === curCategory ||
+          (catObj && (updatedArt.categoryId === catObj.id || updatedArt.categoryId === catObj.slug));
+
+        const cleanSelectedTag = curTag ? curTag.replace(/^#/, '').toLowerCase().trim() : null;
+        const matchesTag =
+          !cleanSelectedTag ||
+          (updatedArt.tags &&
+            updatedArt.tags.some((t) => t.replace(/^#/, '').toLowerCase().trim() === cleanSelectedTag));
+
+        const q = curSearch ? curSearch.toLowerCase().trim() : '';
+        const matchesSearch =
+          !q ||
+          (updatedArt.title && updatedArt.title.toLowerCase().includes(q)) ||
+          (updatedArt.summary && updatedArt.summary.toLowerCase().includes(q)) ||
+          (updatedArt.content && updatedArt.content.toLowerCase().includes(q)) ||
+          (updatedArt.authorName && updatedArt.authorName.toLowerCase().includes(q)) ||
+          (updatedArt.mediaName && updatedArt.mediaName.toLowerCase().includes(q)) ||
+          (updatedArt.tags && updatedArt.tags.some((t) => t.toLowerCase().includes(q)));
+
+        if (matchesCategory && matchesTag && matchesSearch) {
+          setArticles((prev) => {
+            const exists = prev.some((a) => a.id === updatedArt.id);
+            if (exists) {
+              return prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a));
+            }
+            return [updatedArt, ...prev];
+          });
+        }
+        setFeaturedArticle((prev) => (prev && prev.id === updatedArt.id ? { ...prev, ...updatedArt } : prev));
+      } else {
+        // Article unpublished/draft/hidden/deleted
+        setArticles((prev) => prev.filter((a) => a.id !== updatedArt.id));
+        setFeaturedArticle((prev) => (prev && prev.id === updatedArt.id ? null : prev));
+      }
     });
 
     // 3. When an article is deleted
@@ -264,7 +354,7 @@ export const Home: React.FC<HomeProps> = ({
       unsubCommentDeleted();
       unsubHouseUpdated();
     };
-  }, [selectedCategory, selectedTag, searchQuery, categories]);
+  }, []);
 
   // Load next page
   const handleLoadMore = async () => {
@@ -337,7 +427,7 @@ export const Home: React.FC<HomeProps> = ({
     : articles;
 
   return (
-    <div className="w-full min-h-screen bg-[#07080f] text-slate-100 pb-20 md:pb-12 cyber-grid overflow-x-hidden">
+    <div className="w-full min-h-screen bg-[#07080f] text-slate-100 pb-20 md:pb-12 cyber-grid overflow-x-clip">
       <main className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         {/* Live Real-time Breaking Flash Banner */}
         {liveFlash && (

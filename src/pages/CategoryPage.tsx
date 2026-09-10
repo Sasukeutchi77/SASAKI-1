@@ -93,8 +93,28 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
 
     const unsubArticleUpdated = realtime.on('article:updated', (updatedArt: Article) => {
       if (!updatedArt || !updatedArt.id) return;
-      setArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
-      setPopularArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
+
+      if (updatedArt.status === 'published') {
+        if (isMatchingCategory(updatedArt)) {
+          setArticles((prev) => {
+            const exists = prev.some((a) => a.id === updatedArt.id);
+            if (exists) {
+              return prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a));
+            }
+            return [updatedArt, ...prev];
+          });
+          setPopularArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
+        } else {
+          // Changed category to another category
+          setArticles((prev) => prev.filter((a) => a.id !== updatedArt.id));
+          setPopularArticles((prev) => prev.filter((a) => a.id !== updatedArt.id));
+        }
+      } else {
+        // Unpublished/draft/hidden
+        setArticles((prev) => prev.filter((a) => a.id !== updatedArt.id));
+        setPopularArticles((prev) => prev.filter((a) => a.id !== updatedArt.id));
+        setTotal((prev) => Math.max(0, prev - 1));
+      }
     });
 
     const unsubArticleDeleted = realtime.on('article:deleted', ({ articleId }: { articleId: string }) => {
@@ -200,7 +220,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
   };
 
   return (
-    <div className="w-full max-w-full min-h-screen bg-stone-50 pb-20 overflow-x-hidden">
+    <div className="w-full max-w-full min-h-screen bg-stone-50 pb-20 overflow-x-clip">
       {/* Category Header Hero */}
       <div className="bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

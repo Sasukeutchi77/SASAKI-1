@@ -15,6 +15,7 @@ interface MobileNavProps {
   onOpenAuth: () => void;
   onOpenAdmin?: () => void;
   onOpenMyHouse?: () => void;
+  onOpenMediaHouses?: () => void;
   onOpenRankings?: () => void;
 }
 

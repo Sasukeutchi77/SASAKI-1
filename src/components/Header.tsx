@@ -92,7 +92,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 w-full max-w-full bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 shadow-[0_4px_30px_rgba(0,10,35,0.7)] transition-all overflow-hidden">
+    <header className="sticky top-0 z-30 w-full max-w-full bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 shadow-[0_4px_30px_rgba(0,10,35,0.7)] transition-all">
       <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-1.5 sm:gap-3 min-w-0">
           {/* Logo & Platform Name */}

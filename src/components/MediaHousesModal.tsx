@@ -1189,15 +1189,15 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
     return (
       <div
         id="media-houses-page"
-        className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-hidden"
+        className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-clip"
       >
-        {/* Sticky top breadcrumbs & return header */}
-        <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-blue-500/20 px-4 sm:px-8 py-3.5 transition-all w-full max-w-full">
+        {/* Top breadcrumbs & return header */}
+        <div className="w-full max-w-full bg-[#040817] border-b border-blue-500/20 px-3 sm:px-8 py-2.5 sm:py-3 transition-all">
           <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 min-w-0">
             <button
               id="houses-page-back-btn"
               onClick={onClose}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-950/40 hover:bg-blue-600/20 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer touch-target interactive-pop shrink-0"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-950/60 hover:bg-blue-600/25 text-cyan-300 hover:text-white border border-blue-500/40 hover:border-cyan-400/60 text-xs font-bold transition-all cursor-pointer touch-target interactive-pop shrink-0 shadow-[0_0_10px_rgba(0,210,255,0.1)]"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Retour à l'accueil</span>

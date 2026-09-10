@@ -26,6 +26,7 @@ import { api } from '../services/api';
 import { searchHistory } from '../services/searchHistory';
 import { ArticleCard } from '../components/ArticleCard';
 import { useAuth } from '../context/AuthContext';
+import { realtime } from '../services/realtime';
 
 interface SearchPageProps {
   initialQuery?: string;
@@ -251,6 +252,72 @@ export const SearchPage: React.FC<SearchPageProps> = ({
       }
     };
   }, [query, activeTab, selectedCategory, selectedTagFilter, dateRange, sortMode, executeSearch]);
+
+  const queryRef = useRef(query);
+  queryRef.current = query;
+  const selectedCategoryRef = useRef(selectedCategory);
+  selectedCategoryRef.current = selectedCategory;
+  const selectedTagFilterRef = useRef(selectedTagFilter);
+  selectedTagFilterRef.current = selectedTagFilter;
+
+  // Real-time synchronization for search results
+  useEffect(() => {
+    const unsubCreated = realtime.on('article:created', (newArt: Article) => {
+      if (!newArt || !newArt.id) return;
+      const curCategory = selectedCategoryRef.current;
+      const curTagFilter = selectedTagFilterRef.current;
+      const curQuery = queryRef.current;
+
+      const matchesCategory =
+        !curCategory ||
+        curCategory === 'all' ||
+        newArt.categoryId === curCategory;
+
+      const cleanTag = (curTagFilter || '').trim().toLowerCase();
+      const matchesTag =
+        !cleanTag ||
+        (newArt.tags && newArt.tags.some((t) => (t || '').replace(/^#/, '').toLowerCase().trim() === cleanTag));
+
+      const q = (curQuery || '').trim().toLowerCase();
+      const matchesQuery =
+        !q ||
+        (newArt.title && newArt.title.toLowerCase().includes(q)) ||
+        (newArt.summary && newArt.summary.toLowerCase().includes(q)) ||
+        (newArt.content && newArt.content.toLowerCase().includes(q)) ||
+        (newArt.authorName && newArt.authorName.toLowerCase().includes(q)) ||
+        (newArt.mediaName && newArt.mediaName.toLowerCase().includes(q)) ||
+        (newArt.tags && newArt.tags.some((t) => (t || '').toLowerCase().includes(q)));
+
+      if (matchesCategory && matchesTag && matchesQuery) {
+        setArticles((prev) => {
+          if (prev.some((a) => a.id === newArt.id)) return prev;
+          return [newArt, ...prev];
+        });
+        setArticlesTotal((prev) => prev + 1);
+      }
+    });
+
+    const unsubUpdated = realtime.on('article:updated', (updatedArt: Article) => {
+      if (!updatedArt || !updatedArt.id) return;
+      if (updatedArt.status === 'published') {
+        setArticles((prev) => prev.map((a) => (a.id === updatedArt.id ? { ...a, ...updatedArt } : a)));
+      } else {
+        setArticles((prev) => prev.filter((a) => a.id !== updatedArt.id));
+        setArticlesTotal((prev) => Math.max(0, prev - 1));
+      }
+    });
+
+    const unsubDeleted = realtime.on('article:deleted', ({ articleId }: { articleId: string }) => {
+      setArticles((prev) => prev.filter((a) => a.id !== articleId));
+      setArticlesTotal((prev) => Math.max(0, prev - 1));
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+      unsubDeleted();
+    };
+  }, []);
 
   // Autocomplete suggestions fetch
   useEffect(() => {

@@ -279,7 +279,7 @@ export const TopRankingsSection: React.FC<TopRankingsSectionProps> = ({
                       {getRankBadge(displayRank)}
                       <div className="flex items-center gap-1 text-[11px] font-mono text-cyan-300/90 font-bold bg-black/40 px-2 py-0.5 rounded-full border border-cyan-500/20">
                         <Zap className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                        <span>{item.popularityScore.toLocaleString()} pts</span>
+                        <span>{(item.popularityScore || 0).toLocaleString()} pts</span>
                       </div>
                     </div>
 
@@ -408,7 +408,7 @@ export const TopRankingsSection: React.FC<TopRankingsSectionProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs font-mono font-bold text-cyan-300 hidden sm:inline">
-                        {item.popularityScore.toLocaleString()} pts
+                        {(item.popularityScore || 0).toLocaleString()} pts
                       </span>
 
                       <button

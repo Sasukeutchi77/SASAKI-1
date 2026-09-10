@@ -371,8 +371,8 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
     <div
       className={
         isFullScreen
-          ? 'fixed inset-0 z-50 overflow-y-auto bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn w-full max-w-full overflow-x-hidden'
-          : 'w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-hidden'
+          ? 'fixed inset-0 z-50 overflow-y-auto bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn w-full max-w-full overflow-x-clip'
+          : 'w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-clip'
       }
     >
       {/* Top Header / Breadcrumb Bar */}

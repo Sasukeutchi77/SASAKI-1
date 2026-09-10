@@ -5,7 +5,7 @@ import { Article } from '../types';
 interface MediaHousesPageProps {
   onBack: () => void;
   onOpenArticle?: (article: Article) => void;
-  onOpenProfile?: () => void;
+  onOpenProfile?: (userId?: string) => void;
   onOpenCreateArticle?: () => void;
   initialTab?: 'explore' | 'my-house' | 'governance';
 }

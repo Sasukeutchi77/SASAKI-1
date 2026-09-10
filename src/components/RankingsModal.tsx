@@ -190,11 +190,11 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
   };
 
   const getSortedArticles = () => {
-    const q = searchQuery.toLowerCase().trim();
+    const q = (searchQuery || '').toLowerCase().trim();
     const filtered = topArticles.filter((art) => {
       if (!q) return true;
       return (
-        art.title.toLowerCase().includes(q) ||
+        (art.title && art.title.toLowerCase().includes(q)) ||
         (art.summary && art.summary.toLowerCase().includes(q)) ||
         (art.authorName && art.authorName.toLowerCase().includes(q)) ||
         (art.mediaName && art.mediaName.toLowerCase().includes(q)) ||
@@ -255,21 +255,21 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
   const rankingContent = (
     <div className="flex flex-col w-full text-slate-100">
       {/* 1. Header & Context */}
-      <div className="p-5 sm:p-7 border-b border-cyan-500/20 bg-gradient-to-r from-[#0b132e]/90 via-[#091026]/90 to-[#070b1a]/90">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-cyan-400 flex items-center justify-center text-slate-950 shadow-[0_0_25px_rgba(234,179,8,0.4)] border border-white/30 shrink-0">
-              <Trophy className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.5]" />
+      <div className="p-4 sm:p-7 border-b border-cyan-500/20 bg-gradient-to-r from-[#0b132e]/90 via-[#091026]/90 to-[#070b1a]/90">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-cyan-400 flex items-center justify-center text-slate-950 shadow-[0_0_25px_rgba(234,179,8,0.4)] border border-white/30 shrink-0">
+              <Trophy className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.5]" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <span className="px-2.5 py-0.5 rounded-full bg-yellow-400/20 text-yellow-300 text-[10px] font-mono font-black border border-yellow-400/40 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-yellow-400" />
                   PALMARÈS OFFICIEL DE L'INFORMATION
                 </span>
-                <span className="text-xs text-cyan-400 font-mono">Actualisé en temps réel</span>
+                <span className="text-[11px] sm:text-xs text-cyan-400 font-mono">Actualisé en temps réel</span>
               </div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-black text-white tracking-tight leading-snug">
                 Classement de la Presse & des Journalistes
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
@@ -295,23 +295,25 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
         </div>
 
         {/* 2. Primary Navigation Tabs: Maisons | Journalistes | Articles */}
-        <div className="mt-6 w-full max-w-full overflow-x-auto no-scrollbar border-t border-cyan-500/20 pt-4 pb-1">
-          <div className="inline-flex bg-[#060a1a] p-1.5 rounded-2xl border border-cyan-500/30 gap-1 shadow-inner min-w-max">
+        <div className="mt-4 sm:mt-6 w-full border-t border-cyan-500/20 pt-3 sm:pt-4 pb-1">
+          <div className="grid grid-cols-3 bg-[#060a1a] p-1 sm:p-1.5 rounded-2xl border border-cyan-500/30 gap-1 shadow-inner">
             <button
               id="ranking-tab-houses"
               onClick={() => {
                 sfx.playMechanicalClick();
                 setActiveTab('houses');
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'houses'
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_18px_rgba(0,210,255,0.4)]'
                   : 'text-slate-400 hover:text-cyan-300'
               }`}
             >
-              <Building2 className="w-4 h-4" />
-              <span>Maisons de Presse</span>
-              <span className="px-1.5 py-0.2 rounded-md bg-black/40 text-[10px] font-mono">
+              <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span>
+                Maisons<span className="hidden md:inline"> de Presse</span>
+              </span>
+              <span className="px-1.5 py-0.5 rounded-md bg-black/40 text-[10px] font-mono shrink-0">
                 {topHouses.length}
               </span>
             </button>
@@ -322,15 +324,17 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
                 sfx.playMechanicalClick();
                 setActiveTab('journalists');
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'journalists'
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_18px_rgba(0,210,255,0.4)]'
                   : 'text-slate-400 hover:text-cyan-300'
               }`}
             >
-              <Users className="w-4 h-4" />
-              <span>Journalistes & Plumes</span>
-              <span className="px-1.5 py-0.2 rounded-md bg-black/40 text-[10px] font-mono">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span>
+                Journalistes<span className="hidden md:inline"> & Plumes</span>
+              </span>
+              <span className="px-1.5 py-0.5 rounded-md bg-black/40 text-[10px] font-mono shrink-0">
                 {topJournalists.length}
               </span>
             </button>
@@ -341,15 +345,17 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
                 sfx.playMechanicalClick();
                 setActiveTab('articles');
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'articles'
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_18px_rgba(0,210,255,0.4)]'
                   : 'text-slate-400 hover:text-cyan-300'
               }`}
             >
-              <BookOpen className="w-4 h-4" />
-              <span>Articles les Plus Lus</span>
-              <span className="px-1.5 py-0.2 rounded-md bg-black/40 text-[10px] font-mono">
+              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span>
+                Articles<span className="hidden md:inline"> les Plus Lus</span>
+              </span>
+              <span className="px-1.5 py-0.5 rounded-md bg-black/40 text-[10px] font-mono shrink-0">
                 {topArticles.length}
               </span>
             </button>
@@ -523,7 +529,7 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
                             {renderRankPill(displayRank)}
                             <div className="flex items-center gap-1 text-xs font-mono text-cyan-300 font-bold bg-black/40 px-2.5 py-1 rounded-full border border-cyan-500/20">
                               <Zap className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                              <span>{house.popularityScore.toLocaleString()} pts</span>
+                              <span>{(house.popularityScore || 0).toLocaleString()} pts</span>
                             </div>
                           </div>
 
@@ -689,7 +695,7 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
                                 <span className="text-[10px] text-slate-400">articles</span>
                               </span>
                               <span className="hidden md:inline">
-                                <strong className="text-cyan-300">{house.popularityScore.toLocaleString()}</strong>{' '}
+                                <strong className="text-cyan-300">{(house.popularityScore || 0).toLocaleString()}</strong>{' '}
                                 <span className="text-[10px] text-slate-400">pts</span>
                               </span>
                             </div>
@@ -764,7 +770,7 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
                             {renderRankPill(displayRank)}
                             <div className="flex items-center gap-1 text-xs font-mono text-cyan-300 font-bold bg-black/40 px-2.5 py-1 rounded-full border border-cyan-500/20">
                               <Zap className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                              <span>{journalist.popularityScore.toLocaleString()} pts</span>
+                              <span>{(journalist.popularityScore || 0).toLocaleString()} pts</span>
                             </div>
                           </div>
 
@@ -953,7 +959,7 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
                                 <span className="text-[10px] text-slate-400">articles</span>
                               </span>
                               <span className="hidden md:inline">
-                                <strong className="text-cyan-300">{journalist.popularityScore.toLocaleString()}</strong>{' '}
+                                <strong className="text-cyan-300">{(journalist.popularityScore || 0).toLocaleString()}</strong>{' '}
                                 <span className="text-[10px] text-slate-400">pts</span>
                               </span>
                             </div>
@@ -1106,22 +1112,22 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
     return (
       <div
         id="rankings-full-page"
-        className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-hidden"
+        className="w-full max-w-full min-h-screen bg-[#07080f] text-slate-100 font-sans pb-28 md:pb-16 animate-fadeIn overflow-x-clip"
       >
-        {/* Sticky top breadcrumb & return header */}
-        <div className="sticky top-16 z-30 bg-[#040817]/90 backdrop-blur-xl border-b border-cyan-500/20 px-4 sm:px-8 py-3.5 transition-all w-full max-w-full">
-          <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 min-w-0">
+        {/* Top breadcrumb & return header */}
+        <div className="w-full max-w-full bg-[#040817] border-b border-cyan-500/20 px-3 sm:px-8 py-2.5 sm:py-3 transition-all">
+          <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-3 min-w-0">
             <button
               id="rankings-page-back-btn"
               onClick={onClose}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-950/40 hover:bg-blue-600/20 text-cyan-300 hover:text-cyan-200 border border-blue-500/30 hover:border-cyan-400/50 text-xs font-bold transition-all cursor-pointer shrink-0"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-950/60 hover:bg-blue-600/25 text-cyan-300 hover:text-white border border-blue-500/40 hover:border-cyan-400/60 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-[0_0_10px_rgba(0,210,255,0.1)]"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Retour à l'accueil</span>
             </button>
 
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-blue-950/60 text-cyan-300 border border-cyan-500/30">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-blue-950/70 text-cyan-300 border border-cyan-500/35 shadow-[0_0_12px_rgba(0,210,255,0.15)]">
                 <Trophy className="w-3.5 h-3.5 text-yellow-400" />
                 <span>Palmarès Officiel</span>
               </span>
@@ -1129,8 +1135,8 @@ export const RankingsModal: React.FC<RankingsModalProps> = ({
           </div>
         </div>
 
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-8 pt-6 sm:pt-8 min-w-0">
-          <div className="w-full max-w-full rounded-3xl bg-gradient-to-b from-[#090e24] via-[#060a1a] to-[#040714] border border-cyan-500/40 shadow-[0_0_50px_rgba(0,210,255,0.15)] overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto px-2 sm:px-8 pt-5 sm:pt-8 min-w-0">
+          <div className="w-full max-w-full rounded-2xl sm:rounded-3xl bg-gradient-to-b from-[#090e24] via-[#060a1a] to-[#040714] border border-cyan-500/40 shadow-[0_0_50px_rgba(0,210,255,0.15)] overflow-hidden">
             {rankingContent}
           </div>
         </div>
