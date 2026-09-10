@@ -1,1 +1,5 @@
-/*    /index.html   200
+# Forward API calls to Netlify serverless function
+/api/*    /.netlify/functions/api/:splat    200!
+
+# SPA Fallback for client-side routing
+/*        /index.html                       200

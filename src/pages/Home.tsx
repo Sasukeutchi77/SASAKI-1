@@ -801,7 +801,7 @@ export const Home: React.FC<HomeProps> = ({
               )}
             </div>
 
-            {/* Top 7 Maisons de Presse Populaires */}
+            {/* Classement des Maisons de Presse */}
             <div className="bg-[#0b0e1a]/90 rounded-2xl border border-cyan-500/30 p-4 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">
@@ -809,11 +809,11 @@ export const Home: React.FC<HomeProps> = ({
                     <Trophy className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="font-extrabold text-sm text-white">
-                    Top 7 Maisons de Presse
+                    Classement des Rédactions
                   </h3>
                 </div>
                 <button
-                  onClick={() => setShowRankingsModal(true)}
+                  onClick={() => onOpenRankings ? onOpenRankings() : setShowRankingsModal(true)}
                   className="text-[11px] font-bold text-yellow-400 hover:text-yellow-200 cursor-pointer flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30 transition-colors"
                 >
                   <span>Palmarès</span>
@@ -876,7 +876,7 @@ export const Home: React.FC<HomeProps> = ({
               </div>
             </div>
 
-            {/* Top 7 Journalistes Suivis */}
+            {/* Classement des Journalistes */}
             <div className="bg-[#0b0e1a]/90 rounded-2xl border border-cyan-500/30 p-4 shadow-[0_0_15px_rgba(0,243,255,0.06)]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">
@@ -884,11 +884,11 @@ export const Home: React.FC<HomeProps> = ({
                     <TrendingUp className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="font-extrabold text-sm text-white">
-                    Top 7 Journalistes
+                    Classement des Journalistes
                   </h3>
                 </div>
                 <button
-                  onClick={() => setShowRankingsModal(true)}
+                  onClick={() => onOpenRankings ? onOpenRankings() : setShowRankingsModal(true)}
                   className="text-[11px] font-bold text-cyan-400 hover:text-cyan-200 cursor-pointer flex items-center gap-1 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30 transition-colors"
                 >
                   <span>Palmarès</span>
@@ -1035,11 +1035,12 @@ export const Home: React.FC<HomeProps> = ({
         </div>
       </main>
 
-      {/* Rankings Modal (Palmarès & Classement des Top 7) */}
+      {/* Rankings Modal (Palmarès & Classement de la Presse) */}
       {showRankingsModal && (
         <RankingsModal
           isOpen={showRankingsModal}
           onClose={() => setShowRankingsModal(false)}
+          onOpenArticle={onOpenArticle}
           onOpenProfile={onOpenProfile}
           onOpenMediaHouses={onOpenMediaHouses}
           onOpenAuth={onOpenAuth}

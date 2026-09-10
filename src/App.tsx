@@ -24,13 +24,14 @@ import { RankingsModal } from './components/RankingsModal';
 import { BookmarksPage } from './pages/BookmarksPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { MediaHousesPage } from './pages/MediaHousesPage';
+import { RankingsPage } from './pages/RankingsPage';
 import { Article, Category } from './types';
 import { api } from './services/api';
 
 export function AppContent() {
   const { user } = useAuth();
   const [currentView, setCurrentView] = useState<
-    'home' | 'search' | 'category' | 'houses' | 'bookmarks' | 'account'
+    'home' | 'search' | 'category' | 'houses' | 'bookmarks' | 'account' | 'rankings'
   >('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -83,6 +84,13 @@ export function AppContent() {
     setCurrentView('account');
     setMobileTab('profile');
     window.location.hash = 'account';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenRankings = () => {
+    setCurrentView('rankings');
+    setMobileTab('rankings');
+    window.location.hash = 'rankings';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -188,6 +196,9 @@ export function AppContent() {
       } else if (hash === '#account' || hash === '#profile') {
         setCurrentView('account');
         setMobileTab('profile');
+      } else if (hash === '#rankings' || hash === '#classement') {
+        setCurrentView('rankings');
+        setMobileTab('rankings');
       } else if (hash.startsWith('#profile-')) {
         const uid = hash.replace('#profile-', '');
         if (uid) setProfileUserId(uid);
@@ -262,7 +273,7 @@ export function AppContent() {
         onOpenMediaHouses={handleOpenMediaHouses}
         onOpenMyHouse={handleOpenMyHouse}
         onOpenTrustSystem={() => setShowTrustSystemModal(true)}
-        onOpenRankings={() => setShowRankingsModal(true)}
+        onOpenRankings={handleOpenRankings}
         showCategories={currentView === 'feed' || currentView === 'category'}
       />
 
@@ -327,6 +338,14 @@ export function AppContent() {
             }}
             initialTab={mediaHousesTab}
           />
+        ) : currentView === 'rankings' ? (
+          <RankingsPage
+            onBack={navigateToHome}
+            onOpenArticle={handleOpenArticle}
+            onOpenProfile={(userId) => setProfileUserId(userId)}
+            onOpenMediaHouses={handleOpenMediaHouses}
+            onOpenAuth={() => handleOpenAuth('login')}
+          />
         ) : currentView === 'bookmarks' ? (
           <BookmarksPage
             onBack={navigateToHome}
@@ -364,7 +383,7 @@ export function AppContent() {
             onOpenMediaHouses={handleOpenMediaHouses}
             onOpenMyHouse={handleOpenMyHouse}
             onOpenTrustSystem={() => setShowTrustSystemModal(true)}
-            onOpenRankings={() => setShowRankingsModal(true)}
+            onOpenRankings={handleOpenRankings}
           />
         )}
       </div>
@@ -372,7 +391,7 @@ export function AppContent() {
       {/* Mobile Navigation Bar (Optimized for Android / Mobile screens) */}
       <MobileNav
         activeTab={
-          showRankingsModal
+          showRankingsModal || currentView === 'rankings'
             ? 'rankings'
             : currentView === 'search'
             ? 'search'
@@ -389,7 +408,7 @@ export function AppContent() {
         onTabChange={(tab) => {
           setMobileTab(tab);
           if (tab === 'rankings') {
-            setShowRankingsModal(true);
+            handleOpenRankings();
           } else if (tab === 'trending' || tab === 'search') {
             navigateToSearch();
           } else if (tab === 'feed') {
@@ -407,10 +426,7 @@ export function AppContent() {
             handleOpenMyProfile();
           }
         }}
-        onOpenRankings={() => {
-          setMobileTab('rankings');
-          setShowRankingsModal(true);
-        }}
+        onOpenRankings={handleOpenRankings}
         onOpenSearch={() => navigateToSearch()}
         onOpenCreateArticle={() => {
           setArticleToEdit(null);

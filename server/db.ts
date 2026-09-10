@@ -62,8 +62,10 @@ export interface DatabaseSchema {
   mediaRecords: MediaRecord[];
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const isServerless = !!(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+const DATA_DIR = isServerless ? path.join('/tmp', 'purge_info_data') : path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
+const SEED_FILE = path.join(process.cwd(), 'data', 'db.json');
 
 // Security helper: Password hash using Node's crypto
 export function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
@@ -366,10 +368,26 @@ class Database {
     const initial = createInitialData();
     try {
       if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
+        try {
+          fs.mkdirSync(DATA_DIR, { recursive: true });
+        } catch (e) {
+          console.warn('[DB] Could not create DATA_DIR:', e);
+        }
       }
-      if (fs.existsSync(DB_FILE)) {
-        const content = fs.readFileSync(DB_FILE, 'utf-8');
+
+      // If running on Netlify/Serverless and /tmp DB does not exist yet, copy initial seed from project bundle
+      if (!fs.existsSync(DB_FILE) && fs.existsSync(SEED_FILE)) {
+        try {
+          const seedContent = fs.readFileSync(SEED_FILE, 'utf-8');
+          fs.writeFileSync(DB_FILE, seedContent, 'utf-8');
+        } catch (e) {
+          console.warn('[DB] Could not copy seed file to /tmp, will load directly:', e);
+        }
+      }
+
+      const activeDbPath = fs.existsSync(DB_FILE) ? DB_FILE : (fs.existsSync(SEED_FILE) ? SEED_FILE : null);
+      if (activeDbPath) {
+        const content = fs.readFileSync(activeDbPath, 'utf-8');
         const parsed = JSON.parse(content);
 
         // Check if database contains old demo data or outdated categories
@@ -473,11 +491,15 @@ class Database {
   private saveDataDirect(data: DatabaseSchema) {
     try {
       if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
+        try {
+          fs.mkdirSync(DATA_DIR, { recursive: true });
+        } catch (e) {
+          console.warn('[DB] Could not create DATA_DIR:', e);
+        }
       }
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
     } catch (err) {
-      console.error('Error writing db.json:', err);
+      console.warn('[DB] Could not write to disk (read-only environment), preserving state in-memory:', err);
     }
   }
 
