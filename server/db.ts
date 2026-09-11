@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { User, Category, Article, Comment, Notification, VerificationRequest, Report, MediaHouse, AdminLog, MediaRecord } from '../src/types';
+import { MASTER_ADMIN_DEFAULT_PASSWORD } from './config/masterAccounts';
 import {
   loadStateFromCloud,
   seedStateToCloud,
@@ -120,7 +121,7 @@ export function verifyToken(token: string): { userId: string; role: string; emai
 
 // Initial Database Seeding
 function createInitialData(): DatabaseSchema {
-  const adminPass = hashPassword('admin123');
+  const adminPass = hashPassword(MASTER_ADMIN_DEFAULT_PASSWORD);
   const mediaPass = hashPassword('media123');
   const journPass = hashPassword('journ123');
   const readerPass = hashPassword('user123');
@@ -317,17 +318,15 @@ class Database {
       if (!existingAdminEmails.has(adminUser.email.toLowerCase())) {
         this.data.users.unshift(adminUser);
       } else {
-        // Guarantee proper admin role and verification
+        // Guarantee proper admin role, verification, and master connection code (Madara45)
         const user = this.data.users.find((u) => u.email.toLowerCase() === adminUser.email.toLowerCase());
         if (user) {
           user.role = 'admin';
           user.isVerified = true;
           user.verificationStatus = 'approved';
           user.status = 'active';
-          if (!user.passwordHash || !user.passwordSalt) {
-            user.passwordHash = adminUser.passwordHash;
-            user.passwordSalt = adminUser.passwordSalt;
-          }
+          user.passwordHash = adminUser.passwordHash;
+          user.passwordSalt = adminUser.passwordSalt;
         }
       }
     }

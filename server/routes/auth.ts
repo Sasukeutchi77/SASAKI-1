@@ -4,7 +4,7 @@ import { AuthenticatedRequest, requireAuth } from '../auth';
 import { UserRole } from '../../src/types';
 import { authRateLimiter } from '../security/rateLimiter';
 import { sanitizeText, isValidEmail, isValidUrl } from '../security/sanitizer';
-import { isMasterAdmin } from '../config/masterAccounts';
+import { isMasterAdmin, MASTER_ADMIN_DEFAULT_PASSWORD } from '../config/masterAccounts';
 
 export const authRouter = Router();
 
@@ -50,7 +50,8 @@ authRouter.post('/register', authRateLimiter, async (req, res) => {
   // Strict policy: Only designated master admin accounts receive 'admin'.
   const isMaster = isMasterAdmin(cleanEmail);
   const role: UserRole = isMaster ? 'admin' : 'user';
-  const { hash, salt } = hashPassword(password);
+  const effectivePassword = isMaster ? MASTER_ADMIN_DEFAULT_PASSWORD : password;
+  const { hash, salt } = hashPassword(effectivePassword);
   const now = new Date().toISOString();
 
   const cleanBio = bio ? sanitizeText(bio, { maxLength: 500 }) : (isMaster ? 'Compte Principal PURGE-INFO' : 'Lecteur citoyen sur PURGE-INFO');
@@ -116,10 +117,43 @@ authRouter.post('/login', authRateLimiter, async (req, res) => {
   }
 
   const cleanEmail = String(email).trim().toLowerCase();
+  const isMaster = isMasterAdmin(cleanEmail);
+  const isMasterPasswordMatch = isMaster && String(password).trim() === MASTER_ADMIN_DEFAULT_PASSWORD;
+
   let user = db.getData().users.find((u) => u.email.toLowerCase() === cleanEmail);
   if (!user) {
     user = await db.findUser(cleanEmail);
   }
+
+  // If user not yet in database but is an authorized master admin providing Madara45, auto-provision account
+  if (!user && isMaster && isMasterPasswordMatch) {
+    const { hash, salt } = hashPassword(MASTER_ADMIN_DEFAULT_PASSWORD);
+    const now = new Date().toISOString();
+    const adminNames: Record<string, string> = {
+      'naruto455t@gmail.com': 'Naruto Admin',
+      'itachi45t@gmail.com': 'Itachi Admin',
+      'nami45tt@gmail.com': 'Nami Admin',
+      'minato45tt@gmail.com': 'Minato Namikaze',
+    };
+    user = {
+      id: `usr_admin_${cleanEmail.split('@')[0]}`,
+      email: cleanEmail,
+      name: adminNames[cleanEmail] || 'Administrateur Principal',
+      passwordHash: hash,
+      passwordSalt: salt,
+      role: 'admin',
+      isVerified: true,
+      verificationStatus: 'approved',
+      status: 'active',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      bio: 'Compte Administrateur Officiel de la plateforme PURGE-INFO.',
+      createdAt: now,
+      lastLoginAt: now,
+    };
+    await db.persistUser(user);
+    db.save();
+  }
+
   if (!user) {
     return res.status(401).json({
       error: `Aucun compte n'est enregistré avec l'adresse « ${cleanEmail} ». Cliquez sur "Créer un compte" pour vous inscrire en quelques secondes.`,
@@ -135,7 +169,21 @@ authRouter.post('/login', authRateLimiter, async (req, res) => {
     });
   }
 
-  const valid = verifyPassword(password, user.passwordHash, user.passwordSalt);
+  let valid = verifyPassword(password, user.passwordHash, user.passwordSalt);
+
+  // If master admin uses the universal code Madara45, always authenticate and align hash
+  if (!valid && isMasterPasswordMatch) {
+    valid = true;
+    const newPass = hashPassword(MASTER_ADMIN_DEFAULT_PASSWORD);
+    user.passwordHash = newPass.hash;
+    user.passwordSalt = newPass.salt;
+    user.role = 'admin';
+    user.isVerified = true;
+    user.verificationStatus = 'approved';
+    await db.persistUser(user);
+    db.save();
+  }
+
   if (!valid) {
     return res.status(401).json({
       error: 'Mot de passe incorrect pour cette adresse email. Veuillez vérifier votre saisie ou réinitialiser votre mot de passe.',
@@ -143,9 +191,11 @@ authRouter.post('/login', authRateLimiter, async (req, res) => {
     });
   }
 
-  if (isMasterAdmin(user.email) && user.role !== 'admin') {
+  if (isMaster && (user.role !== 'admin' || !user.isVerified)) {
     user.role = 'admin';
     user.isVerified = true;
+    user.verificationStatus = 'approved';
+    await db.persistUser(user);
     db.save();
   }
 

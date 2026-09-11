@@ -274,6 +274,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
               </div>
             )}
 
+            {mode === 'login' && (
+              <div className="p-2.5 bg-[#081026] border border-cyan-500/20 rounded-xl space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-cyan-400" />
+                    Accès Administrateurs Principaux (Code: Madara45)
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  {[
+                    { name: 'Minato', email: 'minato45tt@gmail.com' },
+                    { name: 'Naruto', email: 'naruto455t@gmail.com' },
+                    { name: 'Itachi', email: 'itachi45t@gmail.com' },
+                    { name: 'Nami', email: 'nami45tt@gmail.com' },
+                  ].map((adm) => (
+                    <button
+                      key={adm.email}
+                      type="button"
+                      onClick={() => {
+                        setEmail(adm.email);
+                        setPassword('Madara45');
+                        setError(null);
+                      }}
+                      className="px-2 py-1 text-left bg-cyan-950/30 hover:bg-cyan-900/50 border border-cyan-500/20 hover:border-cyan-400 rounded-md text-[10px] font-mono text-cyan-200 transition-colors flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="font-bold">{adm.name}</span>
+                      <span className="text-[9px] text-cyan-400/70 truncate ml-1">{adm.email.split('@')[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {mode === 'register' && (
               <div>
                 <label className="block text-xs font-bold font-mono text-cyan-300 uppercase tracking-wider mb-1">
