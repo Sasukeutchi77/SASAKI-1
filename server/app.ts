@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import { extractUser } from './auth';
 import { authRouter } from './routes/auth';
 import { articlesRouter } from './routes/articles';
@@ -38,6 +39,9 @@ export function createExpressApp() {
       platform: process.env.NETLIFY ? 'netlify-serverless' : 'node-server',
     });
   });
+
+  // Serve persistent uploads directly
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   // REST API Routes
   app.use('/api/auth', authRouter);

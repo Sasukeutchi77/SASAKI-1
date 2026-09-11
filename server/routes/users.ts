@@ -409,28 +409,33 @@ usersRouter.post('/:id/follow', requireAuth, likesRateLimiter, (req: Authenticat
 
   let isFollowing = false;
   if (existingIndex !== -1) {
-    data.follows.splice(existingIndex, 1);
+    const removedFollow = data.follows.splice(existingIndex, 1)[0];
+    await db.deleteFollow(removedFollow.id);
     isFollowing = false;
   } else {
-    data.follows.push({
+    const newFollow = {
       id: `flw_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       followerId: currentUserId,
       targetId: targetUser.id,
       createdAt: new Date().toISOString(),
-    });
+    };
+    data.follows.push(newFollow);
+    await db.persistFollow(newFollow);
     isFollowing = true;
 
     // Send notification
-    data.notifications.unshift({
+    const followNotif = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: targetUser.id,
-      type: 'follow',
+      type: 'follow' as const,
       title: 'Nouvel abonné',
       message: `${req.user!.name} a commencé à vous suivre.`,
       link: `/profile/${req.user!.id}`,
       read: false,
       createdAt: new Date().toISOString(),
-    });
+    };
+    data.notifications.unshift(followNotif);
+    await db.persistNotification(followNotif);
   }
 
   const dbFollowersCount = data.follows.filter((f) => f.targetId === targetUser.id).length;

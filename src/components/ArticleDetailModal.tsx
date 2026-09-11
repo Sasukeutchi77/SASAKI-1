@@ -434,6 +434,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
       const res = await api.toggleLikeArticle(articleId);
       setIsLiked(res.liked);
       setLikesCount(res.likesCount);
+      setArticle((prev) => (prev ? { ...prev, isLiked: res.liked, likesCount: res.likesCount } : prev));
     } catch (err) {
       console.error('Like failed, rollback:', err);
       setIsLiked(prevLiked);
@@ -450,6 +451,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     try {
       const res = await api.toggleBookmarkArticle(articleId);
       setIsBookmarked(res.bookmarked);
+      setArticle((prev) => (prev ? { ...prev, isBookmarked: res.bookmarked } : prev));
       refreshUser();
     } catch (err) {
       console.error('Bookmark failed, rollback:', err);

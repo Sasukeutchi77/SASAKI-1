@@ -88,6 +88,7 @@ export interface User {
   isFollowing?: boolean;
   articlesCount?: number;
   createdAt: string;
+  updatedAt?: string;
   lastLoginAt?: string;
 }
 

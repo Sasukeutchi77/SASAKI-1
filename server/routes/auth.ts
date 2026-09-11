@@ -6,6 +6,7 @@ import { authRateLimiter } from '../security/rateLimiter';
 import { sanitizeText, isValidEmail, isValidUrl } from '../security/sanitizer';
 import { isMasterAdmin, MASTER_ADMIN_EMAILS, MASTER_ADMIN_DEFAULT_PASSWORD } from '../config/masterAccounts';
 import { realtimeHub } from '../realtime';
+import { saveBase64MediaLocally } from './media';
 
 export const authRouter = Router();
 
@@ -342,7 +343,12 @@ authRouter.put('/profile', requireAuth, async (req: AuthenticatedRequest, res: R
 
   if (avatar !== undefined) {
     if (avatar && isValidUrl(avatar)) {
-      user.avatar = avatar.trim();
+      if (typeof avatar === 'string' && avatar.startsWith('data:image/')) {
+        const localPath = saveBase64MediaLocally(avatar, 'avatar');
+        user.avatar = localPath || avatar;
+      } else {
+        user.avatar = avatar.trim();
+      }
     } else if (!avatar) {
       user.avatar = undefined;
     }
@@ -350,6 +356,13 @@ authRouter.put('/profile', requireAuth, async (req: AuthenticatedRequest, res: R
 
   if (avatarMedia !== undefined && typeof avatarMedia === 'object') {
     if (avatarMedia && avatarMedia.url && isValidUrl(avatarMedia.url)) {
+      if (typeof avatarMedia.url === 'string' && avatarMedia.url.startsWith('data:image/')) {
+        const localPath = saveBase64MediaLocally(avatarMedia.url, 'avatar');
+        if (localPath) {
+          avatarMedia.url = localPath;
+          avatarMedia.secureUrl = localPath;
+        }
+      }
       user.avatarMedia = avatarMedia;
       user.avatar = avatarMedia.url;
     }
@@ -357,7 +370,12 @@ authRouter.put('/profile', requireAuth, async (req: AuthenticatedRequest, res: R
 
   if (coverImage !== undefined) {
     if (coverImage && isValidUrl(coverImage)) {
-      user.coverImage = coverImage.trim();
+      if (typeof coverImage === 'string' && coverImage.startsWith('data:image/')) {
+        const localPath = saveBase64MediaLocally(coverImage, 'cover');
+        user.coverImage = localPath || coverImage;
+      } else {
+        user.coverImage = coverImage.trim();
+      }
     } else if (!coverImage) {
       user.coverImage = undefined;
     }
@@ -365,6 +383,13 @@ authRouter.put('/profile', requireAuth, async (req: AuthenticatedRequest, res: R
 
   if (coverMedia !== undefined && typeof coverMedia === 'object') {
     if (coverMedia && coverMedia.url && isValidUrl(coverMedia.url)) {
+      if (typeof coverMedia.url === 'string' && coverMedia.url.startsWith('data:image/')) {
+        const localPath = saveBase64MediaLocally(coverMedia.url, 'cover');
+        if (localPath) {
+          coverMedia.url = localPath;
+          coverMedia.secureUrl = localPath;
+        }
+      }
       user.coverMedia = coverMedia;
       user.coverImage = coverMedia.url;
     }
@@ -405,14 +430,20 @@ authRouter.put('/profile', requireAuth, async (req: AuthenticatedRequest, res: R
     });
   }
 
+  // Set update timestamp
+  user.updatedAt = new Date().toISOString();
+
   // Strictly protected fields (role, isVerified, verificationStatus, status, createdAt) are NEVER touched here
   await db.persistUser(user);
   db.save();
   req.user = user;
 
+  const safe = sanitizeUser(user);
+  realtimeHub.broadcast('user:updated', safe);
+
   return res.json({
     message: 'Profil mis à jour avec succès.',
-    user: sanitizeUser(user),
+    user: safe,
   });
 });
 
@@ -429,13 +460,24 @@ authRouter.delete('/profile/avatar', requireAuth, async (req: AuthenticatedReque
 
   user.avatar = undefined;
   user.avatarMedia = undefined;
+  user.updatedAt = new Date().toISOString();
+
+  data.articles.forEach((a) => {
+    if (a.authorId === user.id) {
+      a.authorAvatar = undefined;
+    }
+  });
+
   await db.persistUser(user);
   db.save();
   req.user = user;
 
+  const safe = sanitizeUser(user);
+  realtimeHub.broadcast('user:updated', safe);
+
   return res.json({
     message: 'Photo de profil retirée.',
-    user: sanitizeUser(user),
+    user: safe,
   });
 });
 

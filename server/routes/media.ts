@@ -1,4 +1,6 @@
-import { Router, Response } from 'express';
+import { Router, Response, Request } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { v2 as cloudinary } from 'cloudinary';
 import { AuthenticatedRequest, requireAuth } from '../auth';
 import { db } from '../db';
@@ -7,6 +9,59 @@ import { mediaUploadLimiter } from '../security/rateLimiter';
 import { sanitizeText } from '../security/sanitizer';
 
 export const mediaRouter = Router();
+
+const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  try {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  } catch {}
+}
+
+/**
+ * Saves a base64 data URI to the local /uploads directory and returns the served URL path.
+ * This guarantees low-bandwidth storage and avoids Firestore 1MB document limitations.
+ */
+export function saveBase64MediaLocally(dataUri: string, prefix = 'media'): string | null {
+  if (!dataUri || typeof dataUri !== 'string' || !dataUri.startsWith('data:')) return null;
+  const commaIdx = dataUri.indexOf(',');
+  if (commaIdx === -1) return null;
+
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+
+    const mimeMatch = dataUri.substring(0, commaIdx).match(/data:([^;]+);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    let ext = 'jpg';
+    if (mime.includes('png')) ext = 'png';
+    else if (mime.includes('webp')) ext = 'webp';
+    else if (mime.includes('gif')) ext = 'gif';
+    else if (mime.includes('mp4')) ext = 'mp4';
+
+    const base64Data = dataUri.substring(commaIdx + 1);
+    const buffer = Buffer.from(base64Data, 'base64');
+    const filename = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+    const targetPath = path.join(UPLOADS_DIR, filename);
+
+    fs.writeFileSync(targetPath, buffer);
+    return `/api/media/files/${filename}`;
+  } catch (err) {
+    console.error('[Media] Failed to write media file locally:', err);
+    return null;
+  }
+}
+
+// Serve uploaded static media files with high cache headers
+mediaRouter.get('/files/:filename', (req: Request, res: Response) => {
+  const safeFilename = path.basename(req.params.filename);
+  const filePath = path.join(UPLOADS_DIR, safeFilename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Fichier média introuvable.' });
+  }
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  return res.sendFile(filePath);
+});
 
 // Lazy Cloudinary configuration
 function initCloudinary() {
@@ -174,14 +229,15 @@ mediaRouter.post('/upload', requireAuth, mediaUploadLimiter, async (req: Authent
 
   if (!isConfigured) {
     // If user has not yet configured Cloudinary credentials in .env,
-    // generate a graceful local fallback media representation with accurate metadata
-    console.warn('Cloudinary not configured in environment; using local fallback media record.');
-    const fallbackId = `fallback_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const fallbackUrl = file.startsWith('data:')
+    // save media cleanly to local disk and generate a fast local URL
+    console.warn('Cloudinary not configured in environment; using local file persistence.');
+    const fallbackId = `local_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const savedLocalUrl = saveBase64MediaLocally(file, usageType || 'media');
+    const fallbackUrl = savedLocalUrl || (file.startsWith('data:')
       ? file
       : type === 'video'
       ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-      : 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1000&auto=format&fit=crop&q=80';
+      : 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1000&auto=format&fit=crop&q=80');
 
     const fallbackMedia: CloudinaryMedia = {
       url: fallbackUrl,

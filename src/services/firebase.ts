@@ -214,11 +214,12 @@ export async function syncFirestoreUserProfile(
         username: defaultUsername,
         email: fbUser.email?.toLowerCase() || '',
         avatar:
+          additionalData.avatar ||
           fbUser.photoURL ||
           `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
         role: 'user', // Default safe user role
         accountType: 'user',
-        bio: 'Membre de la communauté purge-info',
+        bio: additionalData.bio || 'Membre de la communauté purge-info',
         status: 'active',
         isVerified: false,
         verificationStatus: 'none',
@@ -226,13 +227,15 @@ export async function syncFirestoreUserProfile(
         followingCount: 0,
         createdAt: now,
         lastLoginAt: now,
+        updatedAt: now,
       };
 
       await setDoc(userRef, initialData, { merge: true });
     } else {
-      // Update only safe allowed fields: lastLoginAt and name if provided
+      // Update safe allowed fields
       const updatePayload: Record<string, any> = {
         lastLoginAt: now,
+        updatedAt: now,
       };
       if (additionalData.name) {
         updatePayload.name = additionalData.name;
@@ -249,8 +252,14 @@ export async function syncFirestoreUserProfile(
       if (additionalData.avatar !== undefined) {
         updatePayload.avatar = additionalData.avatar;
       }
+      if (additionalData.avatarMedia !== undefined) {
+        updatePayload.avatarMedia = additionalData.avatarMedia;
+      }
       if (additionalData.coverImage !== undefined) {
         updatePayload.coverImage = additionalData.coverImage;
+      }
+      if (additionalData.coverMedia !== undefined) {
+        updatePayload.coverMedia = additionalData.coverMedia;
       }
       if (additionalData.mediaName !== undefined) {
         updatePayload.mediaName = additionalData.mediaName;

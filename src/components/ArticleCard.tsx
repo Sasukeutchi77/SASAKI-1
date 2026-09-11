@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Article } from '../types';
 import {
   Heart,
@@ -13,6 +13,7 @@ import {
 import { VerifiedBadge } from './VerifiedBadge';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { realtime } from '../services/realtime';
 import { ShareModal } from './ShareModal';
 
 export interface ArticleCardProps {
@@ -43,6 +44,25 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [likesCount, setLikesCount] = useState<number>(article.likesCount);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(!!article.isBookmarked);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
+
+  // Sync state when article prop changes (e.g. from server refresh or user interaction elsewhere)
+  useEffect(() => {
+    setIsLiked(!!article.isLiked);
+    setLikesCount(article.likesCount);
+    setIsBookmarked(!!article.isBookmarked);
+  }, [article.id, article.isLiked, article.likesCount, article.isBookmarked]);
+
+  // Real-time listener for likes
+  useEffect(() => {
+    const unsub = realtime.on('article:liked', ({ articleId: aId, likesCount: aLikes }: { articleId: string; likesCount: number }) => {
+      if (aId === article.id) {
+        setLikesCount(aLikes);
+      }
+    });
+    return () => {
+      unsub();
+    };
+  }, [article.id]);
 
   // Approximate reading time (200 words/min)
   const words = (article.content || '').trim().split(/\s+/).length;

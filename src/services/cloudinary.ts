@@ -86,6 +86,57 @@ export function fileToBase64(
   });
 }
 
+// Client-side image compression to prevent large payloads and guarantee instant persistence
+export function compressImageFile(
+  file: File,
+  maxWidth = 800,
+  maxHeight = 800,
+  quality = 0.85
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || !file.type.startsWith('image/') || file.type.includes('svg')) {
+      return fileToBase64(file).then(resolve).catch(reject);
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.max(1, Math.round(width * ratio));
+        height = Math.max(1, Math.round(height * ratio));
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        return fileToBase64(file).then(resolve).catch(reject);
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      const compressedDataUrl = canvas.toDataURL(mime, quality);
+      resolve(compressedDataUrl);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      fileToBase64(file).then(resolve).catch(reject);
+    };
+
+    img.src = objectUrl;
+  });
+}
+
 // 2. Upload file securely via server backend
 export async function uploadMediaToCloudinary(
   file: File,
@@ -108,7 +159,19 @@ export async function uploadMediaToCloudinary(
   }
 
   if (options.onProgress) options.onProgress(15);
-  const base64Data = await fileToBase64(file, options.onProgress);
+
+  let base64Data: string;
+  if (mediaType === 'image') {
+    if (options.usageType === 'avatar') {
+      base64Data = await compressImageFile(file, 400, 400, 0.85);
+    } else if (options.usageType === 'cover') {
+      base64Data = await compressImageFile(file, 1200, 500, 0.85);
+    } else {
+      base64Data = await compressImageFile(file, 1600, 1200, 0.85);
+    }
+  } else {
+    base64Data = await fileToBase64(file, options.onProgress);
+  }
 
   if (options.onProgress) options.onProgress(70);
 

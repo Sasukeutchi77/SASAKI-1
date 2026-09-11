@@ -11,6 +11,7 @@ import {
   queueCloudSync,
   CLOUD_COLLECTIONS,
   findUserByEmailInCloud,
+  fetchUserByIdFromCloud,
 } from './firestoreService';
 
 export interface DBFollow {
@@ -300,6 +301,9 @@ function mergeDatabaseState(local: DatabaseSchema, cloud: DatabaseSchema): Datab
       userById.set(u.id, copy);
       if (cleanEmail) userByEmail.set(cleanEmail, copy);
     } else {
+      const existingUpdated = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+      const incomingUpdated = u.updatedAt ? new Date(u.updatedAt).getTime() : 0;
+
       // Role: admin > journalist > user
       const preferAdmin = existing.role === 'admin' || u.role === 'admin';
       const preferJournalist = !preferAdmin && (existing.role === 'journalist' || u.role === 'journalist');
@@ -310,23 +314,47 @@ function mergeDatabaseState(local: DatabaseSchema, cloud: DatabaseSchema): Datab
         existing.verificationStatus = 'approved';
       }
 
-      // Preserve custom uploaded avatar over default placeholder
-      if (u.avatar && (!existing.avatar || (isDefaultAvatar(existing.avatar) && !isDefaultAvatar(u.avatar)))) {
-        existing.avatar = u.avatar;
+      if (u.name && (!existing.name || incomingUpdated >= existingUpdated)) {
+        existing.name = u.name;
       }
-      if (u.avatarMedia) existing.avatarMedia = u.avatarMedia;
-      if (u.coverImage && !existing.coverImage) existing.coverImage = u.coverImage;
-      if (u.coverMedia) existing.coverMedia = u.coverMedia;
+      if (u.username && (!existing.username || incomingUpdated >= existingUpdated)) {
+        existing.username = u.username;
+      }
+
+      // Preserve custom uploaded avatar over default placeholder
+      if (u.avatar) {
+        if (!isDefaultAvatar(u.avatar)) {
+          if (isDefaultAvatar(existing.avatar) || incomingUpdated >= existingUpdated || !existing.avatar) {
+            existing.avatar = u.avatar;
+            if (u.avatarMedia) existing.avatarMedia = u.avatarMedia;
+          }
+        }
+      }
+
+      if (u.coverImage) {
+        if (incomingUpdated >= existingUpdated || !existing.coverImage) {
+          existing.coverImage = u.coverImage;
+          if (u.coverMedia) existing.coverMedia = u.coverMedia;
+        }
+      }
+
+      if (u.bio && (!existing.bio || incomingUpdated >= existingUpdated)) {
+        existing.bio = u.bio;
+      }
+      if (u.phone && (!existing.phone || incomingUpdated >= existingUpdated)) {
+        existing.phone = u.phone;
+      }
       if (u.mediaId) existing.mediaId = u.mediaId;
       if (u.mediaName) existing.mediaName = u.mediaName;
-      if (u.bio && (!existing.bio || existing.bio.length < u.bio.length)) existing.bio = u.bio;
-      if (u.phone && !existing.phone) existing.phone = u.phone;
       if (u.passwordHash && !existing.passwordHash) {
         existing.passwordHash = u.passwordHash;
         existing.passwordSalt = u.passwordSalt;
       }
       if (u.lastLoginAt && (!existing.lastLoginAt || new Date(u.lastLoginAt) > new Date(existing.lastLoginAt))) {
         existing.lastLoginAt = u.lastLoginAt;
+      }
+      if (u.updatedAt && incomingUpdated > existingUpdated) {
+        existing.updatedAt = u.updatedAt;
       }
     }
   };
@@ -386,16 +414,27 @@ function mergeDatabaseState(local: DatabaseSchema, cloud: DatabaseSchema): Datab
     return Array.from(map.values());
   };
 
+  const mergedLikes = unionById(local.likes, cloud.likes);
+  const mergedCommentLikes = unionById(local.commentLikes, cloud.commentLikes);
+  const mergedBookmarks = unionById(local.bookmarks, cloud.bookmarks);
+  const mergedFollows = unionById(local.follows, cloud.follows);
+
+  // Reconcile article like counts with definitive likes records
+  mergedArticles.forEach((art) => {
+    const matchingLikesCount = mergedLikes.filter((l) => l.articleId === art.id).length;
+    art.likesCount = Math.max(art.likesCount || 0, matchingLikesCount);
+  });
+
   return {
     users: mergedUsers,
     categories: local.categories?.length ? local.categories : cloud.categories,
     articles: mergedArticles,
     comments: mergedComments,
     mediaHouses: mergedHouses,
-    likes: unionById(local.likes, cloud.likes),
-    commentLikes: unionById(local.commentLikes, cloud.commentLikes),
-    bookmarks: unionById(local.bookmarks, cloud.bookmarks),
-    follows: unionById(local.follows, cloud.follows),
+    likes: mergedLikes,
+    commentLikes: mergedCommentLikes,
+    bookmarks: mergedBookmarks,
+    follows: mergedFollows,
     notifications: unionById(local.notifications, cloud.notifications),
     verificationRequests: unionById(local.verificationRequests, cloud.verificationRequests),
     reports: unionById(local.reports, cloud.reports),
@@ -465,8 +504,9 @@ class Database {
   }
 
   public async persistUser(user: UserWithPassword): Promise<void> {
+    user.updatedAt = user.updatedAt || new Date().toISOString();
     const existingIndex = this.data.users.findIndex(
-      (u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase()
+      (u) => u.id === user.id || (u.email && user.email && u.email.toLowerCase() === user.email.toLowerCase())
     );
     if (existingIndex >= 0) {
       this.data.users[existingIndex] = user;
@@ -475,6 +515,21 @@ class Database {
     }
     this.saveDataDirect(this.data);
     await persistDocToCloud(CLOUD_COLLECTIONS.users, user.id, user);
+  }
+
+  public async findUserById(id: string): Promise<UserWithPassword | null> {
+    if (!id) return null;
+    const user = this.data.users.find((u) => u.id === id);
+    if (user) return user;
+
+    // Check Cloud Firestore directly
+    const cloudUser = await fetchUserByIdFromCloud(id);
+    if (cloudUser) {
+      this.data.users.push(cloudUser);
+      this.saveDataDirect(this.data);
+      return cloudUser;
+    }
+    return null;
   }
 
   public async findUser(email: string): Promise<UserWithPassword | null> {
@@ -490,6 +545,82 @@ class Database {
       return cloudUser;
     }
     return null;
+  }
+
+  public async persistLike(like: DBLike): Promise<void> {
+    if (!this.data.likes) this.data.likes = [];
+    const index = this.data.likes.findIndex((l) => l.id === like.id);
+    if (index >= 0) {
+      this.data.likes[index] = like;
+    } else {
+      this.data.likes.push(like);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.likes, like.id, like);
+  }
+
+  public async deleteLike(likeId: string): Promise<void> {
+    if (!this.data.likes) this.data.likes = [];
+    this.data.likes = this.data.likes.filter((l) => l.id !== likeId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.likes, likeId);
+  }
+
+  public async persistCommentLike(like: DBCommentLike): Promise<void> {
+    if (!this.data.commentLikes) this.data.commentLikes = [];
+    const index = this.data.commentLikes.findIndex((cl) => cl.id === like.id);
+    if (index >= 0) {
+      this.data.commentLikes[index] = like;
+    } else {
+      this.data.commentLikes.push(like);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.commentLikes, like.id, like);
+  }
+
+  public async deleteCommentLike(likeId: string): Promise<void> {
+    if (!this.data.commentLikes) this.data.commentLikes = [];
+    this.data.commentLikes = this.data.commentLikes.filter((cl) => cl.id !== likeId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.commentLikes, likeId);
+  }
+
+  public async persistBookmark(bookmark: DBBookmark): Promise<void> {
+    if (!this.data.bookmarks) this.data.bookmarks = [];
+    const index = this.data.bookmarks.findIndex((b) => b.id === bookmark.id);
+    if (index >= 0) {
+      this.data.bookmarks[index] = bookmark;
+    } else {
+      this.data.bookmarks.push(bookmark);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.bookmarks, bookmark.id, bookmark);
+  }
+
+  public async deleteBookmark(bookmarkId: string): Promise<void> {
+    if (!this.data.bookmarks) this.data.bookmarks = [];
+    this.data.bookmarks = this.data.bookmarks.filter((b) => b.id !== bookmarkId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.bookmarks, bookmarkId);
+  }
+
+  public async persistFollow(follow: DBFollow): Promise<void> {
+    if (!this.data.follows) this.data.follows = [];
+    const index = this.data.follows.findIndex((f) => f.id === follow.id);
+    if (index >= 0) {
+      this.data.follows[index] = follow;
+    } else {
+      this.data.follows.push(follow);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.follows, follow.id, follow);
+  }
+
+  public async deleteFollow(followId: string): Promise<void> {
+    if (!this.data.follows) this.data.follows = [];
+    this.data.follows = this.data.follows.filter((f) => f.id !== followId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.follows, followId);
   }
 
   public async persistArticle(article: Article): Promise<void> {

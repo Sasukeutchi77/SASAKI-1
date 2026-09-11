@@ -719,7 +719,7 @@ articlesRouter.post('/:id/poll/vote', async (req: Request, res: Response) => {
 });
 
 // Toggle Like with rate limiting
-articlesRouter.post('/:id/like', requireAuth, likesRateLimiter, (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.post('/:id/like', requireAuth, likesRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const article = data.articles.find((a) => a.id === req.params.id);
@@ -732,17 +732,20 @@ articlesRouter.post('/:id/like', requireAuth, likesRateLimiter, (req: Authentica
   let liked = false;
 
   if (existingIndex !== -1) {
-    data.likes.splice(existingIndex, 1);
+    const removedLike = data.likes.splice(existingIndex, 1)[0];
     article.likesCount = Math.max(0, article.likesCount - 1);
+    await db.deleteLike(removedLike.id);
     liked = false;
   } else {
-    data.likes.push({
+    const newLike = {
       id: `lk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: user.id,
       articleId: article.id,
       createdAt: new Date().toISOString(),
-    });
+    };
+    data.likes.push(newLike);
     article.likesCount += 1;
+    await db.persistLike(newLike);
     liked = true;
 
     // Send notification to author if not self
@@ -758,17 +761,19 @@ articlesRouter.post('/:id/like', requireAuth, likesRateLimiter, (req: Authentica
         createdAt: new Date().toISOString(),
       };
       data.notifications.unshift(likeNotif);
+      await db.persistNotification(likeNotif);
       realtimeHub.broadcastToUser(article.authorId, 'notification:new', likeNotif);
     }
   }
 
+  await db.persistArticle(article);
   db.save();
   realtimeHub.broadcast('article:liked', { articleId: article.id, likesCount: article.likesCount });
   return res.json({ liked, likesCount: article.likesCount });
 });
 
 // Toggle Bookmark
-articlesRouter.post('/:id/bookmark', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.post('/:id/bookmark', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const article = data.articles.find((a) => a.id === req.params.id);
@@ -781,15 +786,18 @@ articlesRouter.post('/:id/bookmark', requireAuth, (req: AuthenticatedRequest, re
   let bookmarked = false;
 
   if (existingIndex !== -1) {
-    data.bookmarks.splice(existingIndex, 1);
+    const removedBookmark = data.bookmarks.splice(existingIndex, 1)[0];
+    await db.deleteBookmark(removedBookmark.id);
     bookmarked = false;
   } else {
-    data.bookmarks.push({
+    const newBookmark = {
       id: `bm_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: user.id,
       articleId: article.id,
       createdAt: new Date().toISOString(),
-    });
+    };
+    data.bookmarks.push(newBookmark);
+    await db.persistBookmark(newBookmark);
     bookmarked = true;
   }
 
@@ -1046,17 +1054,20 @@ articlesRouter.post('/:id/comments/:commentId/like', requireAuth, async (req: Au
 
   let liked = false;
   if (existingIndex !== -1) {
-    data.commentLikes.splice(existingIndex, 1);
+    const removedCommentLike = data.commentLikes.splice(existingIndex, 1)[0];
     comment.likesCount = Math.max(0, comment.likesCount - 1);
+    await db.deleteCommentLike(removedCommentLike.id);
     liked = false;
   } else {
-    data.commentLikes.push({
+    const newCommentLike = {
       id: `clk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: user.id,
       commentId: comment.id,
       createdAt: new Date().toISOString(),
-    });
+    };
+    data.commentLikes.push(newCommentLike);
     comment.likesCount += 1;
+    await db.persistCommentLike(newCommentLike);
     liked = true;
   }
 
