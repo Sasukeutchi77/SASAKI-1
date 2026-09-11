@@ -491,6 +491,7 @@ articlesRouter.post(
 
   if (house) {
     house.articlesCount = (house.articlesCount || 0) + 1;
+    await db.persistMediaHouse(house);
     realtimeHub.broadcast('mediaHouse:updated', house);
   }
 
@@ -619,6 +620,7 @@ articlesRouter.delete('/:id', requireJournalistOrAdmin, async (req: Authenticate
   const house = (data.mediaHouses || []).find((m) => m.id === article.mediaId);
   if (house) {
     house.articlesCount = Math.max(0, (house.articlesCount || 1) - 1);
+    await db.persistMediaHouse(house);
     realtimeHub.broadcast('mediaHouse:updated', house);
   }
 
@@ -742,7 +744,7 @@ articlesRouter.get('/:id/comments', (req: AuthenticatedRequest, res: Response) =
 });
 
 // Post a comment or reply with anti-spam, duplicate check, and rate limiting
-articlesRouter.post('/:id/comments', requireAuth, commentsRateLimiter, (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.post('/:id/comments', requireAuth, commentsRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const article = data.articles.find((a) => a.id === req.params.id);
@@ -825,6 +827,8 @@ articlesRouter.post('/:id/comments', requireAuth, commentsRateLimiter, (req: Aut
     realtimeHub.broadcastToUser(article.authorId, 'notification:new', commentNotif);
   }
 
+  await db.persistComment(newComment);
+  await db.persistArticle(article);
   db.save();
   // Real-time broadcast of new comment and updated count
   realtimeHub.broadcast('comment:created', {
@@ -837,7 +841,7 @@ articlesRouter.post('/:id/comments', requireAuth, commentsRateLimiter, (req: Aut
 });
 
 // Edit comment
-articlesRouter.put('/:id/comments/:commentId', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.put('/:id/comments/:commentId', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const comment = data.comments.find((c) => c.id === req.params.commentId && c.articleId === req.params.id);
@@ -868,13 +872,14 @@ articlesRouter.put('/:id/comments/:commentId', requireAuth, (req: AuthenticatedR
   comment.isEdited = true;
   comment.updatedAt = new Date().toISOString();
 
+  await db.persistComment(comment);
   db.save();
   realtimeHub.broadcast('comment:updated', { articleId: req.params.id, comment });
   return res.json({ message: 'Commentaire mis à jour.', comment });
 });
 
 // Delete comment
-articlesRouter.delete('/:id/comments/:commentId', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.delete('/:id/comments/:commentId', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const article = data.articles.find((a) => a.id === req.params.id);
@@ -913,6 +918,14 @@ articlesRouter.delete('/:id/comments/:commentId', requireAuth, (req: Authenticat
     article.commentsCount = Math.max(0, article.commentsCount - totalDeletedCount);
   }
 
+  await db.deleteComment(targetComment.id);
+  for (const r of repliesToDelete) {
+    await db.deleteComment(r.id);
+  }
+  if (article) {
+    await db.persistArticle(article);
+  }
+
   db.save();
   realtimeHub.broadcast('comment:deleted', {
     articleId: req.params.id,
@@ -929,7 +942,7 @@ articlesRouter.delete('/:id/comments/:commentId', requireAuth, (req: Authenticat
 });
 
 // Toggle Like on a Comment
-articlesRouter.post('/:id/comments/:commentId/like', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.post('/:id/comments/:commentId/like', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const comment = data.comments.find((c) => c.id === req.params.commentId && c.articleId === req.params.id);
@@ -958,6 +971,7 @@ articlesRouter.post('/:id/comments/:commentId/like', requireAuth, (req: Authenti
     liked = true;
   }
 
+  await db.persistComment(comment);
   db.save();
   realtimeHub.broadcast('comment:liked', {
     articleId: req.params.id,

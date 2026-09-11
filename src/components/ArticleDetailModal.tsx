@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Article, Comment } from '../types';
 import {
   X,
@@ -22,6 +22,7 @@ import {
   Minimize2,
   Maximize2,
   SlidersHorizontal,
+  ArrowUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -166,6 +167,35 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const [zenTheme, setZenTheme] = useState<'cyan' | 'amber' | 'matrix' | 'monochrome'>('cyan');
   const [isMonoFont, setIsMonoFont] = useState<boolean>(true);
   const [scrollProgress, setScrollProgress] = useState<number>(0);
+  const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
+
+  // Dedicated scroll refs for normal and Zen modes
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
+  const zenScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Lock background body scroll while reading article modal on mobile & desktop
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    const prevTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.touchAction = prevTouchAction;
+    };
+  }, []);
+
+  // Reset scroll to the very top whenever a new article is opened
+  useEffect(() => {
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTop = 0;
+    }
+    if (zenScrollRef.current) {
+      zenScrollRef.current.scrollTop = 0;
+    }
+    setScrollProgress(0);
+    setShowScrollTop(false);
+  }, [articleId]);
 
   const handleToggleZenMode = () => {
     const next = !isZenMode;
@@ -183,6 +213,22 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     const total = target.scrollHeight - target.clientHeight;
     if (total > 0) {
       setScrollProgress(Math.min(100, Math.max(0, Math.round((target.scrollTop / total) * 100))));
+    }
+    setShowScrollTop(target.scrollTop > 300);
+  };
+
+  const scrollToTop = () => {
+    if (isZenMode && zenScrollRef.current) {
+      zenScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const scrollToComments = () => {
+    const el = document.getElementById('article-comments-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 

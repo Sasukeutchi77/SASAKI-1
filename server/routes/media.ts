@@ -219,6 +219,7 @@ mediaRouter.post('/upload', requireAuth, mediaUploadLimiter, async (req: Authent
       createdAt: now,
     };
     data.mediaRecords.unshift(mediaRecord);
+    await db.persistMediaRecord(mediaRecord);
     db.save();
 
     return res.json({
@@ -287,6 +288,7 @@ mediaRouter.post('/upload', requireAuth, mediaUploadLimiter, async (req: Authent
     };
 
     data.mediaRecords.unshift(mediaRecord);
+    await db.persistMediaRecord(mediaRecord);
     db.save();
 
     return res.json({
@@ -421,7 +423,8 @@ mediaRouter.delete('/:publicId', requireAuth, async (req: AuthenticatedRequest, 
 
   // Clean metadata from db.json
   if (recordIndex !== -1) {
-    data.mediaRecords.splice(recordIndex, 1);
+    const deletedRecord = data.mediaRecords.splice(recordIndex, 1)[0];
+    await db.deleteMediaRecord(deletedRecord.id);
     db.save();
   }
 

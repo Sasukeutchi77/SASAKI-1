@@ -7,11 +7,15 @@ import { useAuth } from '../context/AuthContext';
 interface NotificationsModalProps {
   onClose: () => void;
   onOpenArticleId?: (articleId: string) => void;
+  onOpenAdminJournalists?: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onClose,
   onOpenArticleId,
+  onOpenAdminJournalists,
+  onOpenProfile,
 }) => {
   const { refreshUser } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -104,7 +108,35 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 return (
                   <div
                     key={notif.id}
-                    onClick={() => {
+                    onClick={async () => {
+                      if (!isRead) {
+                        try {
+                          await api.markNotificationRead(notif.id);
+                          setNotifications((prev) =>
+                            prev.map((n) => (n.id === notif.id ? { ...n, read: true, isRead: true } : n))
+                          );
+                          refreshUser();
+                        } catch {
+                          // Ignore
+                        }
+                      }
+
+                      if (notif.link === 'admin:journalists' || (notif.type === 'verification' && notif.forAdmin)) {
+                        if (onOpenAdminJournalists) {
+                          onOpenAdminJournalists();
+                          onClose();
+                          return;
+                        }
+                      }
+
+                      if (notif.link === 'profile') {
+                        if (onOpenProfile) {
+                          onOpenProfile();
+                          onClose();
+                          return;
+                        }
+                      }
+
                       if (targetArticleId && onOpenArticleId) {
                         onOpenArticleId(targetArticleId);
                         onClose();

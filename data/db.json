@@ -1,127 +1,127 @@
 {
   "users": [
     {
-      "id": "usr_admin_naruto",
-      "email": "naruto455t@gmail.com",
-      "passwordHash": "602618b3ed96abb95442b59a16991e788953f8470afe28615fef8aecbf98e54068364ae49c718d420a91c1275608444e2fa67aec3012e8d8431bb68467e7c4e2",
-      "passwordSalt": "a4bbd23572203d38f8f7ef0781e65a57",
-      "name": "Naruto Admin",
-      "role": "admin",
-      "isVerified": true,
-      "verificationStatus": "approved",
-      "status": "active",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "bio": "Super Administrateur et Fondateur de PURGE-INFO.",
-      "createdAt": "2026-01-01T08:00:00Z",
+      "createdAt": "2026-09-09T16:20:33.170Z",
+      "isVerified": false,
+      "passwordSalt": "f822f3822e02ba6c9a4f7f6986b051ff",
+      "followingCount": 0,
+      "followersCount": 0,
+      "bio": "Lecteur citoyen sur PURGE-INFO",
+      "id": "usr_1788970833170_x86h1",
       "articlesCount": 0,
-      "username": "naruto_admin",
-      "phone": "+33 6 12 34 56 78"
+      "role": "user",
+      "status": "active",
+      "passwordHash": "5a31c388aa314ef63fd58d619a599b95161a5fcac24c3c86cdebb0bc30186ebf7261bc19eeea7a2a3556df7d3c87bfeee0cd78639a8ebd2bfead00e130eb9910",
+      "email": "sasukeutchi91@gmail.com",
+      "name": "Sasuke Uchiha",
+      "verificationStatus": "none",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
     },
     {
-      "id": "usr_admin_itachi",
-      "email": "itachi45t@gmail.com",
-      "passwordHash": "602618b3ed96abb95442b59a16991e788953f8470afe28615fef8aecbf98e54068364ae49c718d420a91c1275608444e2fa67aec3012e8d8431bb68467e7c4e2",
-      "passwordSalt": "a4bbd23572203d38f8f7ef0781e65a57",
+      "verificationStatus": "approved",
       "name": "Itachi Admin",
-      "role": "admin",
-      "isVerified": true,
-      "verificationStatus": "approved",
-      "status": "active",
       "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
+      "passwordSalt": "0f1997d35ba829ae697b337833532044",
       "createdAt": "2026-01-01T08:00:00Z",
-      "articlesCount": 0
-    },
-    {
-      "id": "usr_admin_nami",
-      "email": "nami45tt@gmail.com",
-      "passwordHash": "602618b3ed96abb95442b59a16991e788953f8470afe28615fef8aecbf98e54068364ae49c718d420a91c1275608444e2fa67aec3012e8d8431bb68467e7c4e2",
-      "passwordSalt": "a4bbd23572203d38f8f7ef0781e65a57",
-      "name": "Nami Admin",
-      "role": "admin",
-      "isVerified": true,
-      "verificationStatus": "approved",
+      "passwordHash": "5d32d144f3aaf8c4efc612b7dceef00945656b82edd1f427cef469f1ed7af49e12ef9a2ce8112b101a78a9ef81bc3ff3747d94b4d1d0f659d684645076e16aa5",
+      "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
+      "email": "itachi45t@gmail.com",
       "status": "active",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
-      "createdAt": "2026-01-01T08:00:00Z",
-      "articlesCount": 0
+      "articlesCount": 0,
+      "isVerified": true,
+      "id": "usr_admin_itachi",
+      "role": "admin"
     },
     {
-      "id": "usr_admin_minato",
       "email": "minato45tt@gmail.com",
-      "passwordHash": "602618b3ed96abb95442b59a16991e788953f8470afe28615fef8aecbf98e54068364ae49c718d420a91c1275608444e2fa67aec3012e8d8431bb68467e7c4e2",
-      "passwordSalt": "a4bbd23572203d38f8f7ef0781e65a57",
+      "passwordSalt": "0f1997d35ba829ae697b337833532044",
       "name": "Minato Admin",
-      "role": "admin",
+      "status": "active",
       "isVerified": true,
       "verificationStatus": "approved",
-      "status": "active",
+      "passwordHash": "5d32d144f3aaf8c4efc612b7dceef00945656b82edd1f427cef469f1ed7af49e12ef9a2ce8112b101a78a9ef81bc3ff3747d94b4d1d0f659d684645076e16aa5",
+      "id": "usr_admin_minato",
       "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
       "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
+      "articlesCount": 0,
       "createdAt": "2026-01-01T08:00:00Z",
-      "articlesCount": 0
+      "role": "admin"
     },
     {
-      "id": "usr_1788970833170_x86h1",
-      "email": "sasukeutchi91@gmail.com",
-      "passwordHash": "5a31c388aa314ef63fd58d619a599b95161a5fcac24c3c86cdebb0bc30186ebf7261bc19eeea7a2a3556df7d3c87bfeee0cd78639a8ebd2bfead00e130eb9910",
-      "passwordSalt": "f822f3822e02ba6c9a4f7f6986b051ff",
-      "name": "Sasuke Uchiha",
-      "role": "user",
+      "name": "Nami Admin",
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "bio": "Lecteur citoyen sur PURGE-INFO",
-      "isVerified": false,
-      "verificationStatus": "none",
+      "id": "usr_admin_nami",
+      "verificationStatus": "approved",
+      "createdAt": "2026-01-01T08:00:00Z",
+      "email": "nami45tt@gmail.com",
+      "articlesCount": 0,
       "status": "active",
-      "followersCount": 0,
-      "followingCount": 0,
-      "createdAt": "2026-09-09T16:20:33.170Z",
+      "passwordHash": "5d32d144f3aaf8c4efc612b7dceef00945656b82edd1f427cef469f1ed7af49e12ef9a2ce8112b101a78a9ef81bc3ff3747d94b4d1d0f659d684645076e16aa5",
+      "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
+      "isVerified": true,
+      "passwordSalt": "0f1997d35ba829ae697b337833532044",
+      "role": "admin"
+    },
+    {
+      "email": "naruto455t@gmail.com",
+      "isVerified": true,
+      "id": "usr_admin_naruto",
+      "createdAt": "2026-01-01T08:00:00Z",
+      "name": "Naruto Admin",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "phone": "+33 6 12 34 56 78",
+      "bio": "Super Administrateur et Fondateur de PURGE-INFO.",
+      "passwordHash": "5d32d144f3aaf8c4efc612b7dceef00945656b82edd1f427cef469f1ed7af49e12ef9a2ce8112b101a78a9ef81bc3ff3747d94b4d1d0f659d684645076e16aa5",
+      "verificationStatus": "approved",
+      "username": "naruto_admin",
+      "role": "admin",
+      "status": "active",
+      "passwordSalt": "0f1997d35ba829ae697b337833532044",
       "articlesCount": 0
     }
   ],
   "categories": [
     {
-      "id": "cat_purgeur",
-      "name": "PURGEUR",
-      "slug": "purgeur",
-      "description": "Actualités, profils, faits d’armes et chroniques des Purgeurs",
-      "status": "active"
+      "status": "active",
+      "name": "CÉLÉBRITÉS",
+      "description": "Figures publiques, icônes, légendes et personnalités influentes",
+      "slug": "celebrites",
+      "id": "cat_celebrites"
     },
     {
-      "id": "cat_clans",
-      "name": "CLANS",
+      "status": "active",
       "slug": "clans",
       "description": "Alliances, territoires, rivalités et opérations des clans",
-      "status": "active"
+      "id": "cat_clans",
+      "name": "CLANS"
     },
     {
-      "id": "cat_familles",
+      "description": "Tournois, duels d’élite, arènes, classements et compétitions",
+      "status": "active",
+      "slug": "competition",
+      "id": "cat_competition",
+      "name": "COMPÉTITION"
+    },
+    {
       "name": "FAMILLES",
       "slug": "familles",
       "description": "Lignées historiques, grandes dynasties et actualités des familles",
-      "status": "active"
+      "status": "active",
+      "id": "cat_familles"
     },
     {
-      "id": "cat_purge",
-      "name": "PURGE",
       "slug": "purge",
       "description": "Déroulement, décrets officiels, règles et alertes de la Purge",
+      "name": "PURGE",
+      "id": "cat_purge",
       "status": "active"
     },
     {
-      "id": "cat_competition",
-      "name": "COMPÉTITION",
-      "slug": "competition",
-      "description": "Tournois, duels d’élite, arènes, classements et compétitions",
-      "status": "active"
-    },
-    {
-      "id": "cat_celebrites",
-      "name": "CÉLÉBRITÉS",
-      "slug": "celebrites",
-      "description": "Figures publiques, icônes, légendes et personnalités influentes",
-      "status": "active"
+      "status": "active",
+      "name": "PURGEUR",
+      "id": "cat_purgeur",
+      "description": "Actualités, profils, faits d’armes et chroniques des Purgeurs",
+      "slug": "purgeur"
     }
   ],
   "articles": [],
@@ -137,15 +137,48 @@
   "mediaHouses": [],
   "adminLogs": [
     {
+      "id": "log_1789149166711_ujkb",
+      "adminId": "usr_admin_minato",
+      "adminName": "Minato Admin",
+      "action": "approve_verification",
+      "targetType": "journalist",
+      "targetId": "usr_1789149166363_14nlk",
+      "targetTitle": "Marc Levy",
+      "details": "Demande approuvée. Notes : Accréditation validée par Minato Namikaze.",
+      "timestamp": "2026-09-11T17:52:46.711Z"
+    },
+    {
+      "id": "log_1789149116127_42fa",
+      "adminId": "usr_admin_minato",
+      "targetType": "journalist",
+      "action": "approve_verification",
+      "targetTitle": "Jean Dupont",
+      "adminName": "Minato Admin",
+      "details": "Demande approuvée. Notes : Carte de presse vérifiée auprès de la commission.",
+      "targetId": "usr_1789149116058_1sda7",
+      "timestamp": "2026-09-11T17:51:56.127Z"
+    },
+    {
+      "targetId": "usr_1789149130466_llrs5",
+      "id": "log_1789149130524_4omd",
+      "adminId": "usr_admin_minato",
+      "adminName": "Minato Admin",
+      "targetTitle": "Sophie Marceau",
+      "details": "Demande approuvée. Notes : Validation effectuée.",
+      "targetType": "journalist",
+      "action": "approve_verification",
+      "timestamp": "2026-09-11T17:52:10.524Z"
+    },
+    {
+      "targetId": "prod_env",
       "id": "log_init",
       "adminId": "usr_admin_naruto",
       "adminName": "Naruto Admin",
-      "action": "init_platform",
-      "targetType": "system",
-      "targetId": "prod_env",
       "targetTitle": "PURGE-INFO Production",
       "details": "Initialisation de la plateforme de production avec les 4 comptes administrateurs officiels et les 6 rubriques officielles.",
-      "timestamp": "2026-09-09T03:37:31.971Z"
+      "action": "init_platform",
+      "timestamp": "2026-09-09T03:37:31.971Z",
+      "targetType": "system"
     }
   ],
   "mediaRecords": []

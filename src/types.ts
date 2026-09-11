@@ -283,6 +283,8 @@ export interface Comment {
 export interface Notification {
   id: string;
   userId: string;
+  recipientEmail?: string;
+  forAdmin?: boolean;
   type: 'article' | 'like' | 'comment' | 'verification' | 'follow' | 'system';
   title: string;
   message: string;

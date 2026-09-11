@@ -382,7 +382,7 @@ housesRouter.post('/:id/follow', requireAuth, (req: AuthenticatedRequest, res: R
 });
 
 // 5. Create a new Media House (Chef role)
-housesRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+housesRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
 
@@ -459,6 +459,8 @@ housesRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =
   user.mediaId = newHouse.id;
   user.mediaName = newHouse.name;
 
+  await db.persistMediaHouse(newHouse);
+  await db.persistUser(user);
   db.save();
   realtimeHub.broadcast('mediaHouse:created', newHouse);
 
@@ -469,7 +471,7 @@ housesRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =
 });
 
 // 6. Update Media House information
-housesRouter.put('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+housesRouter.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const house = (data.mediaHouses || []).find((m) => m.id === req.params.id);
@@ -492,11 +494,12 @@ housesRouter.put('/:id', requireAuth, (req: AuthenticatedRequest, res: Response)
     house.name = sanitizeText(name, { maxLength: 80, allowNewlines: false });
     // Update mediaName for all members
     if (house.members) {
-      data.users.forEach((u) => {
-        if (house.members!.includes(u.id)) {
+      for (const u of data.users) {
+        if (house.members.includes(u.id)) {
           u.mediaName = house.name;
+          await db.persistUser(u);
         }
-      });
+      }
     }
   }
 
@@ -518,6 +521,7 @@ housesRouter.put('/:id', requireAuth, (req: AuthenticatedRequest, res: Response)
   if (website !== undefined) house.website = website && isValidUrl(website) ? website.trim() : undefined;
   if (address !== undefined) house.address = address ? sanitizeText(address, { maxLength: 150, allowNewlines: false }) : undefined;
 
+  await db.persistMediaHouse(house);
   db.save();
   realtimeHub.broadcast('mediaHouse:updated', house);
 
@@ -528,7 +532,7 @@ housesRouter.put('/:id', requireAuth, (req: AuthenticatedRequest, res: Response)
 });
 
 // 7. Add a journalist member to the House (Max 5 journalists rule)
-housesRouter.post('/:id/members', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+housesRouter.post('/:id/members', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const house = (data.mediaHouses || []).find((m) => m.id === req.params.id);
@@ -605,6 +609,8 @@ housesRouter.post('/:id/members', requireAuth, (req: AuthenticatedRequest, res: 
     createdAt: new Date().toISOString(),
   });
 
+  await db.persistMediaHouse(house);
+  await db.persistUser(targetJournalist);
   db.save();
   realtimeHub.broadcast('mediaHouse:updated', house);
 
@@ -622,7 +628,7 @@ housesRouter.post('/:id/members', requireAuth, (req: AuthenticatedRequest, res: 
 });
 
 // 8. Remove a journalist member from the House
-housesRouter.delete('/:id/members/:memberId', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+housesRouter.delete('/:id/members/:memberId', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const house = (data.mediaHouses || []).find((m) => m.id === req.params.id);
@@ -681,6 +687,10 @@ housesRouter.delete('/:id/members/:memberId', requireAuth, (req: AuthenticatedRe
     });
   }
 
+  await db.persistMediaHouse(house);
+  if (removedUser) {
+    await db.persistUser(removedUser);
+  }
   db.save();
   realtimeHub.broadcast('mediaHouse:updated', house);
 
@@ -698,7 +708,7 @@ housesRouter.delete('/:id/members/:memberId', requireAuth, (req: AuthenticatedRe
 });
 
 // 9. Delete Media House (Chef of the house or Master Admin)
-housesRouter.delete('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+housesRouter.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const houseIndex = (data.mediaHouses || []).findIndex((m) => m.id === req.params.id);
@@ -721,7 +731,7 @@ housesRouter.delete('/:id', requireAuth, (req: AuthenticatedRequest, res: Respon
 
   // Detach all members
   const memberIds = house.members && Array.isArray(house.members) ? house.members : [house.ownerId];
-  data.users.forEach((u) => {
+  for (const u of data.users) {
     if (memberIds.includes(u.id) || u.mediaId === house.id) {
       u.mediaId = undefined;
       u.mediaName = undefined;
@@ -736,11 +746,13 @@ housesRouter.delete('/:id', requireAuth, (req: AuthenticatedRequest, res: Respon
         read: false,
         createdAt: new Date().toISOString(),
       });
+      await db.persistUser(u);
     }
-  });
+  }
 
   // Remove house
   data.mediaHouses.splice(houseIndex, 1);
+  await db.deleteMediaHouse(house.id);
   db.save();
   realtimeHub.broadcast('mediaHouse:deleted', { houseId: req.params.id });
 
@@ -788,7 +800,7 @@ housesRouter.put('/:id/members/:memberId/role', requireAuth, (req: Authenticated
 });
 
 // 11. Add an internal editorial note / story lead
-housesRouter.post('/:id/notes', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+housesRouter.post('/:id/notes', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const house = (data.mediaHouses || []).find((m) => m.id === req.params.id);
@@ -822,6 +834,7 @@ housesRouter.post('/:id/notes', requireAuth, (req: AuthenticatedRequest, res: Re
   if (!house.editorialNotes) house.editorialNotes = [];
   house.editorialNotes.unshift(newNote);
 
+  await db.persistMediaHouse(house);
   db.save();
   realtimeHub.broadcast('mediaHouse:updated', house);
 
@@ -833,7 +846,7 @@ housesRouter.post('/:id/notes', requireAuth, (req: AuthenticatedRequest, res: Re
 });
 
 // 12. Delete an internal editorial note
-housesRouter.delete('/:id/notes/:noteId', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+housesRouter.delete('/:id/notes/:noteId', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const house = (data.mediaHouses || []).find((m) => m.id === req.params.id);
@@ -861,6 +874,7 @@ housesRouter.delete('/:id/notes/:noteId', requireAuth, (req: AuthenticatedReques
   }
 
   house.editorialNotes.splice(noteIndex, 1);
+  await db.persistMediaHouse(house);
   db.save();
   realtimeHub.broadcast('mediaHouse:updated', house);
 

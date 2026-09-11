@@ -276,6 +276,135 @@ function createInitialData(): DatabaseSchema {
   };
 }
 
+/**
+ * Intelligently merges local database state with authoritative Cloud Firestore state.
+ * Guarantees zero data loss: combines records, preserves the newest changes, and never overwrites with empty sets.
+ */
+function mergeDatabaseState(local: DatabaseSchema, cloud: DatabaseSchema): DatabaseSchema {
+  const userById = new Map<string, UserWithPassword>();
+  const userByEmail = new Map<string, UserWithPassword>();
+
+  const isDefaultAvatar = (av?: string) =>
+    !av ||
+    av.includes('photo-1534528741775-53994a69daeb') ||
+    av.includes('photo-150700') ||
+    av.includes('photo-150064');
+
+  const addOrMergeUser = (u: UserWithPassword) => {
+    if (!u || !u.id) return;
+    const cleanEmail = u.email ? u.email.trim().toLowerCase() : '';
+    const existing = userById.get(u.id) || (cleanEmail ? userByEmail.get(cleanEmail) : null);
+
+    if (!existing) {
+      const copy = { ...u };
+      userById.set(u.id, copy);
+      if (cleanEmail) userByEmail.set(cleanEmail, copy);
+    } else {
+      // Role: admin > journalist > user
+      const preferAdmin = existing.role === 'admin' || u.role === 'admin';
+      const preferJournalist = !preferAdmin && (existing.role === 'journalist' || u.role === 'journalist');
+      existing.role = preferAdmin ? 'admin' : preferJournalist ? 'journalist' : (existing.role || u.role || 'user');
+
+      if (u.isVerified || existing.isVerified) {
+        existing.isVerified = true;
+        existing.verificationStatus = 'approved';
+      }
+
+      // Preserve custom uploaded avatar over default placeholder
+      if (u.avatar && (!existing.avatar || (isDefaultAvatar(existing.avatar) && !isDefaultAvatar(u.avatar)))) {
+        existing.avatar = u.avatar;
+      }
+      if (u.avatarMedia) existing.avatarMedia = u.avatarMedia;
+      if (u.coverImage && !existing.coverImage) existing.coverImage = u.coverImage;
+      if (u.coverMedia) existing.coverMedia = u.coverMedia;
+      if (u.mediaId) existing.mediaId = u.mediaId;
+      if (u.mediaName) existing.mediaName = u.mediaName;
+      if (u.bio && (!existing.bio || existing.bio.length < u.bio.length)) existing.bio = u.bio;
+      if (u.phone && !existing.phone) existing.phone = u.phone;
+      if (u.passwordHash && !existing.passwordHash) {
+        existing.passwordHash = u.passwordHash;
+        existing.passwordSalt = u.passwordSalt;
+      }
+      if (u.lastLoginAt && (!existing.lastLoginAt || new Date(u.lastLoginAt) > new Date(existing.lastLoginAt))) {
+        existing.lastLoginAt = u.lastLoginAt;
+      }
+    }
+  };
+
+  (local.users || []).forEach(addOrMergeUser);
+  (cloud.users || []).forEach(addOrMergeUser);
+  const mergedUsers = Array.from(userById.values());
+
+  // Articles: union by ID, keep newest version
+  const articleMap = new Map<string, Article>();
+  const addOrMergeArticle = (a: Article) => {
+    if (!a || !a.id) return;
+    const existing = articleMap.get(a.id);
+    if (!existing) {
+      articleMap.set(a.id, { ...a });
+    } else {
+      const existingTime = new Date(existing.updatedAt || existing.publishedAt || 0).getTime();
+      const newTime = new Date(a.updatedAt || a.publishedAt || 0).getTime();
+      if (newTime >= existingTime) {
+        articleMap.set(a.id, { ...existing, ...a });
+      }
+    }
+  };
+  (local.articles || []).forEach(addOrMergeArticle);
+  (cloud.articles || []).forEach(addOrMergeArticle);
+  const mergedArticles = Array.from(articleMap.values());
+
+  // Media Houses: union by ID, preserve newest updates
+  const houseMap = new Map<string, MediaHouse>();
+  const addOrMergeHouse = (h: MediaHouse) => {
+    if (!h || !h.id) return;
+    const existing = houseMap.get(h.id);
+    if (!existing) {
+      houseMap.set(h.id, { ...h });
+    } else {
+      houseMap.set(h.id, {
+        ...existing,
+        ...h,
+        members: Array.from(new Set([...(existing.members || []), ...(h.members || [])])),
+      });
+    }
+  };
+  (local.mediaHouses || []).forEach(addOrMergeHouse);
+  (cloud.mediaHouses || []).forEach(addOrMergeHouse);
+  const mergedHouses = Array.from(houseMap.values());
+
+  // Comments: union by ID
+  const commentMap = new Map<string, Comment>();
+  (local.comments || []).forEach((c) => { if (c && c.id) commentMap.set(c.id, c); });
+  (cloud.comments || []).forEach((c) => { if (c && c.id) commentMap.set(c.id, c); });
+  const mergedComments = Array.from(commentMap.values());
+
+  const unionById = <T extends { id: string }>(arr1: T[] = [], arr2: T[] = []): T[] => {
+    const map = new Map<string, T>();
+    arr1.forEach((item) => { if (item && item.id) map.set(item.id, item); });
+    arr2.forEach((item) => { if (item && item.id) map.set(item.id, item); });
+    return Array.from(map.values());
+  };
+
+  return {
+    users: mergedUsers,
+    categories: local.categories?.length ? local.categories : cloud.categories,
+    articles: mergedArticles,
+    comments: mergedComments,
+    mediaHouses: mergedHouses,
+    likes: unionById(local.likes, cloud.likes),
+    commentLikes: unionById(local.commentLikes, cloud.commentLikes),
+    bookmarks: unionById(local.bookmarks, cloud.bookmarks),
+    follows: unionById(local.follows, cloud.follows),
+    notifications: unionById(local.notifications, cloud.notifications),
+    verificationRequests: unionById(local.verificationRequests, cloud.verificationRequests),
+    reports: unionById(local.reports, cloud.reports),
+    views: unionById(local.views, cloud.views),
+    adminLogs: unionById(local.adminLogs, cloud.adminLogs),
+    mediaRecords: unionById(local.mediaRecords, cloud.mediaRecords),
+  };
+}
+
 class Database {
   private data: DatabaseSchema;
   private isCloudReady = false;
@@ -291,14 +420,17 @@ class Database {
   public async initCloudPersistence(): Promise<void> {
     try {
       const cloudData = await loadStateFromCloud();
-      if (cloudData && cloudData.users && cloudData.users.length > 0) {
-        console.log('[DB] Synchronizing state with Cloud Firestore authoritative source...');
-        this.data = cloudData;
+      if (cloudData && ((cloudData.users && cloudData.users.length > 0) || (cloudData.articles && cloudData.articles.length > 0))) {
+        console.log('[DB] Synchronizing state with Cloud Firestore authoritative source (intelligent merge)...');
+        // Merge non-destructively: keep both local and cloud items so newly created articles, houses, comments are NEVER lost
+        this.data = mergeDatabaseState(this.data, cloudData);
         this.ensureMasterAdmins();
         this.isCloudReady = true;
         this.saveDataDirect(this.data);
+        // Immediately sync back merged set so Cloud Firestore receives any items that were only local
+        queueCloudSync(this.data);
         console.log(
-          `[DB] Cloud Firestore synchronization active. Loaded ${this.data.users.length} users and ${this.data.articles.length} articles.`
+          `[DB] Cloud Firestore synchronization active. Unified ${this.data.users.length} users, ${this.data.articles.length} articles, ${this.data.mediaHouses.length} houses, ${this.data.comments.length} comments.`
         );
       } else {
         console.log('[DB] Cloud Firestore is unseeded. Migrating local initial dataset to Cloud Firestore...');
@@ -378,6 +510,7 @@ class Database {
   }
 
   public async persistMediaHouse(house: MediaHouse): Promise<void> {
+    if (!this.data.mediaHouses) this.data.mediaHouses = [];
     const index = this.data.mediaHouses.findIndex((h) => h.id === house.id);
     if (index >= 0) {
       this.data.mediaHouses[index] = house;
@@ -386,6 +519,73 @@ class Database {
     }
     this.saveDataDirect(this.data);
     await persistDocToCloud(CLOUD_COLLECTIONS.mediaHouses, house.id, house);
+  }
+
+  public async deleteMediaHouse(houseId: string): Promise<void> {
+    if (!this.data.mediaHouses) this.data.mediaHouses = [];
+    this.data.mediaHouses = this.data.mediaHouses.filter((h) => h.id !== houseId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.mediaHouses, houseId);
+  }
+
+  public async persistComment(comment: Comment): Promise<void> {
+    if (!this.data.comments) this.data.comments = [];
+    const index = this.data.comments.findIndex((c) => c.id === comment.id);
+    if (index >= 0) {
+      this.data.comments[index] = comment;
+    } else {
+      this.data.comments.push(comment);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.comments, comment.id, comment);
+  }
+
+  public async deleteComment(commentId: string): Promise<void> {
+    if (!this.data.comments) this.data.comments = [];
+    this.data.comments = this.data.comments.filter((c) => c.id !== commentId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.comments, commentId);
+  }
+
+  public async persistVerificationRequest(request: VerificationRequest): Promise<void> {
+    const index = this.data.verificationRequests.findIndex((r) => r.id === request.id);
+    if (index >= 0) {
+      this.data.verificationRequests[index] = request;
+    } else {
+      this.data.verificationRequests.unshift(request);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.verificationRequests, request.id, request);
+  }
+
+  public async persistNotification(notification: Notification): Promise<void> {
+    const index = this.data.notifications.findIndex((n) => n.id === notification.id);
+    if (index >= 0) {
+      this.data.notifications[index] = notification;
+    } else {
+      this.data.notifications.unshift(notification);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.notifications, notification.id, notification);
+  }
+
+  public async persistMediaRecord(record: MediaRecord): Promise<void> {
+    if (!this.data.mediaRecords) this.data.mediaRecords = [];
+    const index = this.data.mediaRecords.findIndex((m) => m.id === record.id);
+    if (index >= 0) {
+      this.data.mediaRecords[index] = record;
+    } else {
+      this.data.mediaRecords.unshift(record);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.mediaRecords, record.id, record);
+  }
+
+  public async deleteMediaRecord(recordId: string): Promise<void> {
+    if (!this.data.mediaRecords) this.data.mediaRecords = [];
+    this.data.mediaRecords = this.data.mediaRecords.filter((m) => m.id !== recordId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.mediaRecords, recordId);
   }
 
   public save() {
@@ -453,20 +653,19 @@ class Database {
           parsed.users = [...parsed.users, ...missingAdmins];
         }
 
-        // Purge all reference seed articles permanently
+        // Purge only exact reference seed articles permanently
+        const referenceArticleIds = new Set([
+          'art_purgeur_1',
+          'art_clans_1',
+          'art_familles_1',
+          'art_purge_1',
+          'art_competition_1',
+          'art_celebrites_1',
+          'art_sentinelle_1',
+        ]);
         parsed.articles = (parsed.articles || []).filter((a: any) => {
           if (referenceUserIds.has(a.authorId)) return false;
-          if (
-            a.id?.startsWith('art_purgeur_') ||
-            a.id?.startsWith('art_clans_') ||
-            a.id?.startsWith('art_familles_') ||
-            a.id?.startsWith('art_purge_') ||
-            a.id?.startsWith('art_competition_') ||
-            a.id?.startsWith('art_celebrites_') ||
-            a.id?.startsWith('art_sentinelle_')
-          ) {
-            return false;
-          }
+          if (referenceArticleIds.has(a.id)) return false;
           return true;
         });
 

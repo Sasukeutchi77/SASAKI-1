@@ -1,10 +1,11 @@
 import { Router, Response } from 'express';
 import { db, hashPassword, verifyPassword, generateToken, UserWithPassword } from '../db';
 import { AuthenticatedRequest, requireAuth } from '../auth';
-import { UserRole } from '../../src/types';
+import { UserRole, Notification, VerificationRequest } from '../../src/types';
 import { authRateLimiter } from '../security/rateLimiter';
 import { sanitizeText, isValidEmail, isValidUrl } from '../security/sanitizer';
-import { isMasterAdmin, MASTER_ADMIN_DEFAULT_PASSWORD } from '../config/masterAccounts';
+import { isMasterAdmin, MASTER_ADMIN_EMAILS, MASTER_ADMIN_DEFAULT_PASSWORD } from '../config/masterAccounts';
+import { realtimeHub } from '../realtime';
 
 export const authRouter = Router();
 
@@ -82,17 +83,64 @@ authRouter.post('/register', authRateLimiter, async (req, res) => {
 
   // If user requested journalist accreditation, auto-create a verification request
   if (accountType === 'journalist') {
-    db.getData().verificationRequests.unshift({
+    newUser.verificationStatus = 'pending';
+    const newReq: VerificationRequest = {
       id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: newUser.id,
       userName: newUser.name,
       userEmail: newUser.email,
       mediaName: cleanMediaName || 'Média indépendant',
       pressCardNumber: 'À renseigner lors de la soumission du dossier',
-      motivation: 'Demande d’accréditation initiée lors de l’inscription.',
+      motivation: 'Demande d’accréditation initiée lors de l’inscription citoyenne.',
       status: 'pending',
       createdAt: now,
+    };
+
+    await db.persistVerificationRequest(newReq);
+    await db.persistUser(newUser);
+
+    // Dispatch persistent notifications to all administrators
+    const targetAdminEmails = new Set<string>(MASTER_ADMIN_EMAILS.map((e) => e.toLowerCase()));
+    db.getData().users.forEach((u) => {
+      if (u.role === 'admin' || isMasterAdmin(u.email)) {
+        targetAdminEmails.add(u.email.toLowerCase());
+      }
     });
+
+    let notifCounter = 0;
+    for (const adminEmail of targetAdminEmails) {
+      const matchedAdmin = db.getData().users.find((u) => u.email.toLowerCase() === adminEmail);
+      const notifItem: Notification = {
+        id: `notif_${Date.now()}_${notifCounter++}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: matchedAdmin ? matchedAdmin.id : `usr_admin_${adminEmail}`,
+        recipientEmail: adminEmail,
+        forAdmin: true,
+        type: 'verification',
+        title: "Nouvelle demande d'accréditation Journaliste",
+        message: `${newUser.name} (${newUser.email}) s'est inscrit en tant que Journaliste (${cleanMediaName || 'Média indépendant'}). En attente d'approbation.`,
+        link: 'admin:journalists',
+        targetId: newReq.id,
+        read: false,
+        createdAt: now,
+      };
+
+      await db.persistNotification(notifItem);
+
+      if (matchedAdmin) {
+        realtimeHub.broadcastToUser(matchedAdmin.id, 'notification:new', notifItem);
+      }
+    }
+
+    realtimeHub.broadcastToAdmins('notification:new', {
+      id: `notif_${Date.now()}`,
+      type: 'verification',
+      title: "Nouvelle demande d'accréditation Journaliste",
+      message: `${newUser.name} (${cleanMediaName || 'Média indépendant'}) a soumis une demande d'accréditation Journaliste.`,
+      link: 'admin:journalists',
+      targetId: newReq.id,
+      createdAt: now,
+    });
+    realtimeHub.broadcast('verification:created', newReq);
   }
   db.save();
 
@@ -216,10 +264,17 @@ authRouter.post('/login', authRateLimiter, async (req, res) => {
 authRouter.get('/me', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
   const data = db.getData();
-  const unreadNotifs = data.notifications.filter((n) => n.userId === req.user!.id && !n.read).length;
-  const bookmarksCount = data.bookmarks.filter((b) => b.userId === req.user!.id).length;
-  const followersCount = data.follows.filter((f) => f.targetId === req.user!.id).length;
-  const followingCount = data.follows.filter((f) => f.followerId === req.user!.id).length;
+  const reqUser = req.user!;
+  const unreadNotifs = data.notifications.filter((n) => {
+    if (n.read) return false;
+    if (n.userId === reqUser.id) return true;
+    if (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) return true;
+    if ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin)) return true;
+    return false;
+  }).length;
+  const bookmarksCount = data.bookmarks.filter((b) => b.userId === reqUser.id).length;
+  const followersCount = data.follows.filter((f) => f.targetId === reqUser.id).length;
+  const followingCount = data.follows.filter((f) => f.followerId === reqUser.id).length;
 
   const safeUser = sanitizeUser(req.user);
   return res.json({
@@ -362,7 +417,7 @@ authRouter.put('/profile', requireAuth, async (req: AuthenticatedRequest, res: R
 });
 
 // Remove Avatar
-authRouter.delete('/profile/avatar', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+authRouter.delete('/profile/avatar', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
   const data = db.getData();
   const user = data.users.find(
@@ -374,6 +429,7 @@ authRouter.delete('/profile/avatar', requireAuth, (req: AuthenticatedRequest, re
 
   user.avatar = undefined;
   user.avatarMedia = undefined;
+  await db.persistUser(user);
   db.save();
   req.user = user;
 
@@ -384,7 +440,7 @@ authRouter.delete('/profile/avatar', requireAuth, (req: AuthenticatedRequest, re
 });
 
 // Remove Cover Image
-authRouter.delete('/profile/cover', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+authRouter.delete('/profile/cover', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
   const data = db.getData();
   const user = data.users.find(
@@ -396,6 +452,7 @@ authRouter.delete('/profile/cover', requireAuth, (req: AuthenticatedRequest, res
 
   user.coverImage = undefined;
   user.coverMedia = undefined;
+  await db.persistUser(user);
   db.save();
   req.user = user;
 

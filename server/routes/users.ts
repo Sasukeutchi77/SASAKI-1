@@ -1,10 +1,11 @@
 import { Router, Response } from 'express';
 import { db } from '../db';
 import { AuthenticatedRequest, requireAuth } from '../auth';
-import { VerificationRequest, Report } from '../../src/types';
+import { VerificationRequest, Report, Notification } from '../../src/types';
 import { reportRateLimiter, likesRateLimiter } from '../security/rateLimiter';
 import { sanitizeText, isValidUrl } from '../security/sanitizer';
-import { isMasterAdmin } from '../config/masterAccounts';
+import { isMasterAdmin, MASTER_ADMIN_EMAILS } from '../config/masterAccounts';
+import { realtimeHub } from '../realtime';
 
 export const usersRouter = Router();
 
@@ -164,7 +165,13 @@ usersRouter.get('/me/bookmarks', requireAuth, (req: AuthenticatedRequest, res: R
 // 3. Notifications list of current user
 usersRouter.get('/me/notifications', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
-  const notifs = data.notifications.filter((n) => n.userId === req.user!.id);
+  const reqUser = req.user!;
+  const notifs = data.notifications.filter((n) => {
+    if (n.userId === reqUser.id) return true;
+    if (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) return true;
+    if ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin)) return true;
+    return false;
+  });
   notifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return res.json({ notifications: notifs });
@@ -173,7 +180,14 @@ usersRouter.get('/me/notifications', requireAuth, (req: AuthenticatedRequest, re
 // 4. Mark single notification read
 usersRouter.put('/me/notifications/:id/read', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
-  const notif = data.notifications.find((n) => n.id === req.params.id && n.userId === req.user!.id);
+  const reqUser = req.user!;
+  const notif = data.notifications.find((n) => {
+    if (n.id !== req.params.id) return false;
+    if (n.userId === reqUser.id) return true;
+    if (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) return true;
+    if ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin)) return true;
+    return false;
+  });
 
   if (notif) {
     notif.read = true;
@@ -185,8 +199,13 @@ usersRouter.put('/me/notifications/:id/read', requireAuth, (req: AuthenticatedRe
 // 5. Mark all notifications read
 usersRouter.put('/me/notifications/read-all', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
+  const reqUser = req.user!;
   data.notifications.forEach((n) => {
-    if (n.userId === req.user!.id) {
+    const isTarget =
+      n.userId === reqUser.id ||
+      (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) ||
+      ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin));
+    if (isTarget) {
       n.read = true;
     }
   });
@@ -195,7 +214,7 @@ usersRouter.put('/me/notifications/read-all', requireAuth, (req: AuthenticatedRe
 });
 
 // 6. Request journalist verification badge with rate limiting & sanitization
-usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, (req: AuthenticatedRequest, res: Response) => {
+usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
 
@@ -249,27 +268,60 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, (re
     createdAt: now,
   };
 
-  data.verificationRequests.unshift(newRequest);
   user.verificationStatus = 'pending';
 
-  // Dispatch notification to Master Admin accounts
-  const adminUsers = data.users.filter((u) => isMasterAdmin(u.email) || u.role === 'admin');
-  adminUsers.forEach((adminUser) => {
-    data.notifications.unshift({
-      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      userId: adminUser.id,
-      type: 'system',
+  // Persist directly to Cloud Firestore
+  await db.persistVerificationRequest(newRequest);
+  await db.persistUser(user);
+
+  // Dispatch persistent notification to Master Admin accounts & all admin users
+  const targetAdminEmails = new Set<string>(MASTER_ADMIN_EMAILS.map((e) => e.toLowerCase()));
+  data.users.forEach((u) => {
+    if (u.role === 'admin' || isMasterAdmin(u.email)) {
+      targetAdminEmails.add(u.email.toLowerCase());
+    }
+  });
+
+  let notifCounter = 0;
+  for (const adminEmail of targetAdminEmails) {
+    const matchedAdmin = data.users.find((u) => u.email.toLowerCase() === adminEmail);
+    const notifItem: Notification = {
+      id: `notif_${Date.now()}_${notifCounter++}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: matchedAdmin ? matchedAdmin.id : `usr_admin_${adminEmail}`,
+      recipientEmail: adminEmail,
+      forAdmin: true,
+      type: 'verification',
       title: "Nouvelle demande d'accréditation Journaliste",
-      message: `${user.name} (${user.email}) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.`,
+      message: `${user.name} (${cleanMediaName}) a soumis une demande d'accréditation Journaliste (Carte: ${cleanCardNumber}). En attente de votre examen.`,
+      link: 'admin:journalists',
+      targetId: newRequest.id,
       read: false,
       createdAt: now,
-    });
+    };
+
+    await db.persistNotification(notifItem);
+
+    if (matchedAdmin) {
+      realtimeHub.broadcastToUser(matchedAdmin.id, 'notification:new', notifItem);
+    }
+  }
+
+  // Real-time broadcast to all connected admins and live events
+  realtimeHub.broadcastToAdmins('notification:new', {
+    id: `notif_${Date.now()}`,
+    type: 'verification',
+    title: "Nouvelle demande d'accréditation Journaliste",
+    message: `${user.name} (${cleanMediaName}) a soumis une demande d'accréditation Journaliste. En attente d'approbation.`,
+    link: 'admin:journalists',
+    targetId: newRequest.id,
+    createdAt: now,
   });
+  realtimeHub.broadcast('verification:created', newRequest);
 
   db.save();
 
   return res.status(201).json({
-    message: 'Votre demande d’accréditation a bien été transmise à l’administrateur principal pour examen officiel.',
+    message: 'Votre demande d’accréditation a bien été transmise aux administrateurs pour examen officiel.',
     request: newRequest,
   });
 });

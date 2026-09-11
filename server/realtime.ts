@@ -2,6 +2,7 @@ import http from 'http';
 import express, { Response } from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { verifyToken } from './db';
+import { isMasterAdmin } from './config/masterAccounts';
 
 export interface RealtimeEvent<T = any> {
   id: string;
@@ -13,6 +14,8 @@ export interface RealtimeEvent<T = any> {
 interface ClientMeta {
   ws: WebSocket;
   userId?: string;
+  email?: string;
+  role?: string;
   isAlive: boolean;
 }
 
@@ -42,7 +45,7 @@ function recordEvent(type: string, payload: any): RealtimeEvent {
 class RealtimeHub {
   private wss: WebSocketServer | null = null;
   private clients: Set<ClientMeta> = new Set();
-  private sseClients: Set<{ res: Response; userId?: string }> = new Set();
+  private sseClients: Set<{ res: Response; userId?: string; email?: string; role?: string }> = new Set();
   private heartbeatTimer: NodeJS.Timeout | null = null;
 
   public registerRoutes(app: express.Application) {
@@ -55,13 +58,19 @@ class RealtimeHub {
       res.flushHeaders?.();
 
       let userId: string | undefined = undefined;
+      let email: string | undefined = undefined;
+      let role: string | undefined = undefined;
       const token = req.query.token as string;
       if (token) {
         const verified = verifyToken(token);
-        if (verified) userId = verified.userId;
+        if (verified) {
+          userId = verified.userId;
+          email = verified.email;
+          role = verified.role;
+        }
       }
 
-      const sseClient = { res, userId };
+      const sseClient = { res, userId, email, role };
       this.sseClients.add(sseClient);
 
       // Initial connection ping
@@ -106,6 +115,8 @@ class RealtimeHub {
           const verified = verifyToken(token);
           if (verified) {
             meta.userId = verified.userId;
+            meta.email = verified.email;
+            meta.role = verified.role;
           }
         }
       } catch {
@@ -139,6 +150,8 @@ class RealtimeHub {
             const verified = verifyToken(data.token);
             if (verified) {
               meta.userId = verified.userId;
+              meta.email = verified.email;
+              meta.role = verified.role;
               ws.send(JSON.stringify({ type: 'auth:confirmed', userId: verified.userId }));
             }
           } else if (data.type === 'ping') {
@@ -238,6 +251,39 @@ class RealtimeHub {
 
     for (const sse of this.sseClients) {
       if (sse.userId === userId) {
+        try {
+          sse.res.write(sseString);
+        } catch {
+          this.sseClients.delete(sse);
+        }
+      }
+    }
+
+    return event;
+  }
+
+  /**
+   * Broadcast specifically to all connected administrators (WebSocket + SSE)
+   */
+  public broadcastToAdmins<T = any>(type: string, payload: T): RealtimeEvent<T> {
+    const event = recordEvent(type, payload);
+    const msgString = JSON.stringify(event);
+    const sseString = `data: ${msgString}\n\n`;
+
+    for (const meta of this.clients) {
+      const isAdmin = meta.role === 'admin' || (meta.email && isMasterAdmin(meta.email));
+      if (isAdmin && meta.ws.readyState === WebSocket.OPEN) {
+        try {
+          meta.ws.send(msgString);
+        } catch {
+          this.clients.delete(meta);
+        }
+      }
+    }
+
+    for (const sse of this.sseClients) {
+      const isAdmin = sse.role === 'admin' || (sse.email && isMasterAdmin(sse.email));
+      if (isAdmin) {
         try {
           sse.res.write(sseString);
         } catch {

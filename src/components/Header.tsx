@@ -353,10 +353,15 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-admin-portal-btn"
                 onClick={onOpenAdmin}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-200 bg-blue-950/60 hover:bg-blue-900/80 border border-cyan-500/40 rounded-full shadow-[0_0_12px_rgba(0,210,255,0.25)] transition-all cursor-pointer"
+                className="relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cyan-200 bg-blue-950/60 hover:bg-blue-900/80 border border-cyan-500/40 rounded-full shadow-[0_0_12px_rgba(0,210,255,0.25)] transition-all cursor-pointer"
               >
                 <Shield className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="hidden sm:inline">Administration</span>
+                {unreadNotifs > 0 && (
+                  <span className="flex items-center justify-center min-w-[16px] h-4 px-1 text-[9px] font-black text-slate-950 bg-cyan-400 rounded-full shadow-[0_0_8px_#00f3ff]">
+                    {unreadNotifs}
+                  </span>
+                )}
               </button>
             )}
 

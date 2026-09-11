@@ -27,6 +27,7 @@ import { AdminReportsTab } from './admin/AdminReportsTab';
 import { AdminCategoriesTab } from './admin/AdminCategoriesTab';
 import { AdminLogsTab } from './admin/AdminLogsTab';
 import { AdminMediaAssetsTab } from './admin/AdminMediaAssetsTab';
+import { realtime } from '../services/realtime';
 
 export type AdminTab =
   | 'overview'
@@ -44,14 +45,16 @@ interface AdminDashboardModalProps {
   onClose: () => void;
   onRefreshData?: () => void;
   onPreviewArticle?: (article: Article) => void;
+  initialTab?: AdminTab;
 }
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   onClose,
   onRefreshData,
   onPreviewArticle,
+  initialTab,
 }) => {
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab || 'overview');
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [usersList, setUsersList] = useState<(User & { articlesCount: number })[]>([]);
   const [verifRequests, setVerifRequests] = useState<VerificationRequest[]>([]);
@@ -91,6 +94,32 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   useEffect(() => {
     loadAllData();
+  }, []);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  // Real-time listener for incoming verification requests
+  useEffect(() => {
+    const unsubCreated = realtime.on<VerificationRequest>('verification:created', (newReq) => {
+      setVerifRequests((prev) => {
+        if (prev.some((r) => r.id === newReq.id)) return prev;
+        return [newReq, ...prev];
+      });
+      showFlash(`Nouvelle demande d’accréditation reçue : ${newReq.userName} (${newReq.mediaName || 'Journaliste'})`);
+    });
+
+    const unsubUpdated = realtime.on<VerificationRequest>('verification:updated', (updatedReq) => {
+      setVerifRequests((prev) => prev.map((r) => (r.id === updatedReq.id ? updatedReq : r)));
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+    };
   }, []);
 
   const showFlash = (msg: string) => {

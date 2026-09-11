@@ -12,7 +12,7 @@ import { CategoryPage } from './pages/CategoryPage';
 import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { CreateArticleModal } from './components/CreateArticleModal';
 import { MediaProfileModal } from './components/MediaProfileModal';
-import { AdminDashboardModal } from './components/AdminDashboardModal';
+import { AdminDashboardModal, AdminTab } from './components/AdminDashboardModal';
 import { JournalistDashboardModal } from './components/JournalistDashboardModal';
 import { BookmarksModal } from './components/BookmarksModal';
 import { NotificationsModal } from './components/NotificationsModal';
@@ -46,6 +46,7 @@ export function AppContent() {
   const [showCreateArticle, setShowCreateArticle] = useState<boolean>(false);
   const [articleToEdit, setArticleToEdit] = useState<Article | null>(null);
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
+  const [adminInitialTab, setAdminInitialTab] = useState<AdminTab>('overview');
   const [showJournalistModal, setShowJournalistModal] = useState<boolean>(false);
   const [showBookmarksModal, setShowBookmarksModal] = useState<boolean>(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
@@ -501,6 +502,7 @@ export function AppContent() {
       {showAdminModal && (
         <AdminDashboardModal
           onClose={() => setShowAdminModal(false)}
+          initialTab={adminInitialTab}
           onRefreshData={() => {
             setFeedRefreshKey((prev) => prev + 1);
             loadCategories();
@@ -547,6 +549,15 @@ export function AppContent() {
           onOpenArticleId={(artId) => {
             setShowNotificationsModal(false);
             handleOpenArticle(artId);
+          }}
+          onOpenAdminJournalists={() => {
+            setShowNotificationsModal(false);
+            setAdminInitialTab('journalists');
+            setShowAdminModal(true);
+          }}
+          onOpenProfile={() => {
+            setShowNotificationsModal(false);
+            setShowUserProfileModal(true);
           }}
         />
       )}

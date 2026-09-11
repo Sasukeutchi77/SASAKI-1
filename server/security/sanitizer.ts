@@ -73,7 +73,7 @@ export function sanitizeText(
   return escapeEntities ? escapeHtml(text) : text;
 }
 
-// Validate URLs strictly against dangerous schemes (e.g., javascript:, data:, vbscript:)
+// Validate URLs strictly against dangerous schemes (e.g., javascript:, vbscript:, file:)
 export function isValidUrl(
   url: string,
   allowedProtocols: string[] = ['http:', 'https:']
@@ -82,9 +82,19 @@ export function isValidUrl(
 
   const trimmed = url.trim();
 
-  // Explicit check for dangerous patterns
-  const dangerousPattern = /^(javascript|data|vbscript|file|about):/i;
+  // Explicit check for dangerous executable schemes
+  const dangerousPattern = /^(javascript|vbscript|file|about):/i;
   if (dangerousPattern.test(trimmed)) {
+    return false;
+  }
+
+  // Safe image data URIs (e.g. data:image/png;base64,... or data:image/jpeg;base64,...)
+  if (/^data:image\/(jpeg|png|webp|gif|svg\+xml);base64,/i.test(trimmed)) {
+    return true;
+  }
+
+  // Disallow other data: schemes (e.g. data:text/html, data:application/...)
+  if (/^data:/i.test(trimmed)) {
     return false;
   }
 
@@ -92,7 +102,7 @@ export function isValidUrl(
     const parsed = new URL(trimmed);
     return allowedProtocols.includes(parsed.protocol.toLowerCase());
   } catch {
-    // Relative URLs or protocol-relative URLs
+    // Relative URLs or protocol-relative URLs (e.g. /api/media/file/...)
     if (trimmed.startsWith('/') || trimmed.startsWith('//')) {
       return !dangerousPattern.test(trimmed);
     }

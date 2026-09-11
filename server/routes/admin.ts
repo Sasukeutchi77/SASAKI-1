@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db';
 import { AuthenticatedRequest, requireAdmin } from '../auth';
-import { AdminLog, MediaHouse, Category } from '../../src/types';
+import { AdminLog, MediaHouse, Category, Notification } from '../../src/types';
 import { setFirebaseCustomUserClaims } from '../firebaseAdmin';
 import { isMasterAdmin, MASTER_ADMIN_EMAILS } from '../config/masterAccounts';
 import { realtimeHub } from '../realtime';
@@ -503,7 +503,7 @@ adminRouter.get('/verification-requests', (req: AuthenticatedRequest, res: Respo
 });
 
 // Handle verification request (Approve / Reject / Request More Info)
-adminRouter.put('/verification-requests/:id', (req: AuthenticatedRequest, res: Response) => {
+adminRouter.put('/verification-requests/:id', async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const request = data.verificationRequests.find((r) => r.id === req.params.id);
 
@@ -535,7 +535,30 @@ adminRouter.put('/verification-requests/:id', (req: AuthenticatedRequest, res: R
     } else if (status === 'rejected') {
       user.isVerified = false;
     }
+
+    await db.persistUser(user);
+
+    // Send direct notification to user
+    const userNotif: Notification = {
+      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: user.id,
+      recipientEmail: user.email,
+      type: 'verification',
+      title: status === 'approved' ? 'Accréditation Journaliste validée !' : 'Demande d’accréditation refusée',
+      message:
+        status === 'approved'
+          ? `Félicitations ${user.name} ! Votre demande d’accréditation en tant que Journaliste (${request.mediaName || 'Presse'}) a été approuvée par l’administration officielle.`
+          : `Votre demande d’accréditation Journaliste a été rejetée. Motif : ${adminNotes || 'Dossier incomplet ou non vérifiable'}.`,
+      link: status === 'approved' ? 'profile' : undefined,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    await db.persistNotification(userNotif);
+    realtimeHub.broadcastToUser(user.id, 'notification:new', userNotif);
   }
+
+  await db.persistVerificationRequest(request);
 
   logAction(
     req,
@@ -545,6 +568,8 @@ adminRouter.put('/verification-requests/:id', (req: AuthenticatedRequest, res: R
     request.userName,
     `Demande ${status === 'approved' ? 'approuvée' : 'rejetée'}. Notes : ${adminNotes || 'Aucune note'}`
   );
+
+  realtimeHub.broadcast('verification:updated', request);
 
   db.save();
   return res.json({ message: `Demande ${status === 'approved' ? 'approuvée' : 'rejetée'}.`, request });
