@@ -1144,43 +1144,45 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                 </div>
               </div>
 
-              {/* The Master Accounts List */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Crown className="w-4 h-4 text-amber-400" />
-                  Les 4 Comptes Administrateurs Officiels
-                </h4>
+              {/* The Master Accounts List - Visible only to admins for security */}
+              {user?.role === 'admin' && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-amber-400" />
+                    Les 4 Comptes Administrateurs Officiels
+                  </h4>
 
-                <div className="space-y-2.5">
-                  {masterAccounts.map((adm, idx) => (
-                    <div
-                      key={adm.email}
-                      className="p-3.5 rounded-xl bg-stone-900 border border-cyan-500/30 flex items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 font-bold flex items-center justify-center text-xs shrink-0">
-                          #{idx + 1}
+                  <div className="space-y-2.5">
+                    {masterAccounts.map((adm, idx) => (
+                      <div
+                        key={adm.email}
+                        className="p-3.5 rounded-xl bg-stone-900 border border-cyan-500/30 flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 font-bold flex items-center justify-center text-xs shrink-0">
+                            #{idx + 1}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                              {adm.name}
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                                SUPER ADMIN
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-stone-400 font-mono truncate">
+                              {adm.email}
+                            </div>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-white truncate flex items-center gap-1.5">
-                            {adm.name}
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-                              SUPER ADMIN
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-stone-400 font-mono truncate">
-                            {adm.email}
-                          </div>
+
+                        <div className="text-[10px] font-mono text-emerald-400 font-semibold shrink-0">
+                          {adm.isRegistered ? 'Actif & Opérationnel' : 'En attente de connexion'}
                         </div>
                       </div>
-
-                      <div className="text-[10px] font-mono text-emerald-400 font-semibold shrink-0">
-                        {adm.isRegistered ? 'Actif & Opérationnel' : 'En attente de connexion'}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>

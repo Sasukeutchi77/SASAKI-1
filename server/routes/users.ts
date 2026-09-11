@@ -327,7 +327,7 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, asy
 });
 
 // 7. Follow / Unfollow author or media with rate limiting
-usersRouter.post('/:id/follow', requireAuth, likesRateLimiter, (req: AuthenticatedRequest, res: Response) => {
+usersRouter.post('/:id/follow', requireAuth, likesRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const currentUserId = req.user!.id;
   const targetId = req.params.id;
