@@ -14,7 +14,7 @@ function sanitizeUser(user: UserWithPassword) {
 }
 
 // Register with anti-abuse rate limiting and strict validation
-authRouter.post('/register', authRateLimiter, (req, res) => {
+authRouter.post('/register', authRateLimiter, async (req, res) => {
   const { name, email, password, accountType, mediaName, bio, phone } = req.body;
 
   if (!name || !email || !password) {
@@ -39,14 +39,15 @@ authRouter.post('/register', authRateLimiter, (req, res) => {
     return res.status(400).json({ error: 'Le mot de passe est trop long (maximum 128 caractères).' });
   }
 
-  const existing = db.getData().users.find((u) => u.email.toLowerCase() === cleanEmail);
+  let existing = db.getData().users.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (!existing) {
+    existing = await db.findUser(cleanEmail);
+  }
   if (existing) {
     return res.status(400).json({ error: 'Un compte avec cette adresse email existe déjà.' });
   }
 
-  // Strict policy: Only the 2 designated master admin accounts receive 'admin'.
-  // All other created accounts are strictly assigned the 'user' (simple citizen) role.
-  // Only the 2 master admin accounts can promote a user to 'journalist'.
+  // Strict policy: Only designated master admin accounts receive 'admin'.
   const isMaster = isMasterAdmin(cleanEmail);
   const role: UserRole = isMaster ? 'admin' : 'user';
   const { hash, salt } = hashPassword(password);
@@ -75,7 +76,8 @@ authRouter.post('/register', authRateLimiter, (req, res) => {
     createdAt: now,
   };
 
-  db.getData().users.push(newUser);
+  // Persist immediately into Cloud Firestore
+  await db.persistUser(newUser);
 
   // If user requested journalist accreditation, auto-create a verification request
   if (accountType === 'journalist') {
@@ -107,14 +109,17 @@ authRouter.post('/register', authRateLimiter, (req, res) => {
 });
 
 // Login with rate limiting
-authRouter.post('/login', authRateLimiter, (req, res) => {
+authRouter.post('/login', authRateLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email et mot de passe requis.' });
   }
 
   const cleanEmail = String(email).trim().toLowerCase();
-  const user = db.getData().users.find((u) => u.email.toLowerCase() === cleanEmail);
+  let user = db.getData().users.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (!user) {
+    user = await db.findUser(cleanEmail);
+  }
   if (!user) {
     return res.status(401).json({
       error: `Aucun compte n'est enregistré avec l'adresse « ${cleanEmail} ». Cliquez sur "Créer un compte" pour vous inscrire en quelques secondes.`,
@@ -179,7 +184,7 @@ authRouter.get('/me', requireAuth, (req: AuthenticatedRequest, res: Response) =>
 });
 
 // Update Profile with sanitization and parameter protection
-authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+authRouter.put('/profile', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
   const { name, username, bio, avatar, avatarMedia, coverImage, coverMedia, mediaName, phone } = req.body;
 
@@ -296,6 +301,7 @@ authRouter.put('/profile', requireAuth, (req: AuthenticatedRequest, res: Respons
   }
 
   // Strictly protected fields (role, isVerified, verificationStatus, status, createdAt) are NEVER touched here
+  await db.persistUser(user);
   db.save();
   req.user = user;
 

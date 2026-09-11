@@ -26,10 +26,14 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
         (payload.email && u.email.toLowerCase() === payload.email.toLowerCase())
     );
 
+    if (!user && payload.email) {
+      user = (await db.findUser(payload.email)) || undefined;
+    }
+
     const isSuperAdminEmail = payload.email ? isMasterAdmin(payload.email) : false;
 
     if (!user && payload.email) {
-      // Auto-restore / provision user if memory or /tmp DB was recycled on serverless
+      // Auto-restore / provision user if memory was fresh
       const now = new Date().toISOString();
       user = {
         id: payload.userId || `usr_${Date.now()}`,
@@ -51,6 +55,7 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
         lastLoginAt: now,
       };
       data.users.push(user);
+      await db.persistUser(user);
       db.save();
     }
 
@@ -60,10 +65,12 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
           user.role = 'admin';
           user.isVerified = true;
           user.verificationStatus = 'approved';
+          await db.persistUser(user);
           db.save();
         }
       } else if (user.role === 'admin') {
         user.role = 'user';
+        await db.persistUser(user);
         db.save();
       }
       req.user = user;
@@ -81,6 +88,10 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
           (decoded.uid && u.id === decoded.uid) ||
           (decoded.email && u.email.toLowerCase() === decoded.email.toLowerCase())
       );
+
+      if (!user && decoded.email) {
+        user = (await db.findUser(decoded.email)) || undefined;
+      }
 
       const isSuperAdminEmail = decoded.email ? isMasterAdmin(decoded.email) : false;
 
@@ -109,10 +120,12 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
           lastLoginAt: now,
         };
         data.users.push(user);
+        await db.persistUser(user);
         db.save();
       } else if (user && isSuperAdminEmail && user.role !== 'admin') {
         user.role = 'admin';
         user.isVerified = true;
+        await db.persistUser(user);
         db.save();
       }
 

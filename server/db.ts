@@ -2,6 +2,15 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { User, Category, Article, Comment, Notification, VerificationRequest, Report, MediaHouse, AdminLog, MediaRecord } from '../src/types';
+import {
+  loadStateFromCloud,
+  seedStateToCloud,
+  persistDocToCloud,
+  deleteDocFromCloud,
+  queueCloudSync,
+  CLOUD_COLLECTIONS,
+  findUserByEmailInCloud,
+} from './firestoreService';
 
 export interface DBFollow {
   id: string;
@@ -268,9 +277,125 @@ function createInitialData(): DatabaseSchema {
 
 class Database {
   private data: DatabaseSchema;
+  private isCloudReady = false;
 
   constructor() {
     this.data = this.loadData();
+    // Automatically initialize Cloud Firestore persistence in the background
+    this.initCloudPersistence().catch((err) => {
+      console.warn('[DB] Cloud persistence initial check failed:', err);
+    });
+  }
+
+  public async initCloudPersistence(): Promise<void> {
+    try {
+      const cloudData = await loadStateFromCloud();
+      if (cloudData && cloudData.users && cloudData.users.length > 0) {
+        console.log('[DB] Synchronizing state with Cloud Firestore authoritative source...');
+        this.data = cloudData;
+        this.ensureMasterAdmins();
+        this.isCloudReady = true;
+        this.saveDataDirect(this.data);
+        console.log(
+          `[DB] Cloud Firestore synchronization active. Loaded ${this.data.users.length} users and ${this.data.articles.length} articles.`
+        );
+      } else {
+        console.log('[DB] Cloud Firestore is unseeded. Migrating local initial dataset to Cloud Firestore...');
+        await seedStateToCloud(this.data);
+        this.isCloudReady = true;
+        console.log('[DB] Initial seeding to Cloud Firestore completed successfully.');
+      }
+    } catch (err) {
+      console.error('[DB] Cloud Firestore connection error:', err);
+    }
+  }
+
+  public ensureMasterAdmins() {
+    const initial = createInitialData();
+    const existingAdminEmails = new Set(this.data.users.map((u) => u.email.toLowerCase()));
+    for (const adminUser of initial.users) {
+      if (!existingAdminEmails.has(adminUser.email.toLowerCase())) {
+        this.data.users.unshift(adminUser);
+      } else {
+        // Guarantee proper admin role and verification
+        const user = this.data.users.find((u) => u.email.toLowerCase() === adminUser.email.toLowerCase());
+        if (user) {
+          user.role = 'admin';
+          user.isVerified = true;
+          user.verificationStatus = 'approved';
+          user.status = 'active';
+          if (!user.passwordHash || !user.passwordSalt) {
+            user.passwordHash = adminUser.passwordHash;
+            user.passwordSalt = adminUser.passwordSalt;
+          }
+        }
+      }
+    }
+  }
+
+  public async persistUser(user: UserWithPassword): Promise<void> {
+    const existingIndex = this.data.users.findIndex(
+      (u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase()
+    );
+    if (existingIndex >= 0) {
+      this.data.users[existingIndex] = user;
+    } else {
+      this.data.users.push(user);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.users, user.id, user);
+  }
+
+  public async findUser(email: string): Promise<UserWithPassword | null> {
+    const cleanEmail = email.trim().toLowerCase();
+    const user = this.data.users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (user) return user;
+
+    // Check Cloud Firestore directly
+    const cloudUser = await findUserByEmailInCloud(cleanEmail);
+    if (cloudUser) {
+      this.data.users.push(cloudUser);
+      this.saveDataDirect(this.data);
+      return cloudUser;
+    }
+    return null;
+  }
+
+  public async persistArticle(article: Article): Promise<void> {
+    const index = this.data.articles.findIndex((a) => a.id === article.id);
+    if (index >= 0) {
+      this.data.articles[index] = article;
+    } else {
+      this.data.articles.unshift(article);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.articles, article.id, article);
+  }
+
+  public async deleteArticle(articleId: string): Promise<void> {
+    this.data.articles = this.data.articles.filter((a) => a.id !== articleId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.articles, articleId);
+  }
+
+  public async persistMediaHouse(house: MediaHouse): Promise<void> {
+    const index = this.data.mediaHouses.findIndex((h) => h.id === house.id);
+    if (index >= 0) {
+      this.data.mediaHouses[index] = house;
+    } else {
+      this.data.mediaHouses.push(house);
+    }
+    this.saveDataDirect(this.data);
+    await persistDocToCloud(CLOUD_COLLECTIONS.mediaHouses, house.id, house);
+  }
+
+  public save() {
+    this.saveDataDirect(this.data);
+    queueCloudSync(this.data);
+  }
+
+  public getData(): DatabaseSchema {
+    return this.data;
   }
 
   private loadData(): DatabaseSchema {
@@ -410,14 +535,6 @@ class Database {
     } catch (err) {
       console.warn('[DB] Could not write to disk (read-only environment), preserving state in-memory:', err);
     }
-  }
-
-  public save() {
-    this.saveDataDirect(this.data);
-  }
-
-  public getData(): DatabaseSchema {
-    return this.data;
   }
 }
 

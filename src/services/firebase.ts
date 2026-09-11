@@ -21,6 +21,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { User, UserRole } from '../types';
+import firebaseAppletConfig from '../../firebase-applet-config.json';
 
 const getClientEnv = (key: string): string => {
   if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
@@ -32,15 +33,18 @@ const getClientEnv = (key: string): string => {
   return '';
 };
 
-// Environment variables for Firebase Client SDK
+// Environment variables for Firebase Client SDK with automatic fallback to firebase-applet-config.json
 const firebaseConfig = {
-  apiKey: getClientEnv('VITE_FIREBASE_API_KEY'),
-  authDomain: getClientEnv('VITE_FIREBASE_AUTH_DOMAIN'),
-  projectId: getClientEnv('VITE_FIREBASE_PROJECT_ID'),
-  storageBucket: getClientEnv('VITE_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: getClientEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
-  appId: getClientEnv('VITE_FIREBASE_APP_ID'),
+  apiKey: getClientEnv('VITE_FIREBASE_API_KEY') || firebaseAppletConfig.apiKey || '',
+  authDomain: getClientEnv('VITE_FIREBASE_AUTH_DOMAIN') || firebaseAppletConfig.authDomain || '',
+  projectId: getClientEnv('VITE_FIREBASE_PROJECT_ID') || firebaseAppletConfig.projectId || '',
+  storageBucket: getClientEnv('VITE_FIREBASE_STORAGE_BUCKET') || firebaseAppletConfig.storageBucket || '',
+  messagingSenderId: getClientEnv('VITE_FIREBASE_MESSAGING_SENDER_ID') || firebaseAppletConfig.messagingSenderId || '',
+  appId: getClientEnv('VITE_FIREBASE_APP_ID') || firebaseAppletConfig.appId || '',
 };
+
+const firestoreDatabaseId =
+  getClientEnv('VITE_FIREBASE_DATABASE_ID') || firebaseAppletConfig.firestoreDatabaseId || undefined;
 
 export const isFirebaseConfigured = (): boolean => {
   return Boolean(
@@ -59,7 +63,7 @@ if (isFirebaseConfigured()) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
-    firestore = getFirestore(app);
+    firestore = firestoreDatabaseId ? getFirestore(app, firestoreDatabaseId) : getFirestore(app);
   } catch (error) {
     console.warn('Erreur lors de l’initialisation de Firebase SDK:', error);
   }

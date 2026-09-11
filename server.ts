@@ -3,8 +3,16 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { createExpressApp } from './server/app';
 import { realtimeHub } from './server/realtime';
+import { db } from './server/db';
 
 async function startServer() {
+  // Initialize Cloud Firestore synchronization before accepting incoming traffic
+  try {
+    await db.initCloudPersistence();
+  } catch (err) {
+    console.warn('[Server] Cloud Firestore initialization deferred:', err);
+  }
+
   const app = createExpressApp();
   const PORT = 3000;
 

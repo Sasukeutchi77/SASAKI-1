@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-sasaki1-d54f04b6-c7ca-43c4-b242-bda2d7957a17",
+      "rules": "firestore.rules"
+    }
+  ]
+}

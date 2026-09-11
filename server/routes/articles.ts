@@ -326,8 +326,12 @@ articlesRouter.post('/:id/view', (req: AuthenticatedRequest, res: Response) => {
 });
 
 // Create article (Journalist or Admin) with rate limiting and strict sanitization
-articlesRouter.post('/', requireJournalistOrAdmin, articleCreationLimiter, (req: AuthenticatedRequest, res: Response) => {
-  const data = db.getData();
+articlesRouter.post(
+  '/',
+  requireJournalistOrAdmin,
+  articleCreationLimiter,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const data = db.getData();
   const user = req.user!;
   const {
     title,
@@ -490,6 +494,7 @@ articlesRouter.post('/', requireJournalistOrAdmin, articleCreationLimiter, (req:
     realtimeHub.broadcast('mediaHouse:updated', house);
   }
 
+  await db.persistArticle(newArticle);
   db.save();
 
   // Real-time broadcast to all connected readers & media houses
@@ -501,7 +506,7 @@ articlesRouter.post('/', requireJournalistOrAdmin, articleCreationLimiter, (req:
 });
 
 // Update article
-articlesRouter.put('/:id', requireJournalistOrAdmin, (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.put('/:id', requireJournalistOrAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const article = data.articles.find((a) => a.id === req.params.id);
@@ -573,6 +578,7 @@ articlesRouter.put('/:id', requireJournalistOrAdmin, (req: AuthenticatedRequest,
     });
   }
 
+  await db.persistArticle(article);
   db.save();
 
   // If status transitioned to 'published', broadcast article:created as well as article:updated
@@ -587,7 +593,7 @@ articlesRouter.put('/:id', requireJournalistOrAdmin, (req: AuthenticatedRequest,
 });
 
 // Delete article
-articlesRouter.delete('/:id', requireJournalistOrAdmin, (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.delete('/:id', requireJournalistOrAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
   const index = data.articles.findIndex((a) => a.id === req.params.id);
@@ -602,6 +608,7 @@ articlesRouter.delete('/:id', requireJournalistOrAdmin, (req: AuthenticatedReque
     return res.status(403).json({ error: 'Vous n’avez pas l’autorisation de supprimer cet article.' });
   }
 
+  await db.deleteArticle(article.id);
   data.articles.splice(index, 1);
   // Also cleanup associated likes, comments, bookmarks
   data.likes = data.likes.filter((l) => l.articleId !== article.id);
