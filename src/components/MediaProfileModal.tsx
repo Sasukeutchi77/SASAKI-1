@@ -113,8 +113,8 @@ export const MediaProfileModal: React.FC<MediaProfileModalProps> = ({
   const mediaCategories = Array.from(new Set(articles.map((a) => a.categoryName)));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#0b0e1a] border border-cyan-500/40 min-h-screen sm:min-h-0 sm:rounded-2xl shadow-[0_0_40px_rgba(0,243,255,0.2)] sm:my-8 overflow-hidden flex flex-col max-h-[95vh] text-slate-100 transition-all">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-xs p-0 sm:p-4 overflow-hidden">
+      <div className="relative w-full max-w-4xl bg-[#0b0e1a] border-0 sm:border border-cyan-500/40 h-full sm:h-[92vh] sm:max-h-[92vh] sm:rounded-2xl shadow-[0_0_40px_rgba(0,243,255,0.2)] sm:my-auto overflow-hidden flex flex-col text-slate-100 transition-all">
         {/* Modal close button */}
         <button
           onClick={onClose}

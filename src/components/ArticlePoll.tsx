@@ -24,6 +24,7 @@ import {
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { sfx } from '../services/soundEffects';
+import { api } from '../services/api';
 
 interface ArticlePollProps {
   articleId: string;
@@ -60,26 +61,24 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({
   poll: propPoll,
   onOpenAuth,
 }) => {
+  // Never display automatic fallback polls: only render if the journalist explicitly set a poll
+  if (!propPoll || !propPoll.question || !propPoll.options || propPoll.options.length < 2) {
+    return null;
+  }
+
   const { isAuthenticated } = useAuth();
   const storageKey = `purge_info_poll_voted_${articleId}`;
 
-  // Default fallback poll if none provided on the article
-  const initialPoll: Poll = propPoll || {
-    id: `poll-${articleId}`,
-    articleId,
-    question: 'Que pensez-vous des mesures et enjeux analysés dans cet article ?',
-    options: [
-      { id: 'opt-1', text: 'Très favorable, une avancée majeure', votes: 164 },
-      { id: 'opt-2', text: 'Mitigé, des garanties strictes sont requises', votes: 98 },
-      { id: 'opt-3', text: 'Défavorable ou prématuré dans le contexte', votes: 38 },
-    ],
-    totalVotes: 300,
-  };
-
-  const [poll, setPoll] = useState<Poll>(initialPoll);
+  const [poll, setPoll] = useState<Poll>(propPoll);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [chartView, setChartView] = useState<'list' | 'bar' | 'pie'>('list');
+
+  useEffect(() => {
+    if (propPoll) {
+      setPoll(propPoll);
+    }
+  }, [propPoll]);
 
   useEffect(() => {
     const savedVote = localStorage.getItem(storageKey);
@@ -89,19 +88,19 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({
     }
   }, [storageKey]);
 
-  const handleVote = (optionId: string) => {
+  const handleVote = async (optionId: string) => {
     if (hasVoted) return;
 
     sfx.playVote();
 
     const updatedOptions = poll.options.map((opt) => {
       if (opt.id === optionId) {
-        return { ...opt, votes: opt.votes + 1 };
+        return { ...opt, votes: (opt.votes || 0) + 1 };
       }
       return opt;
     });
 
-    const newTotal = poll.totalVotes + 1;
+    const newTotal = (poll.totalVotes || 0) + 1;
     setPoll({
       ...poll,
       options: updatedOptions,
@@ -111,6 +110,12 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({
     setSelectedOption(optionId);
     setHasVoted(true);
     localStorage.setItem(storageKey, optionId);
+
+    try {
+      await api.votePoll(articleId, optionId);
+    } catch {
+      // Ignored: vote is saved in localStorage and state
+    }
   };
 
   // Recharts formatted dataset
@@ -384,9 +389,14 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-emerald-400" />
           <span>
-            Tendance :{' '}
-            <strong className="text-cyan-200">{leadingPercentage}%</strong> pour "
-            {leadingOption?.text.substring(0, 32)}..."
+            {poll.totalVotes > 0 && leadingOption ? (
+              <>
+                Tendance : <strong className="text-cyan-200">{leadingPercentage}%</strong> pour "
+                {leadingOption.text.substring(0, 32)}..."
+              </>
+            ) : (
+              <span className="text-slate-300">Soyez le premier à voter pour définir la tendance</span>
+            )}
           </span>
         </div>
 

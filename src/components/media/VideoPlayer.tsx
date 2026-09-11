@@ -19,6 +19,21 @@ export interface VideoPlayerProps {
   autoPlay?: boolean;
 }
 
+function getEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  // YouTube match
+  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0`;
+  }
+  // Vimeo match
+  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  }
+  return null;
+}
+
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
   poster,
@@ -26,6 +41,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   className = '',
   autoPlay = false,
 }) => {
+  const embedUrl = getEmbedUrl(src);
+
+  if (embedUrl) {
+    return (
+      <div className={`relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-md border border-cyan-500/30 ${className}`}>
+        <iframe
+          src={embedUrl}
+          title={title || 'Vidéo intégrée'}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 

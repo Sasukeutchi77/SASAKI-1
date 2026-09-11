@@ -14,7 +14,6 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { ShareModal } from './ShareModal';
-import { FactCheckBadge } from './FactCheckBadge';
 
 export interface ArticleCardProps {
   article: Article;
@@ -569,9 +568,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
           />
-          <div className="absolute top-2 left-2 z-10">
-            <FactCheckBadge factCheck={article.factCheck} compact />
-          </div>
           <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1">
             <Clock className="w-3 h-3 text-cyan-400" />
             <span>{readingTimeMinutes} min</span>

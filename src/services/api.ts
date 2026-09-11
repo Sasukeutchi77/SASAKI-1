@@ -13,6 +13,7 @@ import {
   TopMediaHouse,
   TopJournalist,
   RankingsResponse,
+  Poll,
 } from '../types';
 
 const TOKEN_KEY = 'purge_info_token';
@@ -316,6 +317,8 @@ export const api = {
     coverImage?: string;
     images?: string[];
     status?: 'published' | 'draft';
+    poll?: any;
+    [key: string]: any;
   }) {
     return request<{ article: Article; message: string }>('/api/articles', {
       method: 'POST',
@@ -323,10 +326,17 @@ export const api = {
     });
   },
 
-  async updateArticle(id: string, data: Partial<Article>) {
+  async updateArticle(id: string, data: Partial<Article> & { poll?: any }) {
     return request<{ article: Article; message: string }>(`/api/articles/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  },
+
+  async votePoll(articleId: string, optionId: string) {
+    return request<{ poll: Poll; message: string }>(`/api/articles/${articleId}/poll/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ optionId }),
     });
   },
 

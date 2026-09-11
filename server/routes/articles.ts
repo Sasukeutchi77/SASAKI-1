@@ -1,7 +1,7 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { AuthenticatedRequest, requireAuth, requireJournalistOrAdmin } from '../auth';
-import { Article, Comment, ArticleStatus } from '../../src/types';
+import { Article, Comment, ArticleStatus, Poll } from '../../src/types';
 import {
   articleCreationLimiter,
   commentsRateLimiter,
@@ -348,6 +348,7 @@ articlesRouter.post(
     videoMedia,
     videoThumbnail,
     status = 'published',
+    poll,
   } = req.body;
 
   if (!title || !content || !categoryId) {
@@ -408,9 +409,37 @@ articlesRouter.post(
     }
   }
 
+  // Sanitize optional custom poll if provided by the journalist
+  let validPoll: Poll | undefined = undefined;
+  if (poll && typeof poll.question === 'string' && Array.isArray(poll.options) && poll.options.length >= 2) {
+    const cleanQuestion = sanitizeText(poll.question, { maxLength: 200, allowNewlines: false });
+    const cleanOptions = poll.options
+      .filter((opt: any) => opt && typeof opt.text === 'string' && opt.text.trim())
+      .map((opt: any, idx: number) => ({
+        id: opt.id || `opt_${idx + 1}`,
+        text: sanitizeText(opt.text, { maxLength: 120, allowNewlines: false }),
+        votes: typeof opt.votes === 'number' ? Math.max(0, opt.votes) : 0,
+      }));
+
+    if (cleanQuestion.length >= 5 && cleanOptions.length >= 2) {
+      validPoll = {
+        id: poll.id || `poll_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        articleId: '',
+        question: cleanQuestion,
+        options: cleanOptions,
+        totalVotes: cleanOptions.reduce((acc: number, cur: any) => acc + (cur.votes || 0), 0),
+      };
+    }
+  }
+
   const now = new Date().toISOString();
+  const newArticleId = `art_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  if (validPoll) {
+    validPoll.articleId = newArticleId;
+  }
+
   const newArticle: Article = {
-    id: `art_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    id: newArticleId,
     title: cleanTitle,
     summary: cleanSummary,
     content: cleanContent,
@@ -438,6 +467,7 @@ articlesRouter.post(
     commentsCount: 0,
     createdAt: now,
     updatedAt: now,
+    poll: validPoll,
   };
 
   // Associate media records with this newly created article
@@ -562,6 +592,31 @@ articlesRouter.put('/:id', requireJournalistOrAdmin, async (req: AuthenticatedRe
   if (status && ['published', 'draft', 'hidden'].includes(status)) {
     article.status = status;
   }
+
+  // Handle optional custom poll update / deletion
+  if (req.body.poll === null) {
+    delete article.poll;
+  } else if (req.body.poll && typeof req.body.poll.question === 'string' && Array.isArray(req.body.poll.options)) {
+    const cleanQuestion = sanitizeText(req.body.poll.question, { maxLength: 200, allowNewlines: false });
+    const cleanOptions = req.body.poll.options
+      .filter((opt: any) => opt && typeof opt.text === 'string' && opt.text.trim())
+      .map((opt: any, idx: number) => ({
+        id: opt.id || `opt_${idx + 1}`,
+        text: sanitizeText(opt.text, { maxLength: 120, allowNewlines: false }),
+        votes: typeof opt.votes === 'number' ? Math.max(0, opt.votes) : 0,
+      }));
+
+    if (cleanQuestion.length >= 5 && cleanOptions.length >= 2) {
+      article.poll = {
+        id: article.poll?.id || `poll_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        articleId: article.id,
+        question: cleanQuestion,
+        options: cleanOptions,
+        totalVotes: cleanOptions.reduce((acc: number, cur: any) => acc + (cur.votes || 0), 0),
+      };
+    }
+  }
+
   article.updatedAt = new Date().toISOString();
 
   // Associate updated media records
@@ -627,6 +682,40 @@ articlesRouter.delete('/:id', requireJournalistOrAdmin, async (req: Authenticate
   db.save();
   realtimeHub.broadcast('article:deleted', { articleId: req.params.id, categoryId: article.categoryId });
   return res.json({ message: 'Article supprimé avec succès.' });
+});
+
+// Vote on an article poll (Citizen reader voting)
+articlesRouter.post('/:id/poll/vote', async (req: Request, res: Response) => {
+  const data = db.getData();
+  const article = data.articles.find((a) => a.id === req.params.id);
+
+  if (!article || !article.poll) {
+    return res.status(404).json({ error: 'Aucun sondage actif pour cet article.' });
+  }
+
+  const { optionId } = req.body;
+  if (!optionId || typeof optionId !== 'string') {
+    return res.status(400).json({ error: 'Option de vote manquante.' });
+  }
+
+  const option = article.poll.options.find((o) => o.id === optionId);
+  if (!option) {
+    return res.status(404).json({ error: 'Option de vote introuvable.' });
+  }
+
+  option.votes = (option.votes || 0) + 1;
+  article.poll.totalVotes = article.poll.options.reduce((sum, o) => sum + (o.votes || 0), 0);
+  article.updatedAt = new Date().toISOString();
+
+  await db.persistArticle(article);
+  db.save();
+
+  realtimeHub.broadcast('article:poll_voted', {
+    articleId: article.id,
+    poll: article.poll,
+  });
+
+  return res.json({ message: 'Votre vote a bien été enregistré !', poll: article.poll });
 });
 
 // Toggle Like with rate limiting

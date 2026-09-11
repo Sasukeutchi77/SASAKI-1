@@ -141,6 +141,7 @@ async function runProductionTestSuite() {
   if (failed > 0) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 runProductionTestSuite();

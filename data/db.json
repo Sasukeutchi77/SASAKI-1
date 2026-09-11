@@ -21,9 +21,9 @@
       "verificationStatus": "approved",
       "name": "Itachi Admin",
       "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      "passwordSalt": "0f1997d35ba829ae697b337833532044",
+      "passwordSalt": "8aae722dfa500571ecd7daad86fa0aa6",
       "createdAt": "2026-01-01T08:00:00Z",
-      "passwordHash": "5d32d144f3aaf8c4efc612b7dceef00945656b82edd1f427cef469f1ed7af49e12ef9a2ce8112b101a78a9ef81bc3ff3747d94b4d1d0f659d684645076e16aa5",
+      "passwordHash": "b2d97deba9874a81c1b910be4b359e1fbfb77339c905ad8fdb82d099fde9b87d83fddfb9dbde08fab3d98a789478218eebea977acc1471f66e6b8e1ae93b6302",
       "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
       "email": "itachi45t@gmail.com",
       "status": "active",
@@ -34,12 +34,12 @@
     },
     {
       "email": "minato45tt@gmail.com",
-      "passwordSalt": "0f1997d35ba829ae697b337833532044",
+      "passwordSalt": "8aae722dfa500571ecd7daad86fa0aa6",
       "name": "Minato Admin",
       "status": "active",
       "isVerified": true,
       "verificationStatus": "approved",
-      "passwordHash": "5d32d144f3aaf8c4efc612b7dceef00945656b82edd1f427cef469f1ed7af49e12ef9a2ce8112b101a78a9ef81bc3ff3747d94b4d1d0f659d684645076e16aa5",
+      "passwordHash": "b2d97deba9874a81c1b910be4b359e1fbfb77339c905ad8fdb82d099fde9b87d83fddfb9dbde08fab3d98a789478218eebea977acc1471f66e6b8e1ae93b6302",
       "id": "usr_admin_minato",
       "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
       "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
@@ -56,10 +56,10 @@
       "email": "nami45tt@gmail.com",
       "articlesCount": 0,
       "status": "active",
-      "passwordHash": "5d32d144f3aaf8c4efc612b7dceef00945656b82edd1f427cef469f1ed7af49e12ef9a2ce8112b101a78a9ef81bc3ff3747d94b4d1d0f659d684645076e16aa5",
+      "passwordHash": "b2d97deba9874a81c1b910be4b359e1fbfb77339c905ad8fdb82d099fde9b87d83fddfb9dbde08fab3d98a789478218eebea977acc1471f66e6b8e1ae93b6302",
       "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
       "isVerified": true,
-      "passwordSalt": "0f1997d35ba829ae697b337833532044",
+      "passwordSalt": "8aae722dfa500571ecd7daad86fa0aa6",
       "role": "admin"
     },
     {
@@ -71,114 +71,419 @@
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
       "phone": "+33 6 12 34 56 78",
       "bio": "Super Administrateur et Fondateur de PURGE-INFO.",
-      "passwordHash": "5d32d144f3aaf8c4efc612b7dceef00945656b82edd1f427cef469f1ed7af49e12ef9a2ce8112b101a78a9ef81bc3ff3747d94b4d1d0f659d684645076e16aa5",
+      "passwordHash": "b2d97deba9874a81c1b910be4b359e1fbfb77339c905ad8fdb82d099fde9b87d83fddfb9dbde08fab3d98a789478218eebea977acc1471f66e6b8e1ae93b6302",
       "verificationStatus": "approved",
       "username": "naruto_admin",
       "role": "admin",
       "status": "active",
-      "passwordSalt": "0f1997d35ba829ae697b337833532044",
+      "passwordSalt": "8aae722dfa500571ecd7daad86fa0aa6",
       "articlesCount": 0
+    },
+    {
+      "name": "Jean Dupont",
+      "passwordSalt": "641abb7b5de4f71f8e59bdd109ba7691",
+      "email": "test_journalist_1789149103480@example.com",
+      "passwordHash": "4db0fe2e8879706944a700cab5cb86da56d7fcb422b96d9f4d6e51caf0f9ba394d954e064e2bafd1f8769bdea9f1917ff53feb4dac596b5fde82e08ff9b4e273",
+      "followersCount": 0,
+      "id": "usr_1789149103653_smhn4",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "status": "active",
+      "followingCount": 0,
+      "verificationStatus": "pending",
+      "bio": "Lecteur citoyen sur PURGE-INFO",
+      "createdAt": "2026-09-11T17:51:43.653Z",
+      "articlesCount": 0,
+      "isVerified": false,
+      "role": "user"
+    },
+    {
+      "id": "usr_1789149116058_1sda7",
+      "verificationStatus": "approved",
+      "articlesCount": 0,
+      "isVerified": true,
+      "mediaName": "Le Canard Libéré",
+      "createdAt": "2026-09-11T17:51:56.058Z",
+      "passwordSalt": "d3845edeb2aa6de0444d62e07ba1a15a",
+      "followersCount": 0,
+      "passwordHash": "4c0f4af63d5c179c0e76d3e4c6bca9010a015c7bd3abc89db84bb9f4541ac4422b04f7c61ff5f1d751351c44aaf571a721ddbe0d2e2396e85341bad3a0bfab0c",
+      "followingCount": 0,
+      "name": "Jean Dupont",
+      "email": "test_journalist_1789149115970@example.com",
+      "role": "journalist",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "status": "active",
+      "bio": "Lecteur citoyen sur PURGE-INFO"
+    },
+    {
+      "id": "usr_1789149130466_llrs5",
+      "followersCount": 0,
+      "followingCount": 0,
+      "role": "journalist",
+      "email": "journalist_test_1789149130379@example.com",
+      "bio": "Lecteur citoyen sur PURGE-INFO",
+      "status": "active",
+      "isVerified": true,
+      "passwordSalt": "f3a5aff1413b3762ed113d5cb2416616",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "name": "Sophie Marceau",
+      "createdAt": "2026-09-11T17:52:10.466Z",
+      "passwordHash": "74b84351bb6967d24988529a36cd87388b9cb3636831db9d1f82420022285b8a3390b93372d5cee2ab4f4e101949531f0942a83afcecd5defaed209a7d259048",
+      "mediaName": "L’Écho Citoyen",
+      "articlesCount": 0,
+      "verificationStatus": "approved"
+    },
+    {
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "articlesCount": 0,
+      "email": "journalist_live_1789149166286@example.com",
+      "status": "active",
+      "verificationStatus": "approved",
+      "passwordHash": "6adee90d7bca659971e453e711fae8e435daa3bf0fa165b65ef58dae0acfbe7c7773279d4a4afeca0119076fe176893a556114eb0df920e1417a7087c9329e40",
+      "passwordSalt": "f81d94d1f7714080bbbb6c6fce3a77b5",
+      "name": "Marc Levy",
+      "bio": "Lecteur citoyen sur PURGE-INFO",
+      "id": "usr_1789149166363_14nlk",
+      "followersCount": 0,
+      "followingCount": 0,
+      "role": "journalist",
+      "mediaName": "Le Monde Libre",
+      "createdAt": "2026-09-11T17:52:46.363Z",
+      "isVerified": true
     }
   ],
   "categories": [
     {
-      "status": "active",
-      "name": "CÉLÉBRITÉS",
-      "description": "Figures publiques, icônes, légendes et personnalités influentes",
-      "slug": "celebrites",
-      "id": "cat_celebrites"
-    },
-    {
-      "status": "active",
-      "slug": "clans",
-      "description": "Alliances, territoires, rivalités et opérations des clans",
-      "id": "cat_clans",
-      "name": "CLANS"
-    },
-    {
-      "description": "Tournois, duels d’élite, arènes, classements et compétitions",
-      "status": "active",
-      "slug": "competition",
-      "id": "cat_competition",
-      "name": "COMPÉTITION"
-    },
-    {
-      "name": "FAMILLES",
-      "slug": "familles",
-      "description": "Lignées historiques, grandes dynasties et actualités des familles",
-      "status": "active",
-      "id": "cat_familles"
-    },
-    {
-      "slug": "purge",
-      "description": "Déroulement, décrets officiels, règles et alertes de la Purge",
-      "name": "PURGE",
-      "id": "cat_purge",
+      "id": "cat_purgeur",
+      "name": "PURGEUR",
+      "slug": "purgeur",
+      "description": "Actualités, profils, faits d’armes et chroniques des Purgeurs",
       "status": "active"
     },
     {
-      "status": "active",
-      "name": "PURGEUR",
-      "id": "cat_purgeur",
-      "description": "Actualités, profils, faits d’armes et chroniques des Purgeurs",
-      "slug": "purgeur"
+      "id": "cat_clans",
+      "name": "CLANS",
+      "slug": "clans",
+      "description": "Alliances, territoires, rivalités et opérations des clans",
+      "status": "active"
+    },
+    {
+      "id": "cat_familles",
+      "name": "FAMILLES",
+      "slug": "familles",
+      "description": "Lignées historiques, grandes dynasties et actualités des familles",
+      "status": "active"
+    },
+    {
+      "id": "cat_purge",
+      "name": "PURGE",
+      "slug": "purge",
+      "description": "Déroulement, décrets officiels, règles et alertes de la Purge",
+      "status": "active"
+    },
+    {
+      "id": "cat_competition",
+      "name": "COMPÉTITION",
+      "slug": "competition",
+      "description": "Tournois, duels d’élite, arènes, classements et compétitions",
+      "status": "active"
+    },
+    {
+      "id": "cat_celebrites",
+      "name": "CÉLÉBRITÉS",
+      "slug": "celebrites",
+      "description": "Figures publiques, icônes, légendes et personnalités influentes",
+      "status": "active"
     }
   ],
-  "articles": [],
+  "articles": [
+    {
+      "status": "published",
+      "id": "art_test_123",
+      "title": "Test Article Title",
+      "content": "Content test"
+    }
+  ],
   "comments": [],
+  "mediaHouses": [],
   "likes": [],
   "commentLikes": [],
   "bookmarks": [],
   "follows": [],
-  "notifications": [],
-  "verificationRequests": [],
+  "notifications": [
+    {
+      "message": "Jean Dupont (test_journalist_1789149103480@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "userId": "usr_admin_naruto",
+      "createdAt": "2026-09-11T17:51:43.776Z",
+      "read": false,
+      "id": "notif_1789149103776_1ztb",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "type": "system"
+    },
+    {
+      "read": false,
+      "userId": "usr_admin_itachi",
+      "createdAt": "2026-09-11T17:51:43.776Z",
+      "message": "Jean Dupont (test_journalist_1789149103480@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "id": "notif_1789149103776_3u6p",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "type": "system"
+    },
+    {
+      "type": "system",
+      "id": "notif_1789149103776_m2oq",
+      "createdAt": "2026-09-11T17:51:43.776Z",
+      "read": false,
+      "userId": "usr_admin_nami",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "message": "Jean Dupont (test_journalist_1789149103480@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation."
+    },
+    {
+      "userId": "usr_admin_minato",
+      "read": false,
+      "createdAt": "2026-09-11T17:51:43.776Z",
+      "message": "Jean Dupont (test_journalist_1789149103480@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "id": "notif_1789149103776_qh64",
+      "type": "system"
+    },
+    {
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "userId": "usr_admin_minato",
+      "type": "system",
+      "read": false,
+      "createdAt": "2026-09-11T17:51:56.114Z",
+      "id": "notif_1789149116115_1t6q",
+      "message": "Jean Dupont (test_journalist_1789149115970@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation."
+    },
+    {
+      "message": "Jean Dupont (test_journalist_1789149115970@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "createdAt": "2026-09-11T17:51:56.114Z",
+      "type": "system",
+      "userId": "usr_admin_itachi",
+      "id": "notif_1789149116115_fmf3",
+      "read": false,
+      "title": "Nouvelle demande d'accréditation Journaliste"
+    },
+    {
+      "createdAt": "2026-09-11T17:51:56.114Z",
+      "userId": "usr_admin_naruto",
+      "read": false,
+      "message": "Jean Dupont (test_journalist_1789149115970@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "type": "system",
+      "id": "notif_1789149116115_rs3y"
+    },
+    {
+      "createdAt": "2026-09-11T17:51:56.114Z",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "id": "notif_1789149116115_va3i",
+      "type": "system",
+      "userId": "usr_admin_nami",
+      "message": "Jean Dupont (test_journalist_1789149115970@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "read": false
+    },
+    {
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "createdAt": "2026-09-11T17:52:10.509Z",
+      "type": "system",
+      "read": false,
+      "id": "notif_1789149130509_2585",
+      "message": "Sophie Marceau (journalist_test_1789149130379@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "userId": "usr_admin_itachi"
+    },
+    {
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "read": false,
+      "createdAt": "2026-09-11T17:52:10.509Z",
+      "id": "notif_1789149130509_pn6i",
+      "userId": "usr_admin_minato",
+      "message": "Sophie Marceau (journalist_test_1789149130379@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "type": "system"
+    },
+    {
+      "read": false,
+      "message": "Sophie Marceau (journalist_test_1789149130379@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
+      "createdAt": "2026-09-11T17:52:10.509Z",
+      "userId": "usr_admin_nami",
+      "id": "notif_1789149130509_x0os",
+      "type": "system",
+      "title": "Nouvelle demande d'accréditation Journaliste"
+    },
+    {
+      "createdAt": "2026-09-11T17:52:10.509Z",
+      "id": "notif_1789149130509_yq0n",
+      "type": "system",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "read": false,
+      "userId": "usr_admin_naruto",
+      "message": "Sophie Marceau (journalist_test_1789149130379@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation."
+    },
+    {
+      "createdAt": "2026-09-11T17:52:46.428Z",
+      "message": "Marc Levy (Le Monde Libre) a soumis une demande d'accréditation Journaliste (Carte: CP-990011). En attente de votre examen.",
+      "userId": "usr_admin_naruto",
+      "link": "admin:journalists",
+      "targetId": "req_1789149166428_pu2w",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "id": "notif_1789149166510_0_k49w",
+      "read": false,
+      "type": "verification",
+      "forAdmin": true,
+      "recipientEmail": "naruto455t@gmail.com"
+    },
+    {
+      "recipientEmail": "itachi45t@gmail.com",
+      "read": false,
+      "message": "Marc Levy (Le Monde Libre) a soumis une demande d'accréditation Journaliste (Carte: CP-990011). En attente de votre examen.",
+      "userId": "usr_admin_itachi",
+      "type": "verification",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "targetId": "req_1789149166428_pu2w",
+      "link": "admin:journalists",
+      "createdAt": "2026-09-11T17:52:46.428Z",
+      "id": "notif_1789149166542_1_1ser",
+      "forAdmin": true
+    },
+    {
+      "targetId": "req_1789149166428_pu2w",
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "link": "admin:journalists",
+      "forAdmin": true,
+      "read": false,
+      "createdAt": "2026-09-11T17:52:46.428Z",
+      "id": "notif_1789149166570_2_9h4b",
+      "type": "verification",
+      "userId": "usr_admin_nami",
+      "recipientEmail": "nami45tt@gmail.com",
+      "message": "Marc Levy (Le Monde Libre) a soumis une demande d'accréditation Journaliste (Carte: CP-990011). En attente de votre examen."
+    },
+    {
+      "createdAt": "2026-09-11T17:52:46.428Z",
+      "type": "verification",
+      "message": "Marc Levy (Le Monde Libre) a soumis une demande d'accréditation Journaliste (Carte: CP-990011). En attente de votre examen.",
+      "targetId": "req_1789149166428_pu2w",
+      "userId": "usr_admin_minato",
+      "read": false,
+      "title": "Nouvelle demande d'accréditation Journaliste",
+      "recipientEmail": "minato45tt@gmail.com",
+      "forAdmin": true,
+      "link": "admin:journalists",
+      "id": "notif_1789149166599_3_wcd5"
+    },
+    {
+      "link": "profile",
+      "recipientEmail": "journalist_live_1789149166286@example.com",
+      "message": "Félicitations Marc Levy ! Votre demande d’accréditation en tant que Journaliste (Le Monde Libre) a été approuvée par l’administration officielle.",
+      "id": "notif_1789149166671_xi9s",
+      "title": "Accréditation Journaliste validée !",
+      "read": false,
+      "userId": "usr_1789149166363_14nlk",
+      "createdAt": "2026-09-11T17:52:46.671Z",
+      "type": "verification"
+    }
+  ],
+  "verificationRequests": [
+    {
+      "motivation": "Je souhaite publier des enquêtes indépendantes et vérifiées sur la plateforme.",
+      "createdAt": "2026-09-11T17:51:43.776Z",
+      "userEmail": "test_journalist_1789149103480@example.com",
+      "userId": "usr_1789149103653_smhn4",
+      "status": "pending",
+      "id": "req_1789149103776_4uty",
+      "mediaName": "Le Canard Libéré",
+      "userName": "Jean Dupont",
+      "documentUrl": "https://example.com/press-card.pdf",
+      "pressCardNumber": "CP-789012"
+    },
+    {
+      "userName": "Jean Dupont",
+      "userId": "usr_1789149116058_1sda7",
+      "adminNotes": "Carte de presse vérifiée auprès de la commission.",
+      "documentUrl": "https://example.com/press-card.pdf",
+      "status": "approved",
+      "pressCardNumber": "CP-789012",
+      "reviewedAt": "2026-09-11T17:51:56.126Z",
+      "userEmail": "test_journalist_1789149115970@example.com",
+      "createdAt": "2026-09-11T17:51:56.114Z",
+      "motivation": "Je souhaite publier des enquêtes indépendantes et vérifiées sur la plateforme.",
+      "id": "req_1789149116114_9mlv",
+      "mediaName": "Le Canard Libéré"
+    },
+    {
+      "pressCardNumber": "CP-445566",
+      "userName": "Sophie Marceau",
+      "adminNotes": "Validation effectuée.",
+      "documentUrl": "https://example.com/press-card.pdf",
+      "reviewedAt": "2026-09-11T17:52:10.524Z",
+      "id": "req_1789149130509_ky3p",
+      "mediaName": "L’Écho Citoyen",
+      "userId": "usr_1789149130466_llrs5",
+      "status": "approved",
+      "motivation": "Rejoindre l’équipe de presse officielle de Purge-Info",
+      "userEmail": "journalist_test_1789149130379@example.com",
+      "createdAt": "2026-09-11T17:52:10.509Z"
+    },
+    {
+      "mediaName": "Le Monde Libre",
+      "status": "approved",
+      "userName": "Marc Levy",
+      "id": "req_1789149166428_pu2w",
+      "motivation": "Couvrir les événements majeurs de la Purge avec rigueur et intégrité.",
+      "userId": "usr_1789149166363_14nlk",
+      "userEmail": "journalist_live_1789149166286@example.com",
+      "createdAt": "2026-09-11T17:52:46.428Z",
+      "pressCardNumber": "CP-990011",
+      "documentUrl": "https://example.com/press-card.pdf",
+      "adminNotes": "Accréditation validée par Minato Namikaze.",
+      "reviewedAt": "2026-09-11T17:52:46.646Z"
+    }
+  ],
   "reports": [],
   "views": [],
-  "mediaHouses": [],
   "adminLogs": [
     {
-      "id": "log_1789149166711_ujkb",
-      "adminId": "usr_admin_minato",
-      "adminName": "Minato Admin",
-      "action": "approve_verification",
-      "targetType": "journalist",
-      "targetId": "usr_1789149166363_14nlk",
-      "targetTitle": "Marc Levy",
       "details": "Demande approuvée. Notes : Accréditation validée par Minato Namikaze.",
-      "timestamp": "2026-09-11T17:52:46.711Z"
+      "adminName": "Minato Admin",
+      "id": "log_1789149166711_ujkb",
+      "action": "approve_verification",
+      "targetTitle": "Marc Levy",
+      "targetType": "journalist",
+      "timestamp": "2026-09-11T17:52:46.711Z",
+      "targetId": "usr_1789149166363_14nlk",
+      "adminId": "usr_admin_minato"
     },
     {
-      "id": "log_1789149116127_42fa",
       "adminId": "usr_admin_minato",
-      "targetType": "journalist",
-      "action": "approve_verification",
+      "timestamp": "2026-09-11T17:51:56.127Z",
       "targetTitle": "Jean Dupont",
       "adminName": "Minato Admin",
-      "details": "Demande approuvée. Notes : Carte de presse vérifiée auprès de la commission.",
-      "targetId": "usr_1789149116058_1sda7",
-      "timestamp": "2026-09-11T17:51:56.127Z"
-    },
-    {
-      "targetId": "usr_1789149130466_llrs5",
-      "id": "log_1789149130524_4omd",
-      "adminId": "usr_admin_minato",
-      "adminName": "Minato Admin",
-      "targetTitle": "Sophie Marceau",
-      "details": "Demande approuvée. Notes : Validation effectuée.",
+      "id": "log_1789149116127_42fa",
       "targetType": "journalist",
       "action": "approve_verification",
-      "timestamp": "2026-09-11T17:52:10.524Z"
+      "targetId": "usr_1789149116058_1sda7",
+      "details": "Demande approuvée. Notes : Carte de presse vérifiée auprès de la commission."
     },
     {
-      "targetId": "prod_env",
-      "id": "log_init",
-      "adminId": "usr_admin_naruto",
+      "action": "approve_verification",
+      "timestamp": "2026-09-11T17:52:10.524Z",
+      "targetTitle": "Sophie Marceau",
+      "adminId": "usr_admin_minato",
+      "adminName": "Minato Admin",
+      "id": "log_1789149130524_4omd",
+      "targetId": "usr_1789149130466_llrs5",
+      "details": "Demande approuvée. Notes : Validation effectuée.",
+      "targetType": "journalist"
+    },
+    {
       "adminName": "Naruto Admin",
-      "targetTitle": "PURGE-INFO Production",
       "details": "Initialisation de la plateforme de production avec les 4 comptes administrateurs officiels et les 6 rubriques officielles.",
+      "id": "log_init",
       "action": "init_platform",
+      "targetTitle": "PURGE-INFO Production",
+      "targetType": "system",
       "timestamp": "2026-09-09T03:37:31.971Z",
-      "targetType": "system"
+      "targetId": "prod_env",
+      "adminId": "usr_admin_naruto"
     }
   ],
   "mediaRecords": []

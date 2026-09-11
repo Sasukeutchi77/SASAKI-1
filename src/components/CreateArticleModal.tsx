@@ -22,6 +22,7 @@ import {
   Building2,
   Hash,
   AlertTriangle,
+  BarChart3,
 } from 'lucide-react';
 import { Category, Article, CloudinaryMedia, ArticleMediaItem } from '../types';
 import { api } from '../services/api';
@@ -105,6 +106,19 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
   );
   const [videoThumbnail, setVideoThumbnail] = useState<string | undefined>(
     articleToEdit?.videoThumbnail || undefined
+  );
+
+  // Poll (Optional - defined by journalist)
+  const [hasPoll, setHasPoll] = useState<boolean>(
+    Boolean(articleToEdit?.poll && articleToEdit.poll.question)
+  );
+  const [pollQuestion, setPollQuestion] = useState<string>(
+    articleToEdit?.poll?.question || ''
+  );
+  const [pollOptions, setPollOptions] = useState<string[]>(
+    articleToEdit?.poll?.options && articleToEdit.poll.options.length >= 2
+      ? articleToEdit.poll.options.map((o) => o.text)
+      : ['', '']
   );
 
   const [loading, setLoading] = useState(false);
@@ -206,6 +220,40 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
     const tags = currentTagsArray;
     const flatImages = gallery.map((g) => g.url);
 
+    // Optional journalist custom poll
+    let pollPayload: any = undefined;
+    if (hasPoll) {
+      const cleanQ = pollQuestion.trim();
+      const validOptions = pollOptions.map((o) => o.trim()).filter(Boolean);
+
+      if (!cleanQ) {
+        setError('Veuillez renseigner la question de votre sondage ou désactiver l’option sondage.');
+        return;
+      }
+      if (validOptions.length < 2) {
+        setError('Votre sondage doit comporter au moins 2 options de réponse distinctes.');
+        return;
+      }
+
+      pollPayload = {
+        id: articleToEdit?.poll?.id,
+        question: cleanQ,
+        options: validOptions.map((text, idx) => {
+          const existingOpt = articleToEdit?.poll?.options?.find(
+            (o) => o.text.trim().toLowerCase() === text.toLowerCase()
+          );
+          return {
+            id: existingOpt?.id || `opt_${idx + 1}`,
+            text,
+            votes: existingOpt ? existingOpt.votes : 0,
+          };
+        }),
+        totalVotes: articleToEdit?.poll?.totalVotes || 0,
+      };
+    } else if (articleToEdit?.poll) {
+      pollPayload = null;
+    }
+
     try {
       const payload = {
         title: title.trim(),
@@ -222,6 +270,7 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
         videoMedia,
         videoThumbnail,
         status,
+        poll: pollPayload,
       };
 
       if (articleToEdit) {
@@ -727,6 +776,110 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* SECTION 4: SONDAGE D'OPINION CITOYEN (OPTIONNEL) */}
+          <div className="p-4 bg-[#101428] rounded-2xl border border-cyan-500/30 space-y-4 font-mono">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-cyan-400" />
+                  4. Sondage d'Opinion pour les Lecteurs (Optionnel)
+                </h3>
+                <p className="text-xs text-cyan-400/60 mt-0.5">
+                  Proposez un vote citoyen en temps réel sous votre article. Aucun sondage automatique n'est imposé.
+                </p>
+              </div>
+
+              {/* Toggle Switch */}
+              <label className="relative inline-flex items-center cursor-pointer select-none shrink-0">
+                <input
+                  type="checkbox"
+                  checked={hasPoll}
+                  onChange={(e) => {
+                    setHasPoll(e.target.checked);
+                    if (e.target.checked && pollOptions.filter(Boolean).length < 2) {
+                      setPollOptions(['', '']);
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-[#090d1a] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-cyan-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 peer-checked:shadow-[0_0_12px_rgba(0,243,255,0.4)] border border-cyan-500/40"></div>
+                <span className="ml-2.5 text-xs font-bold text-cyan-200">
+                  {hasPoll ? 'Sondage Activé' : 'Désactivé'}
+                </span>
+              </label>
+            </div>
+
+            {hasPoll && (
+              <div className="space-y-4 pt-3 border-t border-cyan-500/20">
+                {/* Question input */}
+                <div>
+                  <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1.5">
+                    Question du sondage <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={pollQuestion}
+                    onChange={(e) => setPollQuestion(e.target.value)}
+                    placeholder="Ex: Êtes-vous favorable aux nouvelles mesures sécuritaires annoncées ?"
+                    className="w-full px-3.5 py-2.5 text-xs bg-[#141933] border border-cyan-500/40 rounded-xl focus:outline-none focus:border-cyan-400 text-white font-sans placeholder:text-stone-500"
+                    maxLength={200}
+                  />
+                  <div className="flex justify-between items-center text-[10px] text-cyan-400/60 mt-1 font-mono">
+                    <span>Posez une question claire à laquelle les citoyens peuvent répondre</span>
+                    <span>{pollQuestion.length}/200</span>
+                  </div>
+                </div>
+
+                {/* Options list */}
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                    Options de vote (minimum 2 requises)
+                  </label>
+                  {pollOptions.map((optText, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-[11px] font-bold flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={optText}
+                        onChange={(e) => {
+                          const updated = [...pollOptions];
+                          updated[idx] = e.target.value;
+                          setPollOptions(updated);
+                        }}
+                        placeholder={`Option ${idx + 1} (ex: ${idx === 0 ? 'Favorable' : idx === 1 ? 'Défavorable' : 'Neutre / Réservé'})`}
+                        className="flex-1 px-3 py-2 text-xs bg-[#141933] border border-cyan-500/40 rounded-xl focus:outline-none focus:border-cyan-400 text-white font-sans"
+                        maxLength={120}
+                      />
+                      {pollOptions.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
+                          title="Supprimer cette option"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  {pollOptions.length < 6 && (
+                    <button
+                      type="button"
+                      onClick={() => setPollOptions([...pollOptions, ''])}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-cyan-300 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 hover:border-cyan-400 rounded-lg transition cursor-pointer mt-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Ajouter une option de réponse ({pollOptions.length}/6)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         /* LIVE READER PREVIEW */
@@ -818,6 +971,25 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
                 <VideoIcon className="w-4 h-4" /> Reportage vidéo
               </h4>
               <VideoPlayer src={videoUrl} poster={videoThumbnail || coverImage} />
+            </div>
+          )}
+
+          {/* Poll Preview */}
+          {hasPoll && pollQuestion.trim() && pollOptions.filter((o) => o.trim()).length >= 2 && (
+            <div className="p-4 rounded-2xl bg-[#070b16] border border-cyan-500/40 shadow-md space-y-3 font-mono">
+              <div className="flex items-center gap-2 text-xs text-cyan-400 font-bold uppercase tracking-wider">
+                <BarChart3 className="w-4 h-4 text-cyan-400" />
+                <span>Aperçu du Sondage Personnalisé</span>
+              </div>
+              <h4 className="text-sm font-bold text-white font-sans">{pollQuestion}</h4>
+              <div className="space-y-2">
+                {pollOptions.filter((o) => o.trim()).map((opt, i) => (
+                  <div key={i} className="p-2.5 rounded-lg bg-[#040812] border border-cyan-500/20 text-xs text-slate-200 flex items-center justify-between">
+                    <span>{opt}</span>
+                    <span className="text-[11px] text-cyan-400/60 font-mono">0% (0 vote)</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
