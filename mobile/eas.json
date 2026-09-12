@@ -4,13 +4,13 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "image": "default"
+        "image": "sdk-52"
       }
     },
     "production": {
       "android": {
         "buildType": "app-bundle",
-        "image": "default"
+        "image": "sdk-52"
       }
     }
   }
