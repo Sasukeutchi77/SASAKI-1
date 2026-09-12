@@ -37,6 +37,11 @@
           "photosPermission": "L'application PURGE a besoin d'accéder à vos photos pour le téléversement d'avatars et de couvertures d'articles."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1f48294c-a52f-4b95-b46d-96e2c6a64e57"
+      }
+    }
   }
 }
