@@ -27,6 +27,7 @@ import { MediaHousesPage } from './pages/MediaHousesPage';
 import { RankingsPage } from './pages/RankingsPage';
 import { Article, Category } from './types';
 import { api } from './services/api';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 export function AppContent() {
   const { user } = useAuth();
@@ -687,6 +688,9 @@ export function AppContent() {
           </div>
         </div>
       )}
+
+      {/* PWA Offline Network Toast */}
+      <OfflineIndicator />
     </div>
   );
 }

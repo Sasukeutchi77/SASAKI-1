@@ -25,6 +25,7 @@ import { SoundToggleButton } from './SoundToggleButton';
 import { sfx } from '../services/soundEffects';
 import { realtime, RealtimeStatus } from '../services/realtime';
 import { VerifiedBadge } from './VerifiedBadge';
+import { PWAInstallButton } from './PWAInstallButton';
 import { Category } from '../types';
 
 const OFFICIAL_CATEGORIES_DEFAULT: Category[] = [
@@ -106,8 +107,13 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               className="flex items-center gap-1.5 sm:gap-2.5 text-left group cursor-pointer shrink-0"
             >
-              <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 flex items-center justify-center text-white font-black text-base sm:text-xl shadow-[0_0_18px_rgba(29,104,255,0.6)] tracking-tight group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(0,210,255,0.8)] transition-all border border-white/25 shrink-0">
-                <span>P</span>
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-black flex items-center justify-center shadow-[0_0_18px_rgba(0,210,255,0.5)] group-hover:scale-105 group-hover:shadow-[0_0_24px_rgba(0,210,255,0.8)] transition-all border border-cyan-400/50 shrink-0">
+                <img
+                  src="/pwa-192x192.png"
+                  alt="Logo PURGE"
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-cyan-400 rounded-full ring-2 ring-[#040817] shadow-[0_0_8px_rgba(0,210,255,0.8)]" />
               </div>
               <div className="flex flex-col justify-center shrink-0">
@@ -257,6 +263,14 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
               <span>{rtStatus === 'connected' ? 'DIRECT' : rtStatus === 'connecting' ? 'SYNC...' : 'OFFLINE'}</span>
             </button>
+
+            {/* In-App PWA Install Action */}
+            <div className="hidden sm:block">
+              <PWAInstallButton />
+            </div>
+            <div className="sm:hidden">
+              <PWAInstallButton compact />
+            </div>
 
             {/* Mobile Search Toggle Button */}
             <button

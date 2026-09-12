@@ -1,6 +1,6 @@
 {
   "name": "purge-info",
-  "description": "Plateforme web moderne d'actualités, journalisme citoyen et veille sociale développée par SASAKI COMPAGNIE",
+  "description": "Application complète d'actualités, journalisme citoyen et veille sociale PURGE développée par SASAKI COMPAGNIE, avec support PWA et compatibilité Expo Go",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,18 +1,45 @@
 {
-  "name": "purge-info - Plateforme d'Actualités & Journalisme Social",
-  "short_name": "purge-info",
-  "description": "Plateforme web moderne d'actualités, journalisme citoyen et veille sociale développée par SASAKI COMPAGNIE.",
+  "id": "/",
+  "name": "PURGE - Journalisme & Vérité",
+  "short_name": "PURGE",
+  "description": "Plateforme d'actualités indépendantes, journalisme d'investigation et veille citoyenne vérifiée développée par SASAKI COMPAGNIE.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#040817",
-  "theme_color": "#040817",
   "orientation": "portrait-primary",
+  "background_color": "#020512",
+  "theme_color": "#020512",
   "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     }
-  ]
+  ],
+  "categories": ["news", "magazines", "social"]
 }

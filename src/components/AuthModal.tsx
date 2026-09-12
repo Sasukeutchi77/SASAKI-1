@@ -103,17 +103,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
       <div className="relative w-full max-w-md bg-[#040817] border border-blue-500/30 rounded-2xl shadow-[0_0_50px_rgba(29,104,255,0.25)] overflow-hidden flex flex-col my-4 max-h-[92vh] transition-all text-slate-100">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#0b142c] to-[#040817] border-b border-blue-500/20 px-6 py-4 flex items-center justify-between shrink-0 transition-all">
-          <div>
-            <h2 className="text-lg font-black text-white">
-              {mode === 'login' && 'Connexion à PURGE-INFO'}
-              {mode === 'register' && 'Créer un compte citoyen'}
-              {mode === 'forgot' && 'Réinitialiser votre mot de passe'}
-            </h2>
-            <p className="text-xs text-blue-300/60 font-mono">
-              {mode === 'login' && 'Accédez à vos lectures, favoris et débats'}
-              {mode === 'register' && 'Rejoignez le réseau d’information vérifiée'}
-              {mode === 'forgot' && 'Recevez les instructions par courrier électronique'}
-            </p>
+          <div className="flex items-center gap-3">
+            <img
+              src="/pwa-192x192.png"
+              alt="Logo PURGE"
+              className="w-10 h-10 rounded-xl object-cover border border-cyan-400/40 shadow-[0_0_12px_rgba(0,210,255,0.4)] shrink-0"
+              referrerPolicy="no-referrer"
+            />
+            <div>
+              <h2 className="text-lg font-black text-white">
+                {mode === 'login' && 'Connexion à PURGE-INFO'}
+                {mode === 'register' && 'Créer un compte citoyen'}
+                {mode === 'forgot' && 'Réinitialiser votre mot de passe'}
+              </h2>
+              <p className="text-xs text-blue-300/60 font-mono">
+                {mode === 'login' && 'Accédez à vos lectures, favoris et débats'}
+                {mode === 'register' && 'Rejoignez le réseau d’information vérifiée'}
+                {mode === 'forgot' && 'Recevez les instructions par courrier électronique'}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
