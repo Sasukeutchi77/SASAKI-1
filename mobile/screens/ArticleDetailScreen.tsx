@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Share,
+  Alert,
 } from 'react-native';
 import { Article, Comment, User } from '../types';
 import { api } from '../services/api';
@@ -93,7 +94,7 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
         setArticle((prev) => ({ ...prev, poll: res.poll }));
       }
     } catch (err: any) {
-      alert(err.message || 'Impossible d’enregistrer votre vote.');
+      Alert.alert('Vote', err.message || 'Impossible d’enregistrer votre vote.');
     }
   };
 
@@ -108,7 +109,7 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
         }));
       }
     } catch (err: any) {
-      alert(err.message || 'Impossible de publier le commentaire.');
+      Alert.alert('Commentaire', err.message || 'Impossible de publier le commentaire.');
     }
   };
 
