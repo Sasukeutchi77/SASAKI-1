@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db';
 import { AuthenticatedRequest, requireAdmin } from '../auth';
+import { sanitizeUser } from './auth';
 import { AdminLog, MediaHouse, Category, Notification } from '../../src/types';
 import { setFirebaseCustomUserClaims } from '../firebaseAdmin';
 import { isMasterAdmin, MASTER_ADMIN_EMAILS } from '../config/masterAccounts';
@@ -248,7 +249,7 @@ adminRouter.get('/master-accounts', (req: AuthenticatedRequest, res: Response) =
 });
 
 // Change user role (Strict: Only master admins can promote to journalist or demote to user)
-adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) => {
+adminRouter.put('/users/:id/role', async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = data.users.find((u) => u.id === req.params.id);
 
@@ -261,7 +262,7 @@ adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) =>
   }
 
   const { role } = req.body;
-  if (!['user', 'reader', 'journalist', 'admin'].includes(role)) {
+  if (!['user', 'citoyen', 'reader', 'journalist', 'journaliste', 'admin'].includes(role)) {
     return res.status(400).json({ error: 'Rôle invalide.' });
   }
 
@@ -273,7 +274,9 @@ adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) =>
   }
 
   const prevRole = user.role;
-  user.role = role === 'reader' ? 'user' : role;
+  const isTargetJournalist = role === 'journalist' || role === 'journaliste';
+  user.role = role === 'admin' ? 'admin' : isTargetJournalist ? 'journalist' : 'user';
+  user.accountType = user.role === 'journalist' ? 'journalist' : 'user';
 
   if (user.role === 'journalist') {
     user.isVerified = true;
@@ -301,16 +304,22 @@ adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) =>
     user.mediaId = undefined;
     user.mediaName = undefined;
     user.isVerified = false;
+    user.verificationStatus = 'none';
 
-    data.notifications.unshift({
+    const revokeNotif: Notification = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: user.id,
+      recipientEmail: user.email,
       type: 'system',
       title: 'Statut Journaliste révoqué',
       message: `Votre accréditation de Journaliste a été révoquée par l'administrateur principal. Votre compte est désormais un compte simple lecteur.`,
       read: false,
+      isRead: false,
       createdAt: new Date().toISOString(),
-    });
+    };
+    data.notifications.unshift(revokeNotif);
+    await db.persistNotification(revokeNotif);
+    realtimeHub.broadcastToUser(user.id, 'notification:new', revokeNotif);
   }
 
   logAction(
@@ -322,7 +331,23 @@ adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) =>
     `Rôle modifié de "${prevRole}" vers "${user.role}" par le compte principal`
   );
 
+  user.updatedAt = new Date().toISOString();
+  await db.persistUser(user);
   db.save();
+
+  // Broadcast realtime updates
+  realtimeHub.broadcastToUser(user.id, 'user:updated', sanitizeUser(user));
+  realtimeHub.broadcastToUser(user.id, 'user:roleChanged', {
+    role: user.role,
+    isVerified: user.isVerified,
+    verificationStatus: user.verificationStatus,
+  });
+  realtimeHub.broadcast('user:roleChanged', {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    isVerified: user.isVerified,
+  });
 
   // Async sync claims to Firebase
   setFirebaseCustomUserClaims(user.id, {
@@ -335,7 +360,7 @@ adminRouter.put('/users/:id/role', (req: AuthenticatedRequest, res: Response) =>
     message: user.role === 'journalist'
       ? `L'utilisateur "${user.name}" a été promu avec succès au rang de Journaliste accrédité. Il peut désormais fonder ou intégrer une Maison de Journalistes.`
       : `Le rôle a été réinitialisé à Compte Simple ("${user.role}").`,
-    user,
+    user: sanitizeUser(user),
   });
 });
 
@@ -520,12 +545,21 @@ adminRouter.put('/verification-requests/:id', async (req: AuthenticatedRequest, 
   request.adminNotes = adminNotes;
   request.reviewedAt = new Date().toISOString();
 
-  const user = data.users.find((u) => u.id === request.userId);
+  let user = data.users.find(
+    (u) =>
+      u.id === request.userId ||
+      (request.userEmail && u.email && u.email.toLowerCase() === request.userEmail.toLowerCase())
+  );
+  if (!user && request.userEmail) {
+    user = (await db.findUser(request.userEmail)) || undefined;
+  }
+
   if (user) {
     user.verificationStatus = status;
     if (status === 'approved') {
       user.isVerified = true;
       user.role = 'journalist';
+      user.accountType = 'journalist';
       if (request.mediaName) user.mediaName = request.mediaName;
 
       // Update their articles author badge
@@ -534,9 +568,22 @@ adminRouter.put('/verification-requests/:id', async (req: AuthenticatedRequest, 
       });
     } else if (status === 'rejected') {
       user.isVerified = false;
+      user.role = 'user';
+      user.accountType = 'user';
     }
 
+    user.updatedAt = new Date().toISOString();
     await db.persistUser(user);
+
+    // Sync claims to Firebase Auth if user is linked
+    const targetClaimRole = status === 'approved' ? 'journaliste' : 'citoyen';
+    setFirebaseCustomUserClaims(user.id, {
+      role: targetClaimRole,
+      standardRole: user.role,
+      status: user.status,
+      isVerified: user.isVerified,
+      verificationStatus: user.verificationStatus,
+    }).catch(() => {});
 
     // Send direct notification to user
     const userNotif: Notification = {
@@ -551,11 +598,26 @@ adminRouter.put('/verification-requests/:id', async (req: AuthenticatedRequest, 
           : `Votre demande d’accréditation Journaliste a été rejetée. Motif : ${adminNotes || 'Dossier incomplet ou non vérifiable'}.`,
       link: status === 'approved' ? 'profile' : undefined,
       read: false,
+      isRead: false,
       createdAt: new Date().toISOString(),
     };
 
     await db.persistNotification(userNotif);
     realtimeHub.broadcastToUser(user.id, 'notification:new', userNotif);
+
+    // Realtime role synchronization
+    realtimeHub.broadcastToUser(user.id, 'user:updated', sanitizeUser(user));
+    realtimeHub.broadcastToUser(user.id, 'user:roleChanged', {
+      role: user.role,
+      isVerified: user.isVerified,
+      verificationStatus: user.verificationStatus,
+    });
+    realtimeHub.broadcast('user:roleChanged', {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    });
   }
 
   await db.persistVerificationRequest(request);
@@ -572,7 +634,7 @@ adminRouter.put('/verification-requests/:id', async (req: AuthenticatedRequest, 
   realtimeHub.broadcast('verification:updated', request);
 
   db.save();
-  return res.json({ message: `Demande ${status === 'approved' ? 'approuvée' : 'rejetée'}.`, request });
+  return res.json({ message: `Demande ${status === 'approved' ? 'approuvée' : 'rejetée'}.`, request, user: user ? sanitizeUser(user) : undefined });
 });
 
 // -------------------------------------------------------------

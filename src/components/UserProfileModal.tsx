@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Camera,
@@ -34,6 +34,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
   const {
     user,
     logout,
+    refreshUser,
     updateUserProfile,
     uploadAvatar,
     uploadCover,
@@ -41,6 +42,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
     removeCover,
     requestJournalistVerification,
   } = useAuth();
+
+  useEffect(() => {
+    refreshUser();
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);

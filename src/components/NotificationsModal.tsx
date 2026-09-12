@@ -39,8 +39,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   const handleMarkAllRead = async () => {
     try {
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true, isRead: true })));
       await api.markAllNotificationsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       refreshUser();
     } catch (err) {
       console.error(err);
@@ -71,10 +71,10 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             <h2 className="text-base font-black font-mono tracking-wide text-white">Vos Notifications</h2>
           </div>
           <div className="flex items-center gap-2">
-            {notifications.some((n) => !(n.read ?? n.isRead)) && (
+            {notifications.some((n) => !Boolean(n.read || n.isRead)) && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs font-bold font-mono text-cyan-400 hover:text-cyan-200 flex items-center gap-1 cursor-pointer transition-colors"
+                className="text-xs font-bold font-mono text-cyan-400 hover:text-cyan-200 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/40 border border-cyan-500/30 cursor-pointer transition-all"
                 title="Tout marquer comme lu"
               >
                 <CheckCheck className="w-4 h-4" />
@@ -103,18 +103,18 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           ) : (
             <div className="space-y-2">
               {notifications.map((notif) => {
-                const isRead = notif.read ?? notif.isRead ?? false;
+                const isRead = Boolean(notif.read || notif.isRead);
                 const targetArticleId = notif.targetId || (notif.link?.startsWith('#article-') ? notif.link.replace('#article-', '') : undefined);
                 return (
                   <div
                     key={notif.id}
                     onClick={async () => {
                       if (!isRead) {
+                        setNotifications((prev) =>
+                          prev.map((n) => (n.id === notif.id ? { ...n, read: true, isRead: true } : n))
+                        );
                         try {
                           await api.markNotificationRead(notif.id);
-                          setNotifications((prev) =>
-                            prev.map((n) => (n.id === notif.id ? { ...n, read: true, isRead: true } : n))
-                          );
                           refreshUser();
                         } catch {
                           // Ignore
@@ -144,15 +144,15 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                     }}
                     className={`p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
                       isRead
-                        ? 'bg-[#101428] border-cyan-500/20 opacity-80 hover:opacity-100 hover:border-cyan-500/40'
-                        : 'bg-[#101938] border-cyan-500/40 shadow-[0_0_12px_rgba(0,243,255,0.12)]'
+                        ? 'bg-[#101428]/80 border-cyan-500/15 opacity-75 hover:opacity-100 hover:border-cyan-500/30'
+                        : 'bg-[#101938] border-cyan-500/50 shadow-[0_0_14px_rgba(0,243,255,0.15)]'
                     }`}
                   >
                     <div className="p-2 rounded-full bg-[#141933] border border-cyan-500/30 shrink-0">
                       {getIcon(notif.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm text-slate-100 leading-snug">
+                      <p className={`text-xs sm:text-sm leading-snug ${isRead ? 'text-slate-300' : 'text-slate-100 font-medium'}`}>
                         {notif.message}
                       </p>
                       <span className="text-[10px] text-cyan-400/60 font-mono mt-1 block">
@@ -164,8 +164,31 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                         })}
                       </span>
                     </div>
-                    {!isRead && (
-                      <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f3ff] mt-1.5 shrink-0" />
+                    {!isRead ? (
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setNotifications((prev) =>
+                            prev.map((n) => (n.id === notif.id ? { ...n, read: true, isRead: true } : n))
+                          );
+                          try {
+                            await api.markNotificationRead(notif.id);
+                            refreshUser();
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                        className="p-1 rounded-full hover:bg-cyan-500/20 transition-all cursor-pointer mt-0.5 shrink-0 group"
+                        title="Marquer comme lue (cliquez pour faire disparaître le point bleu)"
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f3ff] block animate-pulse group-hover:scale-125 transition-transform" />
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-cyan-500/50 font-mono mt-1 shrink-0 flex items-center gap-1" title="Notification lue">
+                        <CheckCheck className="w-3.5 h-3.5 text-cyan-400/60" />
+                        <span className="text-[9px] hidden sm:inline text-cyan-400/60">Lue</span>
+                      </span>
                     )}
                   </div>
                 );

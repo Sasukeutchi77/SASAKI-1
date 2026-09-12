@@ -1,6 +1,18 @@
-export type UserRole = 'user' | 'reader' | 'journalist' | 'admin';
+export type UserRole = 'user' | 'citoyen' | 'reader' | 'journalist' | 'journaliste' | 'admin';
 
-export type AccountType = 'user' | 'journalist';
+export type AccountType = 'user' | 'citoyen' | 'journalist' | 'journaliste';
+
+export const isJournalistRole = (role?: string | null): boolean => {
+  return role === 'journalist' || role === 'journaliste';
+};
+
+export const isCitizenRole = (role?: string | null): boolean => {
+  return role === 'user' || role === 'citoyen' || role === 'reader' || role === 'citizen';
+};
+
+export const isAdminRole = (role?: string | null): boolean => {
+  return role === 'admin';
+};
 
 export type ArticleStatus = 'draft' | 'published' | 'hidden' | 'deleted';
 

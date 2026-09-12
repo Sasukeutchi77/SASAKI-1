@@ -107,7 +107,9 @@ export function verifyToken(token: string): { userId: string; role: string; emai
     if (parts.length !== 3) return null;
     const [header, body, signature] = parts;
     const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+    const sigBuf = Buffer.from(signature);
+    const expBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
       return null;
     }
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf-8'));
@@ -308,8 +310,11 @@ function mergeDatabaseState(local: DatabaseSchema, cloud: DatabaseSchema): Datab
       const preferAdmin = existing.role === 'admin' || u.role === 'admin';
       const preferJournalist = !preferAdmin && (existing.role === 'journalist' || u.role === 'journalist');
       existing.role = preferAdmin ? 'admin' : preferJournalist ? 'journalist' : (existing.role || u.role || 'user');
+      if (existing.role === 'journalist') {
+        existing.accountType = 'journalist';
+      }
 
-      if (u.isVerified || existing.isVerified) {
+      if (u.isVerified || existing.isVerified || existing.role === 'journalist') {
         existing.isVerified = true;
         existing.verificationStatus = 'approved';
       }
@@ -414,6 +419,27 @@ function mergeDatabaseState(local: DatabaseSchema, cloud: DatabaseSchema): Datab
     return Array.from(map.values());
   };
 
+  const unionNotifications = (arr1: Notification[] = [], arr2: Notification[] = []): Notification[] => {
+    const map = new Map<string, Notification>();
+    [...arr1, ...arr2].forEach((notif) => {
+      if (!notif || !notif.id) return;
+      const existing = map.get(notif.id);
+      const isRead = Boolean(notif.read || notif.isRead);
+      if (!existing) {
+        map.set(notif.id, { ...notif, read: isRead, isRead });
+      } else {
+        const mergedRead = Boolean(existing.read || existing.isRead || isRead);
+        map.set(notif.id, {
+          ...existing,
+          ...notif,
+          read: mergedRead,
+          isRead: mergedRead,
+        });
+      }
+    });
+    return Array.from(map.values());
+  };
+
   const mergedLikes = unionById(local.likes, cloud.likes);
   const mergedCommentLikes = unionById(local.commentLikes, cloud.commentLikes);
   const mergedBookmarks = unionById(local.bookmarks, cloud.bookmarks);
@@ -435,7 +461,7 @@ function mergeDatabaseState(local: DatabaseSchema, cloud: DatabaseSchema): Datab
     commentLikes: mergedCommentLikes,
     bookmarks: mergedBookmarks,
     follows: mergedFollows,
-    notifications: unionById(local.notifications, cloud.notifications),
+    notifications: unionNotifications(local.notifications, cloud.notifications),
     verificationRequests: unionById(local.verificationRequests, cloud.verificationRequests),
     reports: unionById(local.reports, cloud.reports),
     views: unionById(local.views, cloud.views),
@@ -450,6 +476,8 @@ class Database {
 
   constructor() {
     this.data = this.loadData();
+    this.ensureMasterAdmins();
+    this.ensureApprovedJournalists();
     // Automatically initialize Cloud Firestore persistence in the background
     this.initCloudPersistence().catch((err) => {
       console.warn('[DB] Cloud persistence initial check failed:', err);
@@ -464,6 +492,7 @@ class Database {
         // Merge non-destructively: keep both local and cloud items so newly created articles, houses, comments are NEVER lost
         this.data = mergeDatabaseState(this.data, cloudData);
         this.ensureMasterAdmins();
+        this.ensureApprovedJournalists();
         this.isCloudReady = true;
         this.saveDataDirect(this.data);
         // Immediately sync back merged set so Cloud Firestore receives any items that were only local
@@ -503,6 +532,31 @@ class Database {
     }
   }
 
+  public ensureApprovedJournalists() {
+    if (!this.data.verificationRequests || !this.data.users) return;
+    (this.data.verificationRequests || []).forEach((req) => {
+      if (req.status === 'approved') {
+        const user = this.data.users.find(
+          (u) =>
+            u.id === req.userId ||
+            (req.userEmail && u.email && u.email.toLowerCase() === req.userEmail.toLowerCase())
+        );
+        if (user && user.role !== 'admin') {
+          if (user.role !== 'journalist' || !user.isVerified || user.verificationStatus !== 'approved') {
+            console.log(`[DB] Reconciling approved journalist user: ${user.email} (${user.id}) -> role: journalist`);
+            user.role = 'journalist';
+            user.accountType = 'journalist';
+            user.isVerified = true;
+            user.verificationStatus = 'approved';
+            if (req.mediaName && !user.mediaName) {
+              user.mediaName = req.mediaName;
+            }
+          }
+        }
+      }
+    });
+  }
+
   public async persistUser(user: UserWithPassword): Promise<void> {
     user.updatedAt = user.updatedAt || new Date().toISOString();
     const existingIndex = this.data.users.findIndex(
@@ -514,7 +568,40 @@ class Database {
       this.data.users.push(user);
     }
     this.saveDataDirect(this.data);
-    await persistDocToCloud(CLOUD_COLLECTIONS.users, user.id, user);
+
+    // Compute Firestore attributes guaranteeing explicit 'citoyen' -> 'journaliste' transition
+    const isJournalist =
+      user.role === 'journalist' ||
+      user.role === 'journaliste' ||
+      user.verificationStatus === 'approved' ||
+      user.isVerified === true;
+    const isMaster = user.role === 'admin';
+
+    const firestoreRole = isMaster ? 'admin' : isJournalist ? 'journaliste' : 'citoyen';
+    const firestoreAccountType = isMaster ? 'admin' : isJournalist ? 'journaliste' : 'citoyen';
+
+    const cloudUserPayload = {
+      ...user,
+      role: firestoreRole,
+      accountType: firestoreAccountType,
+      standardRole: isJournalist ? 'journalist' : user.role,
+      isJournalist: Boolean(isJournalist),
+      isVerified: Boolean(isMaster || isJournalist),
+      verificationStatus: isMaster || isJournalist ? 'approved' : user.verificationStatus || 'none',
+      updatedAt: user.updatedAt,
+    };
+
+    // 1. Sync to backend cloud collection (cloud_users)
+    await persistDocToCloud(CLOUD_COLLECTIONS.users, user.id, cloudUserPayload);
+
+    // 2. Sync to direct 'users' collection in Cloud Firestore
+    await persistDocToCloud('users', user.id, cloudUserPayload);
+
+    // 3. If user has a Firebase UID distinct from user.id, sync both documents as well
+    if (user.uid && user.uid !== user.id) {
+      await persistDocToCloud(CLOUD_COLLECTIONS.users, user.uid, cloudUserPayload);
+      await persistDocToCloud('users', user.uid, cloudUserPayload);
+    }
   }
 
   public async findUserById(id: string): Promise<UserWithPassword | null> {

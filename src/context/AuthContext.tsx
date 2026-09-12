@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, CloudinaryMedia } from '../types';
 import { api } from '../services/api';
 import {
@@ -48,70 +48,133 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(api.getToken());
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Initialize user and token synchronously from localStorage so session is never lost on refresh
+  const [user, setUserState] = useState<User | null>(() => api.getUser());
+  const [token, setToken] = useState<string | null>(() => api.getToken());
+  const [isLoading, setIsLoading] = useState<boolean>(() => !api.getUser() && !api.getToken());
   const [unreadNotifs, setUnreadNotifs] = useState<number>(0);
   const [bookmarksCount, setBookmarksCount] = useState<number>(0);
   const isFirebaseActive = isFirebaseConfigured();
 
-  // Load current user profile from API/backend
-  const refreshUser = async () => {
-    const currentToken = api.getToken();
-    if (!currentToken) {
-      // Check if Firebase user is logged in
-      if (isFirebaseActive && firebaseAuth?.currentUser) {
-        try {
-          const freshToken = await firebaseAuth.currentUser.getIdToken();
-          api.setToken(freshToken);
-          setToken(freshToken);
-        } catch {
-          setUser(null);
+  // Deduplication ref to avoid multiple concurrent refresh calls on refresh
+  const refreshPromiseRef = useRef<Promise<void> | null>(null);
+
+  // Sync state and localStorage seamlessly
+  const setUser = (u: User | null | ((prev: User | null) => User | null)) => {
+    setUserState((prev) => {
+      const next = typeof u === 'function' ? u(prev) : u;
+      if (next) {
+        api.setUser(next);
+      } else {
+        api.setUser(null);
+      }
+      return next;
+    });
+  };
+
+  // Load current user profile from API/backend with request deduplication
+  const refreshUser = async (): Promise<void> => {
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
+    }
+
+    const runRefresh = async () => {
+      const currentToken = api.getToken();
+      if (!currentToken) {
+        // Check if Firebase user is logged in
+        if (isFirebaseActive && firebaseAuth) {
+          if (typeof (firebaseAuth as any).authStateReady === 'function') {
+            await (firebaseAuth as any).authStateReady().catch(() => {});
+          }
+          if (firebaseAuth.currentUser) {
+            try {
+              const freshToken = await firebaseAuth.currentUser.getIdToken();
+              api.setToken(freshToken);
+              setToken(freshToken);
+            } catch {
+              if (!api.getUser()) {
+                setUser(null);
+              }
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            if (!api.getUser()) {
+              setUser(null);
+            }
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          if (!api.getUser()) {
+            setUser(null);
+          }
           setIsLoading(false);
           return;
         }
-      } else {
-        setUser(null);
-        setIsLoading(false);
-        return;
       }
-    }
 
-    try {
-      const data = await api.getMe();
-      setUser(data.user);
-      setUnreadNotifs(data.unreadNotifs);
-      setBookmarksCount(data.bookmarksCount);
-    } catch (err: any) {
-      console.warn('Session check warning:', err);
-      // Attempt token recovery via Firebase before clearing
-      if (isFirebaseActive && firebaseAuth?.currentUser) {
-        try {
-          const freshIdToken = await firebaseAuth.currentUser.getIdToken(true);
-          api.setToken(freshIdToken);
-          setToken(freshIdToken);
-          const data = await api.getMe();
+      try {
+        const data = await api.getMe();
+        if (data && data.user) {
           setUser(data.user);
-          setUnreadNotifs(data.unreadNotifs);
-          setBookmarksCount(data.bookmarksCount);
-          return;
-        } catch {
-          // continue to cleanup
+          setUnreadNotifs(data.unreadNotifs || 0);
+          setBookmarksCount(data.bookmarksCount || 0);
         }
+      } catch (err: any) {
+        console.warn('Session check warning:', err);
+        // Attempt token recovery via Firebase before clearing
+        let recovered = false;
+        if (isFirebaseActive && firebaseAuth) {
+          try {
+            if (typeof (firebaseAuth as any).authStateReady === 'function') {
+              await (firebaseAuth as any).authStateReady().catch(() => {});
+            }
+            if (firebaseAuth.currentUser) {
+              const freshIdToken = await firebaseAuth.currentUser.getIdToken(true);
+              if (freshIdToken) {
+                api.setToken(freshIdToken);
+                setToken(freshIdToken);
+                const data = await api.getMe();
+                if (data && data.user) {
+                  setUser(data.user);
+                  setUnreadNotifs(data.unreadNotifs || 0);
+                  setBookmarksCount(data.bookmarksCount || 0);
+                  recovered = true;
+                  return;
+                }
+              }
+            }
+          } catch {
+            // continue
+          }
+        }
+
+        const errMsg = String(err?.message || err);
+        const isDefiniteAuthFailure =
+          errMsg.includes('Non authentifié') ||
+          errMsg.includes('Authentification requise') ||
+          errMsg.includes('Token invalide') ||
+          errMsg.includes('Token expiré');
+
+        // Only clear session on a definitive invalidation when no Firebase user is present
+        if (isDefiniteAuthFailure && !recovered) {
+          if (!isFirebaseActive || !firebaseAuth?.currentUser) {
+            api.clearSession();
+            setToken(null);
+            setUser(null);
+          }
+        }
+      } finally {
+        setIsLoading(false);
       }
-      const errMsg = String(err?.message || err);
-      if (
-        errMsg.includes('401') ||
-        errMsg.includes('Non authentifié') ||
-        errMsg.includes('Authentification requise')
-      ) {
-        api.clearToken();
-        setToken(null);
-        setUser(null);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    refreshPromiseRef.current = runRefresh().finally(() => {
+      refreshPromiseRef.current = null;
+    });
+
+    return refreshPromiseRef.current;
   };
 
   // Sync Firebase Auth state listener
@@ -130,11 +193,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } else {
           // If no token in local storage either, reset
-          if (!api.getToken()) {
+          if (!api.getToken() && !api.getUser()) {
             setUser(null);
             setToken(null);
             setIsLoading(false);
-          } else {
+          } else if (api.getToken()) {
             await refreshUser();
           }
         }
@@ -145,15 +208,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isFirebaseActive]);
 
-  // Real-time synchronization for personal notifications (articles published by followed houses, replies, likes)
+  // Real-time synchronization for personal notifications and live role updates
   useEffect(() => {
-    const unsubNotif = realtime.on('notification:new', (notifItem) => {
+    const unsubNotif = realtime.on('notification:new', (notifItem: any) => {
       setUnreadNotifs((prev) => prev + 1);
       sfx.playNotificationDing();
+      if (notifItem?.type === 'verification' || notifItem?.link === 'profile') {
+        refreshUser();
+      }
+    });
+
+    const unsubUser = realtime.on('user:updated', (updatedUser: any) => {
+      if (updatedUser) {
+        setUser((prev) => (prev ? { ...prev, ...updatedUser } : updatedUser));
+        refreshUser();
+      }
+    });
+
+    const unsubRole = realtime.on('user:roleChanged', (payload: any) => {
+      if (payload?.role) {
+        const isJournalist = payload.role === 'journalist' || payload.role === 'journaliste';
+        setUser((prev) => {
+          if (!prev) return prev;
+          if (payload.userId && payload.userId !== prev.id && payload.email && payload.email.toLowerCase() !== prev.email.toLowerCase()) {
+            return prev;
+          }
+          return {
+            ...prev,
+            role: isJournalist ? 'journalist' : (payload.role || prev.role),
+            accountType: isJournalist ? 'journalist' : (payload.accountType || prev.accountType),
+            isVerified: payload.isVerified !== undefined ? payload.isVerified : isJournalist ? true : prev.isVerified,
+            verificationStatus: payload.verificationStatus || (isJournalist ? 'approved' : prev.verificationStatus),
+          };
+        });
+      }
+      refreshUser();
     });
 
     return () => {
       unsubNotif();
+      unsubUser();
+      unsubRole();
     };
   }, []);
 
@@ -270,7 +365,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Firebase logout error:', e);
     }
-    api.clearToken();
+    api.clearSession();
     setToken(null);
     setUser(null);
     setUnreadNotifs(0);

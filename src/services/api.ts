@@ -1,5 +1,6 @@
 import {
   User,
+  UserRole,
   Article,
   Category,
   Comment,
@@ -17,6 +18,7 @@ import {
 } from '../types';
 
 const TOKEN_KEY = 'purge_info_token';
+const USER_KEY = 'purge_info_user';
 const API_BASE = (
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) ||
   (typeof process !== 'undefined' && process.env?.VITE_API_URL) ||
@@ -24,15 +26,42 @@ const API_BASE = (
 ).replace(/\/+$/, '');
 
 export function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearToken(): void {
+  if (typeof window === 'undefined') return;
   localStorage.removeItem(TOKEN_KEY);
+}
+
+export function getUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setUser(user: User | null): void {
+  if (typeof window === 'undefined') return;
+  if (user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_KEY);
+  }
+}
+
+export function clearSession(): void {
+  clearToken();
+  setUser(null);
 }
 
 export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -86,6 +115,9 @@ export const api = {
   getToken,
   setToken,
   clearToken,
+  getUser,
+  setUser,
+  clearSession,
   request,
 
   // Auth
@@ -95,6 +127,9 @@ export const api = {
       body: JSON.stringify(credentials),
     });
     setToken(data.token);
+    if (data.user) {
+      setUser(data.user);
+    }
     return data;
   },
 
@@ -104,18 +139,29 @@ export const api = {
       body: JSON.stringify(formData),
     });
     setToken(data.token);
+    if (data.user) {
+      setUser(data.user);
+    }
     return data;
   },
 
   async getMe() {
-    return request<{ user: User; unreadNotifs: number; bookmarksCount: number }>('/api/auth/me');
+    const res = await request<{ user: User; unreadNotifs: number; bookmarksCount: number }>('/api/auth/me');
+    if (res && res.user) {
+      setUser(res.user);
+    }
+    return res;
   },
 
   async updateProfile(profileData: Partial<User>) {
-    return request<{ user: User; message: string }>('/api/auth/profile', {
+    const res = await request<{ user: User; message: string }>('/api/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(profileData),
     });
+    if (res && res.user) {
+      setUser(res.user);
+    }
+    return res;
   },
 
   async removeAvatar() {
@@ -501,7 +547,7 @@ export const api = {
     });
   },
 
-  async setAdminUserRole(id: string, role: 'user' | 'reader' | 'journalist' | 'admin') {
+  async setAdminUserRole(id: string, role: UserRole) {
     return request<{ message: string; user: User }>(`/api/admin/users/${id}/role`, {
       method: 'PUT',
       body: JSON.stringify({ role }),

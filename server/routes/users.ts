@@ -166,19 +166,25 @@ usersRouter.get('/me/bookmarks', requireAuth, (req: AuthenticatedRequest, res: R
 usersRouter.get('/me/notifications', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const reqUser = req.user!;
-  const notifs = data.notifications.filter((n) => {
-    if (n.userId === reqUser.id) return true;
-    if (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) return true;
-    if ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin)) return true;
-    return false;
-  });
+  const notifs = data.notifications
+    .filter((n) => {
+      if (n.userId === reqUser.id) return true;
+      if (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) return true;
+      if ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin)) return true;
+      return false;
+    })
+    .map((n) => ({
+      ...n,
+      read: Boolean(n.read || n.isRead),
+      isRead: Boolean(n.read || n.isRead),
+    }));
   notifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return res.json({ notifications: notifs });
 });
 
 // 4. Mark single notification read
-usersRouter.put('/me/notifications/:id/read', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+usersRouter.put('/me/notifications/:id/read', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const reqUser = req.user!;
   const notif = data.notifications.find((n) => {
@@ -191,24 +197,28 @@ usersRouter.put('/me/notifications/:id/read', requireAuth, (req: AuthenticatedRe
 
   if (notif) {
     notif.read = true;
+    notif.isRead = true;
+    await db.persistNotification(notif);
     db.save();
   }
-  return res.json({ success: true });
+  return res.json({ success: true, notification: notif });
 });
 
 // 5. Mark all notifications read
-usersRouter.put('/me/notifications/read-all', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+usersRouter.put('/me/notifications/read-all', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const reqUser = req.user!;
-  data.notifications.forEach((n) => {
+  for (const n of data.notifications) {
     const isTarget =
       n.userId === reqUser.id ||
       (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) ||
       ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin));
     if (isTarget) {
       n.read = true;
+      n.isRead = true;
+      await db.persistNotification(n);
     }
-  });
+  }
   db.save();
   return res.json({ success: true });
 });

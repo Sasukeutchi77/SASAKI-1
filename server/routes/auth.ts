@@ -10,7 +10,7 @@ import { saveBase64MediaLocally } from './media';
 
 export const authRouter = Router();
 
-function sanitizeUser(user: UserWithPassword) {
+export function sanitizeUser(user: UserWithPassword) {
   const { passwordHash, passwordSalt, ...safeUser } = user;
   return safeUser;
 }
@@ -246,6 +246,23 @@ authRouter.post('/login', authRateLimiter, async (req, res) => {
     user.verificationStatus = 'approved';
     await db.persistUser(user);
     db.save();
+  } else if (user.role !== 'admin') {
+    const approvedReq = db.getData().verificationRequests.find(
+      (r) =>
+        (r.userId === user.id || (r.userEmail && user.email && r.userEmail.toLowerCase() === user.email.toLowerCase())) &&
+        r.status === 'approved'
+    );
+    if (approvedReq && (user.role !== 'journalist' || !user.isVerified || user.verificationStatus !== 'approved')) {
+      user.role = 'journalist';
+      user.accountType = 'journalist';
+      user.isVerified = true;
+      user.verificationStatus = 'approved';
+      if (approvedReq.mediaName && !user.mediaName) {
+        user.mediaName = approvedReq.mediaName;
+      }
+      await db.persistUser(user);
+      db.save();
+    }
   }
 
   const token = generateToken({
@@ -262,12 +279,33 @@ authRouter.post('/login', authRateLimiter, async (req, res) => {
 });
 
 // Current User Profile
-authRouter.get('/me', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+authRouter.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
   const data = db.getData();
   const reqUser = req.user!;
+
+  // Auto-reconcile journalist accreditation if approved by admin
+  if (reqUser.role !== 'admin') {
+    const approvedReq = data.verificationRequests.find(
+      (r) =>
+        (r.userId === reqUser.id || (r.userEmail && reqUser.email && r.userEmail.toLowerCase() === reqUser.email.toLowerCase())) &&
+        r.status === 'approved'
+    );
+    if (approvedReq && (reqUser.role !== 'journalist' || !reqUser.isVerified || reqUser.verificationStatus !== 'approved')) {
+      reqUser.role = 'journalist';
+      reqUser.accountType = 'journalist';
+      reqUser.isVerified = true;
+      reqUser.verificationStatus = 'approved';
+      if (approvedReq.mediaName && !reqUser.mediaName) {
+        reqUser.mediaName = approvedReq.mediaName;
+      }
+      await db.persistUser(reqUser);
+      db.save();
+    }
+  }
+
   const unreadNotifs = data.notifications.filter((n) => {
-    if (n.read) return false;
+    if (n.read || n.isRead) return false;
     if (n.userId === reqUser.id) return true;
     if (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) return true;
     if ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin)) return true;
@@ -277,7 +315,7 @@ authRouter.get('/me', requireAuth, (req: AuthenticatedRequest, res: Response) =>
   const followersCount = data.follows.filter((f) => f.targetId === reqUser.id).length;
   const followingCount = data.follows.filter((f) => f.followerId === reqUser.id).length;
 
-  const safeUser = sanitizeUser(req.user);
+  const safeUser = sanitizeUser(reqUser);
   return res.json({
     user: {
       ...safeUser,

@@ -54,7 +54,9 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
   const {
     user,
     isAuthenticated,
+    isLoading,
     logout,
+    refreshUser,
     updateUserProfile,
     uploadAvatar,
     uploadCover,
@@ -62,6 +64,10 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
     removeCover,
     requestJournalistVerification,
   } = useAuth();
+
+  useEffect(() => {
+    refreshUser();
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +119,14 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
       setMediaName(user.mediaName || '');
     }
   }, [user]);
+
+  if (isLoading && !user) {
+    return (
+      <div className="min-h-screen bg-[#07080f] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return (

@@ -26,6 +26,10 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
         (payload.email && u.email.toLowerCase() === payload.email.toLowerCase())
     );
 
+    if (!user && payload.userId) {
+      user = (await db.findUserById(payload.userId)) || undefined;
+    }
+
     if (!user && payload.email) {
       user = (await db.findUser(payload.email)) || undefined;
     }
@@ -71,8 +75,26 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
         }
       } else if (user.role === 'admin') {
         user.role = 'user';
+        user.accountType = 'user';
         await db.persistUser(user);
         db.save();
+      } else {
+        const approvedReq = data.verificationRequests.find(
+          (r) =>
+            (r.userId === user.id || (r.userEmail && user.email && r.userEmail.toLowerCase() === user.email.toLowerCase())) &&
+            r.status === 'approved'
+        );
+        if (approvedReq && (user.role !== 'journalist' || !user.isVerified || user.verificationStatus !== 'approved')) {
+          user.role = 'journalist';
+          user.accountType = 'journalist';
+          user.isVerified = true;
+          user.verificationStatus = 'approved';
+          if (approvedReq.mediaName && !user.mediaName) {
+            user.mediaName = approvedReq.mediaName;
+          }
+          await db.persistUser(user);
+          db.save();
+        }
       }
       req.user = user;
     }
@@ -89,6 +111,10 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
           (decoded.uid && u.id === decoded.uid) ||
           (decoded.email && u.email.toLowerCase() === decoded.email.toLowerCase())
       );
+
+      if (!user && decoded.uid) {
+        user = (await db.findUserById(decoded.uid)) || undefined;
+      }
 
       if (!user && decoded.email) {
         user = (await db.findUser(decoded.email)) || undefined;
@@ -127,8 +153,26 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
       } else if (user && isSuperAdminEmail && user.role !== 'admin') {
         user.role = 'admin';
         user.isVerified = true;
+        user.verificationStatus = 'approved';
         await db.persistUser(user);
         db.save();
+      } else if (user && !isSuperAdminEmail && user.role !== 'admin') {
+        const approvedReq = data.verificationRequests.find(
+          (r) =>
+            (r.userId === user!.id || (r.userEmail && user!.email && r.userEmail.toLowerCase() === user!.email.toLowerCase())) &&
+            r.status === 'approved'
+        );
+        if (approvedReq && (user.role !== 'journalist' || !user.isVerified || user.verificationStatus !== 'approved')) {
+          user.role = 'journalist';
+          user.accountType = 'journalist';
+          user.isVerified = true;
+          user.verificationStatus = 'approved';
+          if (approvedReq.mediaName && !user.mediaName) {
+            user.mediaName = approvedReq.mediaName;
+          }
+          await db.persistUser(user);
+          db.save();
+        }
       }
 
       if (user) {

@@ -348,6 +348,20 @@ export function queueCloudSync(data: DatabaseSchema): void {
   }, 1000); // 1 second debounce
 }
 
+function normalizeCloudUserData(data: any): UserWithPassword {
+  const isJournalist = data.role === 'journaliste' || data.role === 'journalist' || data.isJournalist === true;
+  const isCitizen = data.role === 'citoyen' || data.role === 'user' || data.role === 'reader';
+  const role = data.role === 'admin' ? 'admin' : isJournalist ? 'journalist' : 'user';
+
+  return {
+    ...data,
+    role,
+    accountType: isJournalist ? 'journalist' : 'user',
+    isVerified: Boolean(data.role === 'admin' || isJournalist || data.isVerified),
+    verificationStatus: data.verificationStatus || (isJournalist ? 'approved' : 'none'),
+  } as UserWithPassword;
+}
+
 /**
  * Searches for a user in Cloud Firestore by email.
  * Guarantees that even if local cache doesn't have the user yet, Cloud Firestore is queried.
@@ -358,10 +372,18 @@ export async function findUserByEmailInCloud(email: string): Promise<UserWithPas
 
   try {
     const cleanEmail = email.trim().toLowerCase();
-    const q = query(collection(db, CLOUD_COLLECTIONS.users), where('email', '==', cleanEmail));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      return snap.docs[0].data() as UserWithPassword;
+    // Check cloud_users first
+    const q1 = query(collection(db, CLOUD_COLLECTIONS.users), where('email', '==', cleanEmail));
+    const snap1 = await getDocs(q1);
+    if (!snap1.empty) {
+      return normalizeCloudUserData(snap1.docs[0].data());
+    }
+
+    // Check users collection fallback
+    const q2 = query(collection(db, 'users'), where('email', '==', cleanEmail));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) {
+      return normalizeCloudUserData(snap2.docs[0].data());
     }
   } catch (err) {
     console.warn('[FirestoreService] Error querying user by email in cloud:', err);
@@ -377,9 +399,16 @@ export async function fetchUserByIdFromCloud(id: string): Promise<UserWithPasswo
   if (!db || !id) return null;
 
   try {
-    const snap = await getDoc(doc(db, CLOUD_COLLECTIONS.users, String(id)));
-    if (snap.exists()) {
-      return snap.data() as UserWithPassword;
+    // Check cloud_users first
+    const snap1 = await getDoc(doc(db, CLOUD_COLLECTIONS.users, String(id)));
+    if (snap1.exists()) {
+      return normalizeCloudUserData(snap1.data());
+    }
+
+    // Check users collection fallback
+    const snap2 = await getDoc(doc(db, 'users', String(id)));
+    if (snap2.exists()) {
+      return normalizeCloudUserData(snap2.data());
     }
   } catch (err) {
     console.warn(`[FirestoreService] Error fetching user ${id} from cloud:`, err);
