@@ -1,117 +1,165 @@
-import React, { useState, useRef } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-  BackHandler,
-  Platform,
-  SafeAreaView,
-} from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, View, BackHandler } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { WebView } from 'react-native-webview';
 
-// URL par défaut de la plateforme PURGE
-const DEFAULT_APP_URL = 'https://ais-dev-ijf4z7bgmjai2zqxses2p3-897333779097.europe-west2.run.app';
+import { NavigationTab, Article, User } from './types';
+import { api } from './services/api';
+import { Header } from './components/Header';
+import { BottomNavBar } from './components/BottomNavBar';
+import { HomeScreen } from './screens/HomeScreen';
+import { ArticleDetailScreen } from './screens/ArticleDetailScreen';
+import { SearchScreen } from './screens/SearchScreen';
+import { RankingsScreen } from './screens/RankingsScreen';
+import { BookmarksScreen } from './screens/BookmarksScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
+import { CreateArticleScreen } from './screens/CreateArticleScreen';
 
 export default function App() {
-  const [loading, setLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [canGoBack, setCanGoBack] = useState(false);
-  const webViewRef = useRef<WebView>(null);
+  const [activeTab, setActiveTab] = useState<NavigationTab>('feed');
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [isCreatingArticle, setIsCreatingArticle] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [unreadBookmarks, setUnreadBookmarks] = useState<number>(0);
 
-  // Gestion du bouton retour physique sous Android
-  React.useEffect(() => {
-    if (Platform.OS === 'android') {
-      const onBackPress = () => {
-        if (canGoBack && webViewRef.current) {
-          webViewRef.current.goBack();
-          return true;
+  // Restauration de session utilisateur au démarrage
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const cachedUser = await api.getUser();
+        if (cachedUser) {
+          setCurrentUser(cachedUser);
         }
-        return false;
-      };
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => subscription.remove();
-    }
-  }, [canGoBack]);
+        const me = await api.getMe();
+        if (me && me.user) {
+          setCurrentUser(me.user);
+          if (typeof me.bookmarksCount === 'number') {
+            setUnreadBookmarks(me.bookmarksCount);
+          }
+        }
+      } catch (err) {
+        // Mode hors-ligne ou token expiré
+      }
+    };
 
-  const handleReload = () => {
-    setHasError(false);
-    setLoading(true);
-    if (webViewRef.current) {
-      webViewRef.current.reload();
-    }
-  };
+    initAuth();
+  }, []);
+
+  // Gestion matérielle de la touche "Retour" sur Android
+  useEffect(() => {
+    const onBackPress = () => {
+      if (isCreatingArticle) {
+        setIsCreatingArticle(false);
+        return true;
+      }
+      if (selectedArticle) {
+        setSelectedArticle(null);
+        return true;
+      }
+      if (activeTab !== 'feed') {
+        setActiveTab('feed');
+        return true;
+      }
+      return false; // Quitte l'application
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [isCreatingArticle, selectedArticle, activeTab]);
+
+  const handleSelectArticle = useCallback((article: Article) => {
+    setSelectedArticle(article);
+  }, []);
+
+  const handleArticleCreated = useCallback((newArticle: Article) => {
+    setIsCreatingArticle(false);
+    setSelectedArticle(newArticle);
+  }, []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" backgroundColor="#020512" translucent={false} />
-      <View style={styles.container}>
-        {/* En-tête natif discret */}
-        <View style={styles.nativeHeader}>
-          <Image
-            source={require('./assets/icon.png')}
-            style={styles.headerLogo}
-            resizeMode="contain"
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+        <StatusBar style="light" backgroundColor="#020512" />
+
+        {/* Écran d'écriture d'article en plein écran */}
+        {isCreatingArticle ? (
+          <CreateArticleScreen
+            onBack={() => setIsCreatingArticle(false)}
+            onArticleCreated={handleArticleCreated}
           />
-          <Text style={styles.headerTitle}>
-            PURGE <Text style={styles.headerAccent}>• LIVE</Text>
-          </Text>
-        </View>
-
-        {/* Vue Web Ultra-Fluide */}
-        <WebView
-          ref={webViewRef}
-          source={{ uri: DEFAULT_APP_URL }}
-          style={styles.webview}
-          onLoadStart={() => setLoading(true)}
-          onLoadEnd={() => setLoading(false)}
-          onError={() => {
-            setLoading(false);
-            setHasError(true);
-          }}
-          onNavigationStateChange={(navState) => {
-            setCanGoBack(navState.canGoBack);
-          }}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={true}
-          allowsBackForwardNavigationGestures={true}
-          pullToRefreshEnabled={true}
-          renderLoading={() => (
-            <View style={styles.loadingOverlay}>
-              <Image
-                source={require('./assets/icon.png')}
-                style={styles.splashLogo}
-                resizeMode="contain"
-              />
-              <ActivityIndicator size="large" color="#00d2ff" style={{ marginTop: 24 }} />
-              <Text style={styles.loadingText}>Connexion au réseau PURGE...</Text>
-            </View>
-          )}
-        />
-
-        {/* Écran d'erreur en cas d'absence de réseau */}
-        {hasError && (
-          <View style={styles.errorContainer}>
-            <Image
-              source={require('./assets/icon.png')}
-              style={styles.splashLogo}
-              resizeMode="contain"
+        ) : selectedArticle ? (
+          /* Écran de lecture détaillée d'un article */
+          <ArticleDetailScreen
+            article={selectedArticle}
+            currentUser={currentUser}
+            onBack={() => setSelectedArticle(null)}
+            onOpenAuth={() => {
+              setSelectedArticle(null);
+              setActiveTab('profile');
+            }}
+          />
+        ) : (
+          /* Vue Principale avec En-tête et Barre de Navigation */
+          <View style={styles.mainContainer}>
+            <Header
+              title={
+                activeTab === 'feed'
+                  ? 'LE QUOTIDIEN FACTUEL'
+                  : activeTab === 'search'
+                  ? 'EXPLORATEUR DE DÉPÊCHES'
+                  : activeTab === 'rankings'
+                  ? 'INDICE DE NOTORIÉTÉ'
+                  : activeTab === 'bookmarks'
+                  ? 'ARCHIVES PERSONNELLES'
+                  : 'ESPACE COMPTE'
+              }
+              user={currentUser}
+              onOpenCreateArticle={() => setIsCreatingArticle(true)}
+              onOpenSearch={() => setActiveTab('search')}
+              onOpenProfile={() => setActiveTab('profile')}
             />
-            <Text style={styles.errorTitle}>Signal Hors Ligne</Text>
-            <Text style={styles.errorMessage}>
-              Impossible de joindre le serveur PURGE. Vérifiez votre connexion Internet.
-            </Text>
-            <TouchableOpacity style={styles.retryButton} onPress={handleReload} activeOpacity={0.8}>
-              <Text style={styles.retryButtonText}>RÉESSAYER LA CONNEXION</Text>
-            </TouchableOpacity>
+
+            <View style={styles.screenBody}>
+              {activeTab === 'feed' && (
+                <HomeScreen
+                  onSelectArticle={handleSelectArticle}
+                  onRequireAuth={() => setActiveTab('profile')}
+                />
+              )}
+
+              {activeTab === 'search' && (
+                <SearchScreen onSelectArticle={handleSelectArticle} />
+              )}
+
+              {activeTab === 'rankings' && <RankingsScreen />}
+
+              {activeTab === 'bookmarks' && (
+                <BookmarksScreen
+                  currentUser={currentUser}
+                  onSelectArticle={handleSelectArticle}
+                  onOpenFeed={() => setActiveTab('feed')}
+                  onOpenAuth={() => setActiveTab('profile')}
+                />
+              )}
+
+              {activeTab === 'profile' && (
+                <ProfileScreen
+                  currentUser={currentUser}
+                  onUserUpdated={setCurrentUser}
+                  onOpenCreateArticle={() => setIsCreatingArticle(true)}
+                />
+              )}
+            </View>
+
+            <BottomNavBar
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              unreadBookmarks={unreadBookmarks}
+            />
           </View>
         )}
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -120,92 +168,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#020512',
   },
-  container: {
+  mainContainer: {
     flex: 1,
     backgroundColor: '#020512',
   },
-  nativeHeader: {
-    height: 44,
-    backgroundColor: '#020512',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 210, 255, 0.15)',
-  },
-  headerLogo: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  headerTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  headerAccent: {
-    color: '#00d2ff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  webview: {
+  screenBody: {
     flex: 1,
-    backgroundColor: '#020512',
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#020512',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  splashLogo: {
-    width: 140,
-    height: 140,
-    borderRadius: 24,
-  },
-  loadingText: {
-    color: '#94a3b8',
-    fontSize: 13,
-    marginTop: 12,
-    fontFamily: 'monospace',
-  },
-  errorContainer: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#020512',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    zIndex: 20,
-  },
-  errorTitle: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 20,
-  },
-  errorMessage: {
-    color: '#94a3b8',
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  retryButton: {
-    backgroundColor: '#1d68ff',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#00d2ff',
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: 'bold',
-    letterSpacing: 0.8,
   },
 });
