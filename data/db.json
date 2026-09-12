@@ -21,9 +21,9 @@
       "verificationStatus": "approved",
       "name": "Itachi Admin",
       "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      "passwordSalt": "52bec895c06381fbd78bfe978e4354af",
+      "passwordSalt": "99b0daae247a4a93edbe77f0ab5fdae5",
       "createdAt": "2026-01-01T08:00:00Z",
-      "passwordHash": "94be7bfecc9362df183c58a8bcac508bc633abfe56d828de6630d988f10d668757a101f57ba04e83d962599ed7c9b9308bbd72f3145ae98990f007a4d925c019",
+      "passwordHash": "56935fc627320d01bcfa6b304b60120b91d95ffb05e4ce8ced91ed920e8ac3e365b676a41d8cfa18c9ffd32c98b2b4d2219f9094f796982a98473da959817f98",
       "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
       "email": "itachi45t@gmail.com",
       "status": "active",
@@ -34,12 +34,12 @@
     },
     {
       "email": "minato45tt@gmail.com",
-      "passwordSalt": "52bec895c06381fbd78bfe978e4354af",
+      "passwordSalt": "99b0daae247a4a93edbe77f0ab5fdae5",
       "name": "Minato Admin",
       "status": "active",
       "isVerified": true,
       "verificationStatus": "approved",
-      "passwordHash": "94be7bfecc9362df183c58a8bcac508bc633abfe56d828de6630d988f10d668757a101f57ba04e83d962599ed7c9b9308bbd72f3145ae98990f007a4d925c019",
+      "passwordHash": "56935fc627320d01bcfa6b304b60120b91d95ffb05e4ce8ced91ed920e8ac3e365b676a41d8cfa18c9ffd32c98b2b4d2219f9094f796982a98473da959817f98",
       "id": "usr_admin_minato",
       "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
       "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
@@ -56,10 +56,10 @@
       "email": "nami45tt@gmail.com",
       "articlesCount": 0,
       "status": "active",
-      "passwordHash": "94be7bfecc9362df183c58a8bcac508bc633abfe56d828de6630d988f10d668757a101f57ba04e83d962599ed7c9b9308bbd72f3145ae98990f007a4d925c019",
+      "passwordHash": "56935fc627320d01bcfa6b304b60120b91d95ffb05e4ce8ced91ed920e8ac3e365b676a41d8cfa18c9ffd32c98b2b4d2219f9094f796982a98473da959817f98",
       "bio": "Compte Administrateur Officiel de la plateforme PURGE-INFO.",
       "isVerified": true,
-      "passwordSalt": "52bec895c06381fbd78bfe978e4354af",
+      "passwordSalt": "99b0daae247a4a93edbe77f0ab5fdae5",
       "role": "admin"
     },
     {
@@ -71,12 +71,12 @@
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
       "phone": "+33 6 12 34 56 78",
       "bio": "Super Administrateur et Fondateur de PURGE-INFO.",
-      "passwordHash": "94be7bfecc9362df183c58a8bcac508bc633abfe56d828de6630d988f10d668757a101f57ba04e83d962599ed7c9b9308bbd72f3145ae98990f007a4d925c019",
+      "passwordHash": "56935fc627320d01bcfa6b304b60120b91d95ffb05e4ce8ced91ed920e8ac3e365b676a41d8cfa18c9ffd32c98b2b4d2219f9094f796982a98473da959817f98",
       "verificationStatus": "approved",
       "username": "naruto_admin",
       "role": "admin",
       "status": "active",
-      "passwordSalt": "52bec895c06381fbd78bfe978e4354af",
+      "passwordSalt": "99b0daae247a4a93edbe77f0ab5fdae5",
       "articlesCount": 0
     },
     {
@@ -168,7 +168,8 @@
       "followersCount": 0,
       "followingCount": 0,
       "createdAt": "2026-09-12T04:10:21.117Z",
-      "updatedAt": "2026-09-12T04:10:21.118Z"
+      "updatedAt": "2026-09-12T04:10:21.118Z",
+      "articlesCount": 0
     },
     {
       "id": "usr_1789186236181_6tcm1",
@@ -187,7 +188,8 @@
       "followingCount": 0,
       "createdAt": "2026-09-12T04:10:36.181Z",
       "updatedAt": "2026-09-12T04:10:36.512Z",
-      "accountType": "journalist"
+      "accountType": "journalist",
+      "articlesCount": 0
     }
   ],
   "categories": [
@@ -274,7 +276,8 @@
       "link": "admin:journalists",
       "targetId": "req_1789186236262_h4o8",
       "read": false,
-      "createdAt": "2026-09-12T04:10:36.261Z"
+      "createdAt": "2026-09-12T04:10:36.261Z",
+      "isRead": false
     },
     {
       "id": "notif_1789186236433_2_1g9e",
@@ -287,7 +290,8 @@
       "link": "admin:journalists",
       "targetId": "req_1789186236262_h4o8",
       "read": false,
-      "createdAt": "2026-09-12T04:10:36.261Z"
+      "createdAt": "2026-09-12T04:10:36.261Z",
+      "isRead": false
     },
     {
       "id": "notif_1789186236400_1_lfhh",
@@ -300,7 +304,8 @@
       "link": "admin:journalists",
       "targetId": "req_1789186236262_h4o8",
       "read": false,
-      "createdAt": "2026-09-12T04:10:36.261Z"
+      "createdAt": "2026-09-12T04:10:36.261Z",
+      "isRead": false
     },
     {
       "id": "notif_1789186236371_0_8krg",
@@ -313,7 +318,8 @@
       "link": "admin:journalists",
       "targetId": "req_1789186236262_h4o8",
       "read": false,
-      "createdAt": "2026-09-12T04:10:36.261Z"
+      "createdAt": "2026-09-12T04:10:36.261Z",
+      "isRead": false
     },
     {
       "message": "Jean Dupont (test_journalist_1789149103480@example.com) a soumis une demande d'accréditation Journaliste. En attente de votre décision d'approbation.",
@@ -506,137 +512,137 @@
   ],
   "verificationRequests": [
     {
-      "id": "req_1789186236262_h4o8",
-      "userId": "usr_1789186236181_6tcm1",
-      "userName": "Jean Citoyen",
-      "userEmail": "citoyen_test_1789186236058@gmail.com",
-      "mediaName": "Le Courrier du Peuple",
-      "pressCardNumber": "CP-987654",
-      "motivation": "Je souhaite publier des enquêtes indépendantes vérifiées.",
       "documentUrl": "https://example.com/card.png",
-      "status": "approved",
       "createdAt": "2026-09-12T04:10:36.261Z",
-      "adminNotes": "Dossier vérifié et validé.",
-      "reviewedAt": "2026-09-12T04:10:36.512Z"
+      "mediaName": "Le Courrier du Peuple",
+      "userName": "Jean Citoyen",
+      "id": "req_1789186236262_h4o8",
+      "motivation": "Je souhaite publier des enquêtes indépendantes vérifiées.",
+      "userEmail": "citoyen_test_1789186236058@gmail.com",
+      "reviewedAt": "2026-09-12T04:10:36.512Z",
+      "pressCardNumber": "CP-987654",
+      "userId": "usr_1789186236181_6tcm1",
+      "status": "approved",
+      "adminNotes": "Dossier vérifié et validé."
     },
     {
-      "createdAt": "2026-09-11T17:51:43.776Z",
-      "motivation": "Je souhaite publier des enquêtes indépendantes et vérifiées sur la plateforme.",
-      "userName": "Jean Dupont",
-      "status": "pending",
-      "pressCardNumber": "CP-789012",
+      "id": "req_1789149103776_4uty",
       "userEmail": "test_journalist_1789149103480@example.com",
       "documentUrl": "https://example.com/press-card.pdf",
+      "motivation": "Je souhaite publier des enquêtes indépendantes et vérifiées sur la plateforme.",
+      "pressCardNumber": "CP-789012",
+      "createdAt": "2026-09-11T17:51:43.776Z",
+      "userName": "Jean Dupont",
+      "status": "pending",
       "userId": "usr_1789149103653_smhn4",
-      "id": "req_1789149103776_4uty",
       "mediaName": "Le Canard Libéré"
     },
     {
-      "reviewedAt": "2026-09-11T17:51:56.126Z",
       "userId": "usr_1789149116058_1sda7",
-      "createdAt": "2026-09-11T17:51:56.114Z",
-      "id": "req_1789149116114_9mlv",
-      "mediaName": "Le Canard Libéré",
-      "userEmail": "test_journalist_1789149115970@example.com",
-      "pressCardNumber": "CP-789012",
       "status": "approved",
-      "adminNotes": "Carte de presse vérifiée auprès de la commission.",
-      "userName": "Jean Dupont",
+      "mediaName": "Le Canard Libéré",
+      "pressCardNumber": "CP-789012",
       "motivation": "Je souhaite publier des enquêtes indépendantes et vérifiées sur la plateforme.",
-      "documentUrl": "https://example.com/press-card.pdf"
+      "createdAt": "2026-09-11T17:51:56.114Z",
+      "userName": "Jean Dupont",
+      "documentUrl": "https://example.com/press-card.pdf",
+      "id": "req_1789149116114_9mlv",
+      "adminNotes": "Carte de presse vérifiée auprès de la commission.",
+      "userEmail": "test_journalist_1789149115970@example.com",
+      "reviewedAt": "2026-09-11T17:51:56.126Z"
     },
     {
-      "userId": "usr_1789149130466_llrs5",
-      "mediaName": "L’Écho Citoyen",
-      "userEmail": "journalist_test_1789149130379@example.com",
-      "id": "req_1789149130509_ky3p",
-      "reviewedAt": "2026-09-11T17:52:10.524Z",
-      "pressCardNumber": "CP-445566",
-      "documentUrl": "https://example.com/press-card.pdf",
-      "adminNotes": "Validation effectuée.",
-      "status": "approved",
-      "motivation": "Rejoindre l’équipe de presse officielle de Purge-Info",
       "userName": "Sophie Marceau",
+      "documentUrl": "https://example.com/press-card.pdf",
+      "id": "req_1789149130509_ky3p",
+      "userId": "usr_1789149130466_llrs5",
+      "motivation": "Rejoindre l’équipe de presse officielle de Purge-Info",
+      "status": "approved",
+      "pressCardNumber": "CP-445566",
+      "userEmail": "journalist_test_1789149130379@example.com",
+      "mediaName": "L’Écho Citoyen",
+      "adminNotes": "Validation effectuée.",
+      "reviewedAt": "2026-09-11T17:52:10.524Z",
       "createdAt": "2026-09-11T17:52:10.509Z"
     },
     {
+      "adminNotes": "Accréditation validée par Minato Namikaze.",
+      "reviewedAt": "2026-09-11T17:52:46.646Z",
+      "userEmail": "journalist_live_1789149166286@example.com",
+      "userName": "Marc Levy",
+      "id": "req_1789149166428_pu2w",
+      "mediaName": "Le Monde Libre",
+      "motivation": "Couvrir les événements majeurs de la Purge avec rigueur et intégrité.",
+      "createdAt": "2026-09-11T17:52:46.428Z",
+      "status": "approved",
       "userId": "usr_1789149166363_14nlk",
       "documentUrl": "https://example.com/press-card.pdf",
-      "userEmail": "journalist_live_1789149166286@example.com",
-      "id": "req_1789149166428_pu2w",
-      "adminNotes": "Accréditation validée par Minato Namikaze.",
-      "motivation": "Couvrir les événements majeurs de la Purge avec rigueur et intégrité.",
-      "mediaName": "Le Monde Libre",
-      "reviewedAt": "2026-09-11T17:52:46.646Z",
-      "status": "approved",
-      "userName": "Marc Levy",
-      "createdAt": "2026-09-11T17:52:46.428Z",
       "pressCardNumber": "CP-990011"
     }
   ],
   "reports": [],
   "views": [
     {
+      "id": "vw_1789152467899_rph6",
       "ip": "127.0.0.1",
       "articleId": "art_test_123",
-      "viewedAt": "2026-09-11T18:47:47.899Z",
-      "id": "vw_1789152467899_rph6"
+      "viewedAt": "2026-09-11T18:47:47.899Z"
     }
   ],
   "adminLogs": [
     {
       "id": "log_1789186236632_bxlg",
-      "adminId": "usr_admin_naruto",
-      "adminName": "Naruto Admin",
+      "timestamp": "2026-09-12T04:10:36.632Z",
       "action": "approve_verification",
+      "adminId": "usr_admin_naruto",
       "targetType": "journalist",
-      "targetId": "usr_1789186236181_6tcm1",
       "targetTitle": "Jean Citoyen",
+      "targetId": "usr_1789186236181_6tcm1",
       "details": "Demande approuvée. Notes : Dossier vérifié et validé.",
-      "timestamp": "2026-09-12T04:10:36.632Z"
+      "adminName": "Naruto Admin"
     },
     {
-      "targetTitle": "Marc Levy",
-      "timestamp": "2026-09-11T17:52:46.711Z",
-      "targetId": "usr_1789149166363_14nlk",
-      "adminId": "usr_admin_minato",
-      "id": "log_1789149166711_ujkb",
       "details": "Demande approuvée. Notes : Accréditation validée par Minato Namikaze.",
       "action": "approve_verification",
-      "targetType": "journalist",
-      "adminName": "Minato Admin"
-    },
-    {
-      "id": "log_1789149116127_42fa",
-      "adminId": "usr_admin_minato",
-      "targetId": "usr_1789149116058_1sda7",
       "adminName": "Minato Admin",
-      "targetTitle": "Jean Dupont",
       "targetType": "journalist",
-      "action": "approve_verification",
-      "timestamp": "2026-09-11T17:51:56.127Z",
-      "details": "Demande approuvée. Notes : Carte de presse vérifiée auprès de la commission."
+      "timestamp": "2026-09-11T17:52:46.711Z",
+      "targetId": "usr_1789149166363_14nlk",
+      "targetTitle": "Marc Levy",
+      "id": "log_1789149166711_ujkb",
+      "adminId": "usr_admin_minato"
     },
     {
-      "adminId": "usr_admin_minato",
+      "details": "Demande approuvée. Notes : Carte de presse vérifiée auprès de la commission.",
+      "targetTitle": "Jean Dupont",
+      "adminName": "Minato Admin",
+      "action": "approve_verification",
+      "targetId": "usr_1789149116058_1sda7",
       "targetType": "journalist",
-      "timestamp": "2026-09-11T17:52:10.524Z",
+      "timestamp": "2026-09-11T17:51:56.127Z",
+      "id": "log_1789149116127_42fa",
+      "adminId": "usr_admin_minato"
+    },
+    {
+      "details": "Demande approuvée. Notes : Validation effectuée.",
+      "adminName": "Minato Admin",
       "action": "approve_verification",
       "targetId": "usr_1789149130466_llrs5",
+      "targetType": "journalist",
+      "timestamp": "2026-09-11T17:52:10.524Z",
       "id": "log_1789149130524_4omd",
-      "adminName": "Minato Admin",
-      "targetTitle": "Sophie Marceau",
-      "details": "Demande approuvée. Notes : Validation effectuée."
+      "adminId": "usr_admin_minato",
+      "targetTitle": "Sophie Marceau"
     },
     {
-      "targetTitle": "PURGE-INFO Production",
-      "timestamp": "2026-09-09T03:37:31.971Z",
-      "adminId": "usr_admin_naruto",
-      "targetId": "prod_env",
       "id": "log_init",
-      "details": "Initialisation de la plateforme de production avec les 4 comptes administrateurs officiels et les 6 rubriques officielles.",
+      "timestamp": "2026-09-09T03:37:31.971Z",
       "action": "init_platform",
+      "adminId": "usr_admin_naruto",
       "targetType": "system",
+      "targetTitle": "PURGE-INFO Production",
+      "targetId": "prod_env",
+      "details": "Initialisation de la plateforme de production avec les 4 comptes administrateurs officiels et les 6 rubriques officielles.",
       "adminName": "Naruto Admin"
     }
   ],

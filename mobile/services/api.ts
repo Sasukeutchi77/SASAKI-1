@@ -15,7 +15,7 @@ const TOKEN_KEY = 'purge_mobile_token';
 const USER_KEY = 'purge_mobile_user';
 
 // Définition de l'URL de base API - Priorité à la variable d'environnement Expo
-const DEFAULT_FALLBACK_URL = 'https://ais-dev-ijf4z7bgmjai2zqxses2p3-897333779097.europe-west2.run.app';
+const DEFAULT_FALLBACK_URL = 'https://ais-dev-zhsd7l5y3xfrth647bh6oi-155891801467.europe-west2.run.app';
 
 export function getApiBaseUrl(): string {
   if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {

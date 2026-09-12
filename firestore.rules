@@ -1,8 +1,159 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email in [
+          'naruto455t@gmail.com',
+          'itachi45t@gmail.com',
+          'nami45tt@gmail.com',
+          'minato45tt@gmail.com',
+          'lordequipe@gmail.com'
+        ] || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Default deny catch-all
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && incoming().id == userId
+        && incoming().role in ['user', 'citoyen', 'reader']
+        && (!('isVerified' in incoming()) || incoming().isVerified == false);
+      allow update: if (
+        isAdmin() ||
+        (
+          isSignedIn() && request.auth.uid == userId
+          && incoming().role == existing().role
+          && incoming().isVerified == existing().isVerified
+          && incoming().verificationStatus == existing().verificationStatus
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'username', 'bio', 'phone', 'avatar', 'avatarMedia',
+            'coverImage', 'coverMedia', 'mediaName', 'lastLoginAt', 'updatedAt'
+          ])
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Public Collections (Direct & Cloud Mirrors)
+    match /cloud_users/{userId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /cloud_articles/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin() || (isSignedIn() && (incoming().authorId == request.auth.uid || existing().authorId == request.auth.uid));
+    }
+
+    match /cloud_categories/{catId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /cloud_comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+    }
+
+    match /cloud_media_houses/{houseId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().ownerId == request.auth.uid;
+      allow update, delete: if isAdmin() || (isSignedIn() && existing().ownerId == request.auth.uid);
+    }
+
+    match /cloud_likes/{likeId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+    }
+
+    match /cloud_comment_likes/{likeId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+    }
+
+    match /cloud_bookmarks/{bookmarkId} {
+      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+    }
+
+    match /cloud_follows/{followId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().followerId == request.auth.uid;
+      allow delete: if isAdmin() || (isSignedIn() && existing().followerId == request.auth.uid);
+    }
+
+    match /cloud_notifications/{notifId} {
+      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create, update: if isAdmin() || (isSignedIn() && incoming().userId == request.auth.uid);
+      allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+    }
+
+    match /cloud_verification_requests/{reqId} {
+      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /cloud_reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && incoming().reporterId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /cloud_views/{viewId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /cloud_media_records/{recordId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().ownerId == request.auth.uid;
+      allow update, delete: if isAdmin() || (isSignedIn() && existing().ownerId == request.auth.uid);
+    }
+
+    match /cloud_admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Strict immutability for audit logs
+    }
+
+    match /cloud_meta/{metaId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
+
