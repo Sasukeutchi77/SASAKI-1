@@ -219,11 +219,30 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     throw new Error('PROXY_HTML_REDIRECT');
   }
 
-  const data = await response.json().catch(() => ({}));
+  let data: any = null;
+  if (contentType.includes('application/json')) {
+    data = await response.json().catch(() => null);
+  } else {
+    const text = await response.text().catch(() => '');
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text };
+      }
+    }
+  }
 
   if (!response.ok) {
-    const errorMsg = (data && data.error) || `Erreur (${response.status})`;
-    throw new Error(errorMsg);
+    const errorMsg =
+      (typeof data === 'string' && data.trim()) ||
+      (typeof data?.error === 'string' && data.error.trim()) ||
+      (typeof data?.error?.message === 'string' && data.error.message.trim()) ||
+      (typeof data?.message === 'string' && data.message.trim()) ||
+      (Array.isArray(data?.errors) && (data.errors[0]?.message || data.errors[0])) ||
+      (typeof data?.details === 'string' && data.details.trim()) ||
+      `Erreur (${response.status})`;
+    throw new Error(String(errorMsg));
   }
 
   return data as T;

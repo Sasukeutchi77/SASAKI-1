@@ -260,22 +260,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 1. Prioritize Platform REST login
       try {
         const data = await api.login({ email: cleanEmail, password: pass });
+        if (!data || !data.token) {
+          throw new Error('Réponse de connexion invalide reçue du serveur.');
+        }
         setToken(data.token);
         setUser(data.user);
         await refreshUser();
         return;
       } catch (apiErr: any) {
+        // If account is suspended or blocked by moderation, stop immediately
+        const errMsg = String(apiErr?.message || '');
+        if (
+          errMsg.toLowerCase().includes('suspendu') ||
+          errMsg.toLowerCase().includes('suspended') ||
+          errMsg.toLowerCase().includes('trop de tentatives') ||
+          apiErr?.status === 429
+        ) {
+          throw apiErr;
+        }
+
         // If REST login fails, check if the account exists in Firebase Auth
         if (isFirebaseActive && firebaseAuth) {
           try {
             const { idToken } = await loginWithFirebaseEmail(cleanEmail, pass);
+            if (!idToken) {
+              throw new Error('Token Firebase introuvable.');
+            }
             api.setToken(idToken);
             setToken(idToken);
             await refreshUser();
             return;
-          } catch {
-            // If Firebase also fails, surface the clearer platform REST error message
-            throw apiErr;
+          } catch (fbErr: any) {
+            // Both failed. If REST gave a clear message (e.g. mot de passe incorrect, aucun compte), prioritize it.
+            // Otherwise format the Firebase error code.
+            if (
+              apiErr &&
+              apiErr.message &&
+              !apiErr.message.startsWith('Erreur serveur (5') &&
+              !apiErr.networkError
+            ) {
+              throw apiErr;
+            }
+            throw new Error(mapFirebaseError(fbErr?.code || fbErr?.message));
           }
         }
         throw apiErr;
@@ -299,6 +325,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password: pass,
         accountType: 'user', // Forced USER role
       });
+      if (!res || !res.token) {
+        throw new Error('Échec de création du compte : réponse de validation invalide.');
+      }
       setToken(res.token);
       setUser(res.user);
 
@@ -322,17 +351,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       if (isFirebaseActive && firebaseAuth) {
+        let idToken = '';
         try {
-          const { idToken } = await loginWithFirebaseGoogle();
-          api.setToken(idToken);
-          setToken(idToken);
-          await refreshUser();
+          const res = await loginWithFirebaseGoogle();
+          idToken = res.idToken;
         } catch (fbErr: any) {
           throw new Error(mapFirebaseError(fbErr.code || fbErr.message));
         }
+
+        if (!idToken) {
+          throw new Error('Impossible d’obtenir le jeton d’authentification Google.');
+        }
+
+        api.setToken(idToken);
+        setToken(idToken);
+
+        // Load or verify user profile
+        await refreshUser();
+
+        // Ensure user was loaded properly; if not, query getMe directly to surface errors like suspended
+        if (!api.getUser()) {
+          try {
+            const me = await api.getMe();
+            if (me?.user) {
+              setUser(me.user);
+            } else {
+              throw new Error('Impossible de charger votre profil utilisateur.');
+            }
+          } catch (meErr: any) {
+            api.clearSession();
+            setToken(null);
+            setUser(null);
+            throw meErr;
+          }
+        }
       } else {
         throw new Error(
-          'La connexion via Google nécessite la configuration des identifiants Firebase (VITE_FIREBASE_*). Veuillez utiliser votre email et mot de passe ou configurer les variables d’environnement.'
+          'La connexion via Google nécessite la configuration Firebase. Veuillez utiliser votre email et mot de passe.'
         );
       }
     } finally {
@@ -343,16 +398,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 4. Password Reset
   const resetPassword = async (email: string) => {
     const cleanEmail = email.trim().toLowerCase();
+    let restSuccess = false;
+    let restError: any = null;
+
     try {
       await api.forgotPassword(cleanEmail);
-    } catch {
-      if (isFirebaseActive && firebaseAuth) {
-        try {
-          await sendFirebasePasswordReset(cleanEmail);
-        } catch (fbErr: any) {
-          throw new Error(mapFirebaseError(fbErr.code || fbErr.message));
+      restSuccess = true;
+    } catch (err: any) {
+      restError = err;
+    }
+
+    if (isFirebaseActive && firebaseAuth) {
+      try {
+        await sendFirebasePasswordReset(cleanEmail);
+        return; // Firebase reset succeeded
+      } catch (fbErr: any) {
+        if (!restSuccess) {
+          throw new Error(mapFirebaseError(fbErr?.code || fbErr?.message) || restError?.message);
         }
       }
+    }
+
+    // Never fail silently if REST failed and Firebase was unavailable or inactive
+    if (!restSuccess && restError) {
+      throw restError;
     }
   };
 

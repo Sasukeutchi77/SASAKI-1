@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User as UserIcon, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { X, Lock, Mail, User as UserIcon, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, KeyRound, Eye, EyeOff, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { formatAuthErrorMessage } from '../services/authErrors';
 
 interface AuthModalProps {
   onClose: () => void;
@@ -8,7 +9,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' }) => {
-  const { loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword, isFirebaseActive } = useAuth();
+  const { loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +22,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const switchMode = (newMode: 'login' | 'register' | 'forgot') => {
+    setError(null);
+    setSuccessMessage(null);
+    setMode(newMode);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -28,15 +35,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
 
     if (mode === 'forgot') {
       if (!email.trim()) {
-        setError('Veuillez saisir votre adresse email.');
+        setError('Veuillez renseigner votre adresse email.');
         return;
       }
       setLoading(true);
       try {
         await resetPassword(email.trim());
-        setSuccessMessage('Un email de réinitialisation a été envoyé à votre adresse.');
+        setSuccessMessage('Un email de réinitialisation a été envoyé à votre adresse. Veuillez consulter votre boîte de réception.');
       } catch (err: any) {
-        setError(err.message || 'Impossible d’envoyer l’email de réinitialisation.');
+        setError(formatAuthErrorMessage(err));
       } finally {
         setLoading(false);
       }
@@ -45,7 +52,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
 
     if (mode === 'register') {
       if (!name.trim()) {
-        setError('Veuillez renseigner votre nom complet.');
+        setError('Veuillez renseigner votre nom complet ou pseudonyme.');
+        return;
+      }
+      if (!email.trim()) {
+        setError('Veuillez renseigner votre adresse email.');
         return;
       }
       if (password.length < 6) {
@@ -61,7 +72,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
         await registerWithEmail(name.trim(), email.trim(), password);
         onClose();
       } catch (err: any) {
-        setError(err.message || 'Erreur lors de la création du compte.');
+        setError(formatAuthErrorMessage(err));
       } finally {
         setLoading(false);
       }
@@ -70,7 +81,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
 
     if (mode === 'login') {
       if (!email.trim() || !password) {
-        setError('Veuillez renseigner votre email et mot de passe.');
+        setError('Veuillez renseigner votre adresse email et votre mot de passe.');
         return;
       }
       setLoading(true);
@@ -78,7 +89,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
         await loginWithEmail(email.trim(), password);
         onClose();
       } catch (err: any) {
-        setError(err.message || 'Identifiants invalides.');
+        setError(formatAuthErrorMessage(err));
       } finally {
         setLoading(false);
       }
@@ -92,7 +103,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
       await loginWithGoogle();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Échec de la connexion avec Google.');
+      setError(formatAuthErrorMessage(err));
     } finally {
       setGoogleLoading(false);
     }
@@ -134,24 +145,66 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
         {/* Content Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
           {error && (
-            <div className="p-3 bg-red-950/60 border border-red-500/40 text-red-200 text-xs rounded-xl flex flex-col gap-2 font-medium">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
-                <span className="leading-relaxed">{error}</span>
-              </div>
-              {mode === 'login' && error.toLowerCase().includes('aucun compte') && (
+            <div className="p-3.5 bg-red-950/70 border border-red-500/50 text-red-200 text-xs rounded-xl flex flex-col gap-2.5 font-medium shadow-[0_0_20px_rgba(239,68,68,0.2)] animate-in fade-in duration-200">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                  <span className="leading-relaxed">{error}</span>
+                </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setError(null);
-                    setMode('register');
-                  }}
-                  className="self-start mt-1 px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_10px_rgba(0,210,255,0.2)]"
+                  onClick={() => setError(null)}
+                  className="text-red-400/70 hover:text-red-200 p-0.5 rounded cursor-pointer transition-colors"
+                  title="Masquer l'erreur"
                 >
-                  <span>Créer mon compte citoyen maintenant</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              )}
+              </div>
+
+              {/* Contextual Action 1: Email already exists in registration */}
+              {mode === 'register' &&
+                (error.toLowerCase().includes('existe déjà') ||
+                  error.toLowerCase().includes('already exists') ||
+                  error.toLowerCase().includes('already registered')) && (
+                  <button
+                    type="button"
+                    onClick={() => switchMode('login')}
+                    className="self-start px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_10px_rgba(0,210,255,0.2)]"
+                  >
+                    <span>Ce compte existe déjà ? Se connecter avec cet email</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+              {/* Contextual Action 2: User not found in login */}
+              {mode === 'login' &&
+                (error.toLowerCase().includes('aucun compte') ||
+                  error.toLowerCase().includes('not found') ||
+                  error.toLowerCase().includes('introuvable')) && (
+                  <button
+                    type="button"
+                    onClick={() => switchMode('register')}
+                    className="self-start px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_10px_rgba(0,210,255,0.2)]"
+                  >
+                    <span>Créer mon compte citoyen maintenant</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+              {/* Contextual Action 3: Invalid credentials / Wrong password in login */}
+              {mode === 'login' &&
+                (error.toLowerCase().includes('mot de passe incorrect') ||
+                  error.toLowerCase().includes('identifiants invalides') ||
+                  error.toLowerCase().includes('invalid credentials')) && (
+                  <button
+                    type="button"
+                    onClick={() => switchMode('forgot')}
+                    className="self-start px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/50 text-blue-200 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <KeyRound className="w-3.5 h-3.5 text-blue-300" />
+                    <span>Mot de passe oublié ? Réinitialiser</span>
+                  </button>
+                )}
             </div>
           )}
 
@@ -249,11 +302,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   {mode === 'login' && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setError(null);
-                        setSuccessMessage(null);
-                        setMode('forgot');
-                      }}
+                      onClick={() => switchMode('forgot')}
                       className="text-[11px] font-bold font-mono text-cyan-400 hover:text-cyan-200 hover:underline cursor-pointer"
                     >
                       Mot de passe oublié ?
@@ -346,11 +395,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                 Vous n'avez pas encore de compte ?{' '}
                 <button
                   type="button"
-                  onClick={() => {
-                    setError(null);
-                    setSuccessMessage(null);
-                    setMode('register');
-                  }}
+                  onClick={() => switchMode('register')}
                   className="font-bold text-cyan-300 hover:text-cyan-100 hover:underline cursor-pointer"
                 >
                   Créer un compte
@@ -363,11 +408,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                 Vous avez déjà un compte ?{' '}
                 <button
                   type="button"
-                  onClick={() => {
-                    setError(null);
-                    setSuccessMessage(null);
-                    setMode('login');
-                  }}
+                  onClick={() => switchMode('login')}
                   className="font-bold text-cyan-300 hover:text-cyan-100 hover:underline cursor-pointer"
                 >
                   Se connecter
@@ -378,11 +419,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
             {mode === 'forgot' && (
               <button
                 type="button"
-                onClick={() => {
-                  setError(null);
-                  setSuccessMessage(null);
-                  setMode('login');
-                }}
+                onClick={() => switchMode('login')}
                 className="text-xs font-bold font-mono text-cyan-300 hover:text-cyan-100 hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <KeyRound className="w-3 h-3" />

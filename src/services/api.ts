@@ -77,13 +77,29 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
 
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
 
-  let response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+    });
+  } catch (fetchErr: any) {
+    const netError = new Error(
+      'Impossible de joindre le serveur PURGE-INFO. Veuillez vérifier votre connexion internet et réessayer.'
+    );
+    (netError as any).networkError = true;
+    (netError as any).originalError = fetchErr;
+    throw netError;
+  }
 
   // If 401 Unauthorized, attempt to fetch a fresh token from active Firebase session and retry once
-  if (response.status === 401 && typeof window !== 'undefined') {
+  // (Skip retrying for public auth endpoints like login/register/forgot-password)
+  const isAuthEndpoint =
+    endpoint.startsWith('/api/auth/login') ||
+    endpoint.startsWith('/api/auth/register') ||
+    endpoint.startsWith('/api/auth/forgot-password');
+
+  if (response.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
     try {
       const { auth } = await import('./firebase');
       if (auth?.currentUser) {
@@ -102,10 +118,35 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
     }
   }
 
-  const data = await response.json().catch(() => ({}));
+  let data: any = null;
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    data = await response.json().catch(() => null);
+  } else {
+    const text = await response.text().catch(() => '');
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text };
+      }
+    }
+  }
 
   if (!response.ok) {
-    throw new Error((data && data.error) || `Erreur serveur (${response.status})`);
+    const rawError =
+      (typeof data === 'string' && data.trim()) ||
+      (typeof data?.error === 'string' && data.error.trim()) ||
+      (typeof data?.error?.message === 'string' && data.error.message.trim()) ||
+      (typeof data?.message === 'string' && data.message.trim()) ||
+      (Array.isArray(data?.errors) && (data.errors[0]?.message || data.errors[0])) ||
+      (typeof data?.details === 'string' && data.details.trim()) ||
+      `Erreur serveur (${response.status})`;
+
+    const errorObj = new Error(String(rawError));
+    (errorObj as any).status = response.status;
+    (errorObj as any).data = data;
+    throw errorObj;
   }
 
   return data as T;
