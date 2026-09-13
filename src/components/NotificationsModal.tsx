@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, CheckCheck, Heart, MessageSquare, Shield, CheckCircle2 } from 'lucide-react';
+import { X, Bell, CheckCheck, Heart, MessageSquare, Shield, CheckCircle2, Trash2 } from 'lucide-react';
 import { Notification } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +25,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     setLoading(true);
     try {
       const res = await api.getNotifications();
-      setNotifications(res.notifications);
+      setNotifications(res.notifications || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -41,6 +41,27 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     try {
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true, isRead: true })));
       await api.markAllNotificationsRead();
+      refreshUser();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await api.deleteNotification(id);
+      refreshUser();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!window.confirm('Voulez-vous supprimer toutes vos notifications ?')) return;
+    setNotifications([]);
+    try {
+      await api.clearAllNotifications();
       refreshUser();
     } catch (err) {
       console.error(err);
@@ -78,7 +99,17 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 title="Tout marquer comme lu"
               >
                 <CheckCheck className="w-4 h-4" />
-                <span>Tout marquer comme lu</span>
+                <span className="hidden sm:inline">Tout marquer comme lu</span>
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                className="text-xs font-bold font-mono text-red-400/80 hover:text-red-300 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/30 hover:bg-red-900/40 border border-red-500/30 cursor-pointer transition-all"
+                title="Supprimer toutes les notifications"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Tout effacer</span>
               </button>
             )}
             <button
@@ -142,7 +173,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                         onClose();
                       }
                     }}
-                    className={`p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
+                    className={`p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer group/card ${
                       isRead
                         ? 'bg-[#101428]/80 border-cyan-500/15 opacity-75 hover:opacity-100 hover:border-cyan-500/30'
                         : 'bg-[#101938] border-cyan-500/50 shadow-[0_0_14px_rgba(0,243,255,0.15)]'
@@ -164,32 +195,40 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                         })}
                       </span>
                     </div>
-                    {!isRead ? (
+                    <div className="flex items-center gap-1.5 shrink-0 mt-0.5" onClick={(e) => e.stopPropagation()}>
+                      {!isRead ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setNotifications((prev) =>
+                              prev.map((n) => (n.id === notif.id ? { ...n, read: true, isRead: true } : n))
+                            );
+                            try {
+                              await api.markNotificationRead(notif.id);
+                              refreshUser();
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          className="p-1.5 rounded-full hover:bg-cyan-500/20 transition-all cursor-pointer group"
+                          title="Marquer comme lue"
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f3ff] block animate-pulse group-hover:scale-125 transition-transform" />
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-cyan-500/50 font-mono flex items-center gap-1" title="Notification lue">
+                          <CheckCheck className="w-3.5 h-3.5 text-cyan-400/60" />
+                        </span>
+                      )}
                       <button
                         type="button"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          setNotifications((prev) =>
-                            prev.map((n) => (n.id === notif.id ? { ...n, read: true, isRead: true } : n))
-                          );
-                          try {
-                            await api.markNotificationRead(notif.id);
-                            refreshUser();
-                          } catch (err) {
-                            console.error(err);
-                          }
-                        }}
-                        className="p-1 rounded-full hover:bg-cyan-500/20 transition-all cursor-pointer mt-0.5 shrink-0 group"
-                        title="Marquer comme lue (cliquez pour faire disparaître le point bleu)"
+                        onClick={() => handleDeleteNotification(notif.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                        title="Supprimer cette notification"
                       >
-                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f3ff] block animate-pulse group-hover:scale-125 transition-transform" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    ) : (
-                      <span className="text-[10px] text-cyan-500/50 font-mono mt-1 shrink-0 flex items-center gap-1" title="Notification lue">
-                        <CheckCheck className="w-3.5 h-3.5 text-cyan-400/60" />
-                        <span className="text-[9px] hidden sm:inline text-cyan-400/60">Lue</span>
-                      </span>
-                    )}
+                    </div>
                   </div>
                 );
               })}

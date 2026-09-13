@@ -78,16 +78,26 @@ const DATA_DIR = isServerless ? path.join('/tmp', 'purge_info_data') : path.join
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const SEED_FILE = path.join(process.cwd(), 'data', 'db.json');
 
-// Security helper: Password hash using Node's crypto
+// Security helper: Password hash using SHA-256 with salt for full mobile & cloud cross-compatibility
 export function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
   const generatedSalt = salt || crypto.randomBytes(16).toString('hex');
-  const hash = crypto.scryptSync(password, generatedSalt, 64).toString('hex');
+  const hash = 'sha256:' + crypto.createHash('sha256').update(`${password}:${generatedSalt}`).digest('hex');
   return { hash, salt: generatedSalt };
 }
 
 export function verifyPassword(password: string, hash: string, salt: string): boolean {
-  const testHash = crypto.scryptSync(password, salt, 64).toString('hex');
-  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(testHash, 'hex'));
+  if (!hash) return false;
+  if (hash.startsWith('sha256:')) {
+    const expected = 'sha256:' + crypto.createHash('sha256').update(`${password}:${salt}`).digest('hex');
+    return hash === expected;
+  }
+  // Legacy scrypt support
+  try {
+    const testHash = crypto.scryptSync(password, salt, 64).toString('hex');
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(testHash, 'hex'));
+  } catch {
+    return false;
+  }
 }
 
 // Token generator helper (HMAC SHA-256 based)
@@ -785,6 +795,29 @@ class Database {
     }
     this.saveDataDirect(this.data);
     await persistDocToCloud(CLOUD_COLLECTIONS.notifications, notification.id, notification);
+  }
+
+  public async deleteNotification(notificationId: string): Promise<void> {
+    if (!this.data.notifications) this.data.notifications = [];
+    this.data.notifications = this.data.notifications.filter((n) => n.id !== notificationId);
+    this.saveDataDirect(this.data);
+    await deleteDocFromCloud(CLOUD_COLLECTIONS.notifications, notificationId);
+  }
+
+  public async deleteUserNotifications(userId: string, userEmail?: string, isAdmin: boolean = false): Promise<void> {
+    if (!this.data.notifications) this.data.notifications = [];
+    const toDelete = this.data.notifications.filter((n) => {
+      if (n.userId === userId) return true;
+      if (userEmail && n.recipientEmail && n.recipientEmail.toLowerCase() === userEmail.toLowerCase()) return true;
+      if (isAdmin && (n.userId === 'admin' || n.forAdmin)) return true;
+      return false;
+    });
+    const idsToDelete = toDelete.map((n) => n.id);
+    this.data.notifications = this.data.notifications.filter((n) => !idsToDelete.includes(n.id));
+    this.saveDataDirect(this.data);
+    for (const id of idsToDelete) {
+      await deleteDocFromCloud(CLOUD_COLLECTIONS.notifications, id).catch(() => {});
+    }
   }
 
   public async persistMediaRecord(record: MediaRecord): Promise<void> {

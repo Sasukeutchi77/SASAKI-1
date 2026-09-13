@@ -223,6 +223,33 @@ usersRouter.put('/me/notifications/read-all', requireAuth, async (req: Authentic
   return res.json({ success: true });
 });
 
+// 5b. Delete single notification
+usersRouter.delete('/me/notifications/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const reqUser = req.user!;
+  const notifIndex = data.notifications.findIndex((n) => {
+    if (n.id !== req.params.id) return false;
+    if (n.userId === reqUser.id) return true;
+    if (n.recipientEmail && n.recipientEmail.toLowerCase() === reqUser.email.toLowerCase()) return true;
+    if ((reqUser.role === 'admin' || isMasterAdmin(reqUser.email)) && (n.userId === 'admin' || n.forAdmin)) return true;
+    return false;
+  });
+
+  if (notifIndex >= 0) {
+    const notif = data.notifications[notifIndex];
+    data.notifications.splice(notifIndex, 1);
+    await db.deleteNotification(notif.id);
+  }
+  return res.json({ success: true });
+});
+
+// 5c. Delete / clear all notifications for user
+usersRouter.delete('/me/notifications', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const reqUser = req.user!;
+  await db.deleteUserNotifications(reqUser.id, reqUser.email, reqUser.role === 'admin' || isMasterAdmin(reqUser.email));
+  return res.json({ success: true });
+});
+
 // 6. Request journalist verification badge with rate limiting & sanitization
 usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();

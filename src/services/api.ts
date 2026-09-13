@@ -498,6 +498,18 @@ export const api = {
     });
   },
 
+  async deleteNotification(id: string) {
+    return request<{ success: boolean }>(`/api/users/me/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async clearAllNotifications() {
+    return request<{ success: boolean }>('/api/users/me/notifications', {
+      method: 'DELETE',
+    });
+  },
+
   async requestVerification(data: {
     mediaName?: string;
     pressCardNumber: string;

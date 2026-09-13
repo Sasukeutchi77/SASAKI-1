@@ -20,11 +20,14 @@ import {
   fetchCommentsFromCloud,
   addCommentToCloud,
   fetchNotificationsFromCloud,
+  deleteNotificationFromCloud,
+  deleteUserNotificationsFromCloud,
   logoutFirebase,
   saveUserProfileToFirestore,
   submitVerificationRequestToFirestore,
   fetchVerificationRequestsFromFirestore,
   reviewVerificationRequestInFirestore,
+  resetUserPasswordInFirestore,
 } from './firebase';
 
 const TOKEN_KEY = 'purge_mobile_token';
@@ -236,12 +239,12 @@ export const api = {
   clearSession,
   request: apiRequest,
 
-  // Authentification Hybride (Priorité Firebase Auth Native + Synchronisation Firestore)
+  // Authentification Directe Cloud Firestore & Hybride Firebase
   async login(credentials: { email: string; password: string }) {
     const cleanEmail = credentials.email.trim().toLowerCase();
     const cleanPass = credentials.password;
 
-    // 1. Tenter Firebase Auth nativement (Connexion directe sans restriction de proxy)
+    // 1. Authentification directe Cloud Firestore / Firebase (Connexion directe sans restriction de proxy)
     if (isFirebaseConfigured()) {
       try {
         const { user, token } = await loginWithFirebaseEmailAndProfile(cleanEmail, cleanPass);
@@ -249,36 +252,12 @@ export const api = {
         await setUser(user);
         return { user, token, message: 'Connexion réussie.' };
       } catch (fbErr: any) {
-        console.warn('[API Mobile] Erreur Firebase login:', fbErr.message);
-
-        // Si Firebase a retourné une erreur d'identifiant claire, la lever directement
-        if (
-          fbErr.message?.includes('Identifiants incorrects') ||
-          fbErr.message?.includes('Aucun compte n’est associé') ||
-          fbErr.message?.includes('mot de passe doit comporter')
-        ) {
-          throw fbErr;
-        }
-
-        // Tenter l'API REST en cas d'indisponibilité temporaire Firebase
-        try {
-          const res = await apiRequest<{ token: string; user: User; message: string }>('/api/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email: cleanEmail, password: cleanPass }),
-          });
-          if (res?.token && res?.user) {
-            await setToken(res.token);
-            await setUser(res.user);
-            return res;
-          }
-        } catch {
-          // Relancer l'erreur Firebase conviviale
-          throw fbErr;
-        }
+        console.warn('[API Mobile] Erreur connexion:', fbErr.message);
+        throw fbErr;
       }
     }
 
-    // 2. Fallback REST standard
+    // 2. Fallback REST si Firebase n'est pas configuré
     const res = await apiRequest<{ token: string; user: User; message: string }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email: cleanEmail, password: cleanPass }),
@@ -296,7 +275,7 @@ export const api = {
     const cleanEmail = formData.email.trim().toLowerCase();
     const cleanPass = formData.password;
 
-    // 1. Tenter l'inscription Firebase Auth directe (rôle citoyen par défaut)
+    // 1. Inscription directe Cloud Firestore / Firebase (rôle citoyen par défaut)
     if (isFirebaseConfigured()) {
       try {
         const { user, token } = await registerWithFirebaseEmailAndProfile({
@@ -308,12 +287,12 @@ export const api = {
         await setUser(user);
         return { user, token, message: 'Compte citoyen créé avec succès.' };
       } catch (fbErr: any) {
-        console.warn('[API Mobile] Erreur Firebase register:', fbErr.message);
+        console.warn('[API Mobile] Erreur inscription:', fbErr.message);
         throw fbErr;
       }
     }
 
-    // 2. Fallback REST
+    // 2. Fallback REST si Firebase n'est pas configuré
     const res = await apiRequest<{ token: string; user: User; message: string }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({
@@ -329,6 +308,22 @@ export const api = {
       return res;
     }
     throw new Error('Échec de l’inscription. Veuillez réessayer.');
+  },
+
+  async resetPassword(email: string, newPass: string) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = newPass.trim();
+
+    if (isFirebaseConfigured()) {
+      await resetUserPasswordInFirestore(cleanEmail, cleanPass);
+      return { message: 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.' };
+    }
+
+    const res = await apiRequest<{ message: string }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: cleanEmail, newPassword: cleanPass }),
+    });
+    return res;
   },
 
   async getMe() {
@@ -635,18 +630,27 @@ export const api = {
 
   async getNotifications(): Promise<{ notifications: Notification[] }> {
     const user = await getUser();
+    let deletedIds: string[] = [];
+    try {
+      const stored = await storage.getItem('purge_deleted_notif_ids');
+      if (stored) {
+        deletedIds = JSON.parse(stored);
+      }
+    } catch {}
+
+    let notifs: Notification[] = [];
     if (user) {
       try {
         const cloudNotifs = await fetchNotificationsFromCloud(user.id);
         if (cloudNotifs.length > 0) {
-          return { notifications: cloudNotifs };
+          notifs = cloudNotifs;
         }
       } catch {}
     }
 
-    // Notifications de bienvenue par défaut
-    return {
-      notifications: [
+    if (notifs.length === 0) {
+      // Notifications de bienvenue par défaut
+      notifs = [
         {
           id: 'notif_welcome',
           userId: user?.id || 'guest',
@@ -665,8 +669,83 @@ export const api = {
           read: false,
           createdAt: new Date().toISOString(),
         },
-      ],
-    };
+      ];
+    }
+
+    // Filtrer les notifications supprimées par l'utilisateur
+    if (deletedIds.length > 0) {
+      notifs = notifs.filter((n) => !deletedIds.includes(n.id));
+    }
+
+    return { notifications: notifs };
+  },
+
+  async deleteNotification(id: string): Promise<boolean> {
+    try {
+      // 1. Sauvegarder dans les IDs supprimés localement
+      const stored = await storage.getItem('purge_deleted_notif_ids');
+      const deletedIds: string[] = stored ? JSON.parse(stored) : [];
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        await storage.setItem('purge_deleted_notif_ids', JSON.stringify(deletedIds));
+      }
+
+      // 2. Supprimer de Cloud Firestore si document existant
+      deleteNotificationFromCloud(id).catch(() => {});
+
+      // 3. Supprimer de l'API backend si disponible
+      apiRequest(`/api/users/me/notifications/${id}`, { method: 'DELETE' }).catch(() => {});
+
+      return true;
+    } catch (err) {
+      console.warn('[API Mobile] Erreur deleteNotification:', err);
+      return false;
+    }
+  },
+
+  async clearAllNotifications(ids?: string[]): Promise<boolean> {
+    try {
+      const stored = await storage.getItem('purge_deleted_notif_ids');
+      const deletedIds: string[] = stored ? JSON.parse(stored) : [];
+      if (ids && ids.length > 0) {
+        ids.forEach((id) => {
+          if (!deletedIds.includes(id)) deletedIds.push(id);
+        });
+      }
+      await storage.setItem('purge_deleted_notif_ids', JSON.stringify(deletedIds));
+
+      const user = await getUser();
+      if (user) {
+        deleteUserNotificationsFromCloud(user.id).catch(() => {});
+      }
+      if (ids) {
+        ids.forEach((id) => deleteNotificationFromCloud(id).catch(() => {}));
+      }
+
+      apiRequest('/api/users/me/notifications', { method: 'DELETE' }).catch(() => {});
+      return true;
+    } catch (err) {
+      console.warn('[API Mobile] Erreur clearAllNotifications:', err);
+      return false;
+    }
+  },
+
+  async markNotificationRead(id: string): Promise<boolean> {
+    try {
+      await apiRequest(`/api/users/me/notifications/${id}/read`, { method: 'PUT' });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async markAllNotificationsRead(): Promise<boolean> {
+    try {
+      await apiRequest('/api/users/me/notifications/read-all', { method: 'PUT' });
+      return true;
+    } catch {
+      return false;
+    }
   },
 
   // Création d'article (Journalistes / Admins)

@@ -31,6 +31,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [systemPermissionGranted, setSystemPermissionGranted] = useState<boolean>(false);
+  const [readingId, setReadingId] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -52,8 +53,48 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     }
   }, [visible]);
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await api.markAllNotificationsRead();
+  };
+
+  const handleDeleteNotification = (id: string, title?: string) => {
+    Alert.alert(
+      'Supprimer la notification',
+      `Voulez-vous supprimer ${title ? `« ${title} »` : 'cette notification'} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            setNotifications((prev) => prev.filter((n) => n.id !== id));
+            if (readingId === id) setReadingId(null);
+            await api.deleteNotification(id);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearAll = () => {
+    Alert.alert(
+      'Effacer toutes les notifications',
+      'Voulez-vous vraiment supprimer toutes les notifications de votre historique ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Tout supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            const allIds = notifications.map((n) => n.id);
+            setNotifications([]);
+            setReadingId(null);
+            await api.clearAllNotifications(allIds);
+          },
+        },
+      ]
+    );
   };
 
   const handleTestNotification = async () => {
@@ -96,35 +137,75 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   const renderItem = ({ item }: { item: Notification }) => {
     const isBreaking = item.type === 'breaking_news';
+    const isReading = readingId === item.id;
+    const isRead = item.read;
+
     return (
-      <TouchableOpacity
-        style={[styles.notifCard, !item.read && styles.unreadCard]}
-        onPress={() => {
-          setNotifications((prev) =>
-            prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
-          );
-          if (onSelectNotification) {
-            onSelectNotification(item);
-          }
-        }}
-        activeOpacity={0.75}
-      >
-        <View style={styles.notifHeaderRow}>
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeBadgeText}>
-              {isBreaking ? '🚨 ALERTE DIRECT' : 'INFO SYSTÈME'}
-            </Text>
+      <View style={[styles.notifCard, !isRead && styles.unreadCard, isReading && styles.readingCard]}>
+        {/* Zone principale cliquable pour lire la notification */}
+        <TouchableOpacity
+          onPress={() => {
+            if (!isRead) {
+              setNotifications((prev) =>
+                prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+              );
+              api.markNotificationRead(item.id);
+            }
+            setReadingId(isReading ? null : item.id);
+            if (onSelectNotification) {
+              onSelectNotification(item);
+            }
+          }}
+          activeOpacity={0.75}
+        >
+          <View style={styles.notifHeaderRow}>
+            <View style={styles.typeBadge}>
+              <Text style={styles.typeBadgeText}>
+                {isBreaking ? '🚨 ALERTE DIRECT' : 'INFO SYSTÈME'}
+              </Text>
+            </View>
+
+            <View style={styles.headerRightActions}>
+              <Text style={styles.timeText}>
+                {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+
+              {/* Bouton de suppression rapide en tête de carte */}
+              <TouchableOpacity
+                style={styles.quickDeleteBtn}
+                onPress={() => handleDeleteNotification(item.id, item.title)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.6}
+              >
+                <Text style={styles.quickDeleteText}>🗑️</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <Text style={styles.timeText}>
-            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-        </View>
 
-        <Text style={styles.notifTitle}>{item.title}</Text>
-        <Text style={styles.notifMessage}>{item.message}</Text>
+          <Text style={styles.notifTitle}>{item.title}</Text>
+          <Text style={styles.notifMessage}>{item.message}</Text>
 
-        {!item.read && <View style={styles.unreadDot} />}
-      </TouchableOpacity>
+          {!isRead && <View style={styles.unreadDot} />}
+        </TouchableOpacity>
+
+        {/* Barre d'action quand l'utilisateur lit ou a ouvert la notification */}
+        {isReading && (
+          <View style={styles.readingActionsRow}>
+            <View style={styles.readingStatus}>
+              <Text style={styles.readingStatusText}>✓ Notification lue</Text>
+            </View>
+            <View style={styles.readingButtonsGroup}>
+              <TouchableOpacity
+                style={styles.deleteActionBtn}
+                onPress={() => handleDeleteNotification(item.id, item.title)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteActionBtnText}>🗑️ Supprimer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -143,7 +224,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Action Bar (Test & Tout Marquer Lu) */}
+          {/* Action Bar (Test, Tout Marquer Lu & Tout Effacer) */}
           <View style={styles.actionsBar}>
             <TouchableOpacity
               style={styles.testBtn}
@@ -153,11 +234,19 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
               <Text style={styles.testBtnText}>🔔 TESTER UNE NOTIFICATION</Text>
             </TouchableOpacity>
 
-            {notifications.some((n) => !n.read) && (
-              <TouchableOpacity onPress={handleMarkAllRead} activeOpacity={0.7}>
-                <Text style={styles.markReadText}>Tout marquer lu</Text>
-              </TouchableOpacity>
-            )}
+            <View style={styles.topRightActions}>
+              {notifications.some((n) => !n.read) && (
+                <TouchableOpacity onPress={handleMarkAllRead} activeOpacity={0.7} style={styles.actionLinkBtn}>
+                  <Text style={styles.markReadText}>Tout marquer lu</Text>
+                </TouchableOpacity>
+              )}
+
+              {notifications.length > 0 && (
+                <TouchableOpacity onPress={handleClearAll} activeOpacity={0.7} style={styles.actionLinkBtn}>
+                  <Text style={styles.clearAllText}>Tout effacer</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Statut permission système */}
@@ -185,7 +274,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
               <Text style={styles.emptyIcon}>🔔</Text>
               <Text style={styles.emptyTitle}>Aucune notification</Text>
               <Text style={styles.emptySub}>
-                Vous serez alerté dès qu’un décret ou une dépêche urgente sera publié.
+                Toutes vos alertes ont été traitées ou supprimées.
               </Text>
             </View>
           ) : (
@@ -269,10 +358,24 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0.5,
   },
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  actionLinkBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
   markReadText: {
     color: '#38bdf8',
     fontSize: 12,
     fontWeight: '600',
+  },
+  clearAllText: {
+    color: '#f87171',
+    fontSize: 12,
+    fontWeight: '700',
   },
   permissionStatusBox: {
     flexDirection: 'row',
@@ -314,11 +417,69 @@ const styles = StyleSheet.create({
     borderColor: '#0284c7',
     backgroundColor: '#0c1a38',
   },
+  readingCard: {
+    borderColor: '#06b6d4',
+    backgroundColor: '#091530',
+  },
   notifHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 6,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickDeleteBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+  },
+  quickDeleteText: {
+    fontSize: 11,
+  },
+  readingActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#1e293b',
+  },
+  readingStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  readingStatusText: {
+    color: '#10b981',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  readingButtonsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#450a0a',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ef4444',
+  },
+  deleteActionBtnText: {
+    color: '#fca5a5',
+    fontSize: 11,
+    fontWeight: '800',
   },
   typeBadge: {
     backgroundColor: '#1e293b',

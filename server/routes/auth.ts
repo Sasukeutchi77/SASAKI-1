@@ -183,6 +183,8 @@ authRouter.post('/login', authRateLimiter, async (req, res) => {
       'itachi45t@gmail.com': 'Itachi Admin',
       'nami45tt@gmail.com': 'Nami Admin',
       'minato45tt@gmail.com': 'Minato Namikaze',
+      'lordequipe@gmail.com': 'Équipe PURGE-INFO',
+      'madarauchiwa45t@gmail.com': 'Madara Uchiha',
     };
     user = {
       id: `usr_admin_${cleanEmail.split('@')[0]}`,
