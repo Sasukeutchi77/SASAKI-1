@@ -605,7 +605,43 @@ export const api = {
     };
   },
 
-  // Classements
+  // Classements & Maisons de Presse
+  async getMediaHouses(): Promise<{ mediaHouses: MediaHouse[] }> {
+    try {
+      const res = await apiRequest<{ mediaHouses: MediaHouse[] }>('/api/media-houses');
+      if (res?.mediaHouses) return res;
+    } catch (err) {
+      console.warn('[API] Erreur chargement maisons:', err);
+    }
+    return { mediaHouses: [] };
+  },
+
+  async getMediaHouseById(id: string): Promise<{ house: MediaHouse; articles: Article[] }> {
+    return apiRequest<{ house: MediaHouse; articles: Article[] }>(`/api/media-houses/${id}`);
+  },
+
+  async createMediaHouse(data: Partial<MediaHouse>): Promise<{ message: string; house: MediaHouse }> {
+    const res = await apiRequest<{ message: string; house: MediaHouse }>('/api/media-houses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    // Update local user session if the user became owner of the house
+    try {
+      const currentUser = await getUser();
+      if (currentUser && res.house) {
+        currentUser.mediaId = res.house.id;
+        currentUser.mediaName = res.house.name;
+        currentUser.mediaHouseRole = 'Chef de Rédaction';
+        await setUser(currentUser);
+      }
+    } catch (err) {
+      console.warn('[API] Update user media:', err);
+    }
+
+    return res;
+  },
+
   async getTopRankings(): Promise<RankingsResponse> {
     try {
       const [housesRes, journalistsRes] = await Promise.all([

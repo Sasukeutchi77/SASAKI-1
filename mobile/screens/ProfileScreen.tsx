@@ -19,6 +19,9 @@ import {
   requestNotificationPermission,
   areNotificationsEnabled,
 } from '../services/notifications';
+import { EditProfileModal } from '../components/EditProfileModal';
+import { CreateHouseModal } from '../components/CreateHouseModal';
+import { ImageSelectModal } from '../components/ImageSelectModal';
 
 interface ProfileScreenProps {
   currentUser: User | null;
@@ -42,6 +45,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [notificationsActive, setNotificationsActive] = useState<boolean>(false);
+
+  // Modals pour modifications profil, création maison de presse et photo
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showCreateHouseModal, setShowCreateHouseModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   // État du formulaire de candidature journaliste (Citoyen -> Journaliste)
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -280,20 +288,28 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     ]);
   };
 
-  const handleChangeAvatar = async () => {
-    try {
-      const picked = await pickImageFromGallery([1, 1]);
-      if (!picked) return;
+  const handleChangeAvatar = () => {
+    setShowAvatarModal(true);
+  };
 
+  const handleSelectAvatar = async (result: { url?: string; pickedResult?: any }) => {
+    try {
       setUpdatingAvatar(true);
-      const uploaded = await uploadPickedImageToCloudinary(picked, 'avatar');
-      const updated = await api.updateProfile({ avatar: uploaded.url });
-      onUserUpdated(updated.user);
-      Alert.alert('Succès', 'Votre photo de profil a été mise à jour.');
+      let finalUrl = result.url;
+      if (result.pickedResult) {
+        const uploaded = await uploadPickedImageToCloudinary(result.pickedResult, 'avatar');
+        finalUrl = uploaded.url;
+      }
+      if (finalUrl) {
+        const updated = await api.updateProfile({ avatar: finalUrl });
+        onUserUpdated(updated.user);
+        Alert.alert('Photo mise à jour', 'Votre photo de profil a été mise à jour avec succès !');
+      }
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Impossible de mettre à jour la photo.');
+      Alert.alert('Erreur photo', err.message || 'Impossible de mettre à jour la photo de profil.');
     } finally {
       setUpdatingAvatar(false);
+      setShowAvatarModal(false);
     }
   };
 
@@ -534,6 +550,77 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <Text style={styles.statLabel}>Abonnements</Text>
           </View>
         </View>
+
+        {/* Action : Modifier mon profil */}
+        <TouchableOpacity
+          style={styles.editProfileBtn}
+          onPress={() => setShowEditProfileModal(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.editProfileBtnText}>✏️ MODIFIER MES INFORMATIONS & PROFIL</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* SECTION MAISON DE PRESSE & RÉSEAU ÉDITORIAL */}
+      <View style={styles.mediaHouseCard}>
+        <View style={styles.mediaHouseHeaderRow}>
+          <View>
+            <Text style={styles.mediaHouseTitle}>🏛️ MAISON DE PRESSE</Text>
+            <Text style={styles.mediaHouseSub}>Réseau éditorial officiel</Text>
+          </View>
+          <View style={styles.mediaHouseBadge}>
+            <Text style={styles.mediaHouseBadgeText}>
+              {currentUser.mediaName ? 'AFFILIÉ' : 'ACCÈS LIBRE'}
+            </Text>
+          </View>
+        </View>
+
+        {currentUser.mediaName ? (
+          <View style={styles.mediaHouseBody}>
+            <View style={styles.mediaHouseInfoBox}>
+              <Text style={styles.mediaHouseLabel}>Votre Maison de Presse :</Text>
+              <Text style={styles.mediaHouseNameText}>« {currentUser.mediaName} »</Text>
+              <Text style={styles.mediaHouseRoleText}>
+                Statut : {currentUser.mediaHouseRole || (isAdmin ? 'Directeur de Rédaction' : 'Journaliste Accrédité')}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.mediaHouseBtn}
+              onPress={() => setShowCreateHouseModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.mediaHouseBtnText}>🏛️ FONDER UNE NOUVELLE MAISON</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.mediaHouseBody}>
+            <Text style={styles.mediaHouseDesc}>
+              {isJournalist || isAdmin
+                ? 'Fondez votre propre maison de presse d’investigation, invitez des journalistes confrères et publiez vos enquêtes sous une marque éditoriale reconnue.'
+                : 'Les maisons de presse regroupent les journalistes et directeurs de rédaction. Devenez journaliste ou fondez votre rédaction officielle.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.mediaHouseBtn}
+              onPress={() => {
+                if (!isJournalist && !isAdmin) {
+                  Alert.alert(
+                    'Accréditation requise',
+                    'La création d’une maison de presse nécessite le statut Journaliste ou Administrateur. Souhaitez-vous déposer une demande d’accréditation ?',
+                    [
+                      { text: 'Plus tard', style: 'cancel' },
+                      { text: 'Postuler maintenant', onPress: () => setShowApplyModal(true) },
+                    ]
+                  );
+                } else {
+                  setShowCreateHouseModal(true);
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.mediaHouseBtnText}>🏛️ FONDER UNE MAISON DE PRESSE</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* ESPACE CITOYEN : Candidature au Statut Journaliste */}
@@ -856,6 +943,34 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* Modal d'édition des informations personnelles et profil */}
+      <EditProfileModal
+        visible={showEditProfileModal}
+        currentUser={currentUser}
+        onUserUpdated={(u) => onUserUpdated(u)}
+        onClose={() => setShowEditProfileModal(false)}
+      />
+
+      {/* Modal de fondation d'une Maison de Presse */}
+      <CreateHouseModal
+        visible={showCreateHouseModal}
+        currentUser={currentUser}
+        onSuccess={(house) => {
+          api.getProfile().then((res) => onUserUpdated(res.user)).catch(() => {});
+        }}
+        onClose={() => setShowCreateHouseModal(false)}
+      />
+
+      {/* Modal universel de sélection d'avatar */}
+      <ImageSelectModal
+        visible={showAvatarModal}
+        title="Photo de Profil"
+        mode="avatar"
+        currentImageUrl={currentUser.avatar}
+        onSelectImage={handleSelectAvatar}
+        onClose={() => setShowAvatarModal(false)}
+      />
     </ScrollView>
   );
 };
@@ -1242,6 +1357,106 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 11,
     marginTop: 2,
+  },
+  editProfileBtn: {
+    marginTop: 14,
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: '#06b6d4',
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  editProfileBtnText: {
+    color: '#06b6d4',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  mediaHouseCard: {
+    backgroundColor: '#070d1e',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+    marginBottom: 14,
+  },
+  mediaHouseHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  mediaHouseTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  mediaHouseSub: {
+    color: '#64748b',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  mediaHouseBadge: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.4)',
+  },
+  mediaHouseBadgeText: {
+    color: '#06b6d4',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  mediaHouseBody: {
+    gap: 10,
+  },
+  mediaHouseInfoBox: {
+    backgroundColor: 'rgba(2, 5, 18, 0.6)',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  mediaHouseLabel: {
+    color: '#94a3b8',
+    fontSize: 11,
+  },
+  mediaHouseNameText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginVertical: 4,
+  },
+  mediaHouseRoleText: {
+    color: '#06b6d4',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  mediaHouseActionsRow: {
+    marginTop: 4,
+  },
+  mediaHouseDesc: {
+    color: '#94a3b8',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  mediaHouseBtn: {
+    backgroundColor: '#06b6d4',
+    paddingVertical: 11,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  mediaHouseBtnText: {
+    color: '#020512',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   settingsCard: {
     backgroundColor: '#070d1e',

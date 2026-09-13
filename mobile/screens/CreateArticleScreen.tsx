@@ -17,6 +17,7 @@ import {
   uploadPickedImageToCloudinary,
   PickImageResult,
 } from '../services/imagePicker';
+import { ImageSelectModal } from '../components/ImageSelectModal';
 
 interface CreateArticleScreenProps {
   onBack: () => void;
@@ -33,6 +34,8 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [pickedImage, setPickedImage] = useState<PickImageResult | null>(null);
+  const [directCoverUrl, setDirectCoverUrl] = useState<string | null>(null);
+  const [showImageModal, setShowImageModal] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
@@ -47,14 +50,13 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
       .catch((err) => console.warn('Erreur catégories:', err));
   }, []);
 
-  const handlePickCover = async () => {
-    try {
-      const result = await pickImageFromGallery([16, 9]);
-      if (result) {
-        setPickedImage(result);
-      }
-    } catch (err: any) {
-      Alert.alert('Image', err.message || 'Impossible de sélectionner l’image.');
+  const handleSelectCover = async (result: { url?: string; pickedResult?: PickImageResult }) => {
+    if (result.pickedResult) {
+      setPickedImage(result.pickedResult);
+      setDirectCoverUrl(null);
+    } else if (result.url) {
+      setDirectCoverUrl(result.url);
+      setPickedImage(null);
     }
   };
 
@@ -78,11 +80,13 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
     try {
       let coverImageUrl: string | undefined;
 
-      // Si une image a été sélectionnée, on l'uploade vers Cloudinary via le backend PURGE
+      // Si une image a été sélectionnée depuis la galerie ou la caméra, on l'uploade vers Cloudinary
       if (pickedImage) {
         setUploadStatus('Téléversement Cloudinary en cours...');
         const uploaded = await uploadPickedImageToCloudinary(pickedImage, 'article_cover');
         coverImageUrl = uploaded.url;
+      } else if (directCoverUrl) {
+        coverImageUrl = directCoverUrl;
       }
 
       setUploadStatus('Publication de l’enquête...');
@@ -104,6 +108,8 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
       setUploadStatus(null);
     }
   };
+
+  const currentCoverDisplay = pickedImage?.uri || directCoverUrl;
 
   return (
     <View style={styles.container}>
@@ -136,19 +142,39 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
 
         {/* Sélection d'image de couverture */}
         <View style={styles.section}>
-          <Text style={styles.label}>PHOTO DE COUVERTURE (CLOUDINARY)</Text>
-          {pickedImage ? (
+          <Text style={styles.label}>PHOTO DE COUVERTURE (16:9)</Text>
+          {currentCoverDisplay ? (
             <View style={styles.imagePreviewWrapper}>
-              <Image source={{ uri: pickedImage.uri }} style={styles.coverPreview} resizeMode="cover" />
-              <TouchableOpacity style={styles.changeCoverBtn} onPress={handlePickCover}>
-                <Text style={styles.changeCoverText}>Changer la photo</Text>
-              </TouchableOpacity>
+              <Image source={{ uri: currentCoverDisplay }} style={styles.coverPreview} resizeMode="cover" />
+              <View style={styles.coverActionsRow}>
+                <TouchableOpacity
+                  style={styles.changeCoverBtn}
+                  onPress={() => setShowImageModal(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.changeCoverText}>📷 Modifier l'image</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeCoverBtn}
+                  onPress={() => {
+                    setPickedImage(null);
+                    setDirectCoverUrl(null);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.removeCoverText}>✕ Supprimer</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ) : (
-            <TouchableOpacity style={styles.uploadPlaceholder} onPress={handlePickCover} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.uploadPlaceholder}
+              onPress={() => setShowImageModal(true)}
+              activeOpacity={0.8}
+            >
               <Text style={styles.uploadIcon}>📷</Text>
-              <Text style={styles.uploadTitle}>Sélectionner une photo depuis la galerie</Text>
-              <Text style={styles.uploadSub}>Format recommandé : 16:9 paysage haute définition</Text>
+              <Text style={styles.uploadTitle}>Ajouter une photo de couverture</Text>
+              <Text style={styles.uploadSub}>Galerie photo, appareil photo, lien direct ou modèles d'enquête</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -216,6 +242,16 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
           />
         </View>
       </ScrollView>
+
+      {/* Modal Universel de sélection d'image de couverture */}
+      <ImageSelectModal
+        visible={showImageModal}
+        title="Photo de Couverture de l'Enquête"
+        mode="cover"
+        currentImageUrl={currentCoverDisplay || undefined}
+        onSelectImage={handleSelectCover}
+        onClose={() => setShowImageModal(false)}
+      />
     </View>
   );
 };
@@ -388,14 +424,18 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  changeCoverBtn: {
+  coverActionsRow: {
     position: 'absolute',
     bottom: 10,
     right: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  changeCoverBtn: {
     backgroundColor: 'rgba(2, 5, 18, 0.85)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#00d2ff',
   },
@@ -403,5 +443,16 @@ const styles = StyleSheet.create({
     color: '#00d2ff',
     fontSize: 11,
     fontWeight: '700',
+  },
+  removeCoverBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.85)',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  removeCoverText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
 });
