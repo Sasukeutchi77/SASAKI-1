@@ -42,6 +42,8 @@ export interface User {
   coverMedia?: CloudinaryMedia;
   bio?: string;
   isVerified?: boolean;
+  verificationStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  trustScore?: number;
   status: 'active' | 'suspended';
   mediaName?: string;
   mediaId?: string;
@@ -145,26 +147,33 @@ export interface MediaHouse {
 export interface TopMediaHouse {
   id: string;
   name: string;
+  slug?: string;
   logo?: string;
   bio?: string;
   isVerified?: boolean;
   articlesCount: number;
   followersCount: number;
-  score: number;
-  rank: number;
+  score?: number;
+  trustScore?: number;
+  rating?: number;
+  journalistsCount?: number;
+  rank?: number;
   isFollowing?: boolean;
 }
 
 export interface TopJournalist {
   id: string;
   name: string;
+  username?: string;
   avatar?: string;
   mediaName?: string;
+  role?: string;
   isVerified?: boolean;
   articlesCount: number;
   followersCount: number;
-  score: number;
-  rank: number;
+  score?: number;
+  trustScore?: number;
+  rank?: number;
   isFollowing?: boolean;
 }
 
@@ -174,6 +183,21 @@ export interface RankingsResponse {
   totalHousesCount: number;
   totalJournalistsCount: number;
   lastUpdated: string;
+}
+
+export interface VerificationRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  mediaName?: string;
+  pressCardNumber?: string;
+  motivation?: string;
+  documentUrl?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  adminNotes?: string;
+  reviewedAt?: string;
+  createdAt: string;
 }
 
 export interface Notification {

@@ -7,6 +7,7 @@ import { NavigationTab, Article, User } from './types';
 import { api } from './services/api';
 import { Header } from './components/Header';
 import { BottomNavBar } from './components/BottomNavBar';
+import { NotificationsModal } from './components/NotificationsModal';
 import { HomeScreen } from './screens/HomeScreen';
 import { ArticleDetailScreen } from './screens/ArticleDetailScreen';
 import { SearchScreen } from './screens/SearchScreen';
@@ -14,6 +15,12 @@ import { RankingsScreen } from './screens/RankingsScreen';
 import { BookmarksScreen } from './screens/BookmarksScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { CreateArticleScreen } from './screens/CreateArticleScreen';
+import {
+  initNotifications,
+  requestNotificationPermission,
+  addNotificationReceivedListener,
+  addNotificationResponseReceivedListener,
+} from './services/notifications';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('feed');
@@ -21,10 +28,21 @@ export default function App() {
   const [isCreatingArticle, setIsCreatingArticle] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [unreadBookmarks, setUnreadBookmarks] = useState<number>(0);
+  const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(2);
 
-  // Restauration de session utilisateur au démarrage
+  // Initialisation au démarrage : Authentification & Notifications
   useEffect(() => {
-    const initAuth = async () => {
+    const initApp = async () => {
+      // 1. Initialiser le canal de notifications Android & demander la permission
+      try {
+        await initNotifications();
+        await requestNotificationPermission();
+      } catch (err) {
+        console.warn('[App] Initialisation notifications:', err);
+      }
+
+      // 2. Restauration de session utilisateur
       try {
         const cachedUser = await api.getUser();
         if (cachedUser) {
@@ -36,18 +54,39 @@ export default function App() {
           if (typeof me.bookmarksCount === 'number') {
             setUnreadBookmarks(me.bookmarksCount);
           }
+          if (typeof me.unreadNotifs === 'number') {
+            setUnreadNotificationsCount(me.unreadNotifs);
+          }
         }
-      } catch (err) {
-        // Mode hors-ligne ou token expiré
+      } catch {
+        // Mode hors-ligne ou session expirée
       }
     };
 
-    initAuth();
+    initApp();
+
+    // 3. Écouteurs de notifications Expo
+    const receivedSub = addNotificationReceivedListener((notification) => {
+      setUnreadNotificationsCount((prev) => prev + 1);
+    });
+
+    const responseSub = addNotificationResponseReceivedListener((response) => {
+      setShowNotificationsModal(true);
+    });
+
+    return () => {
+      receivedSub.remove();
+      responseSub.remove();
+    };
   }, []);
 
   // Gestion matérielle de la touche "Retour" sur Android
   useEffect(() => {
     const onBackPress = () => {
+      if (showNotificationsModal) {
+        setShowNotificationsModal(false);
+        return true;
+      }
       if (isCreatingArticle) {
         setIsCreatingArticle(false);
         return true;
@@ -65,7 +104,7 @@ export default function App() {
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => subscription.remove();
-  }, [isCreatingArticle, selectedArticle, activeTab]);
+  }, [showNotificationsModal, isCreatingArticle, selectedArticle, activeTab]);
 
   const handleSelectArticle = useCallback((article: Article) => {
     setSelectedArticle(article);
@@ -80,6 +119,15 @@ export default function App() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <StatusBar style="light" backgroundColor="#020512" />
+
+        {/* Modal des Notifications */}
+        <NotificationsModal
+          visible={showNotificationsModal}
+          onClose={() => {
+            setShowNotificationsModal(false);
+            setUnreadNotificationsCount(0);
+          }}
+        />
 
         {/* Écran d'écriture d'article en plein écran */}
         {isCreatingArticle ? (
@@ -114,6 +162,8 @@ export default function App() {
                   : 'ESPACE COMPTE'
               }
               user={currentUser}
+              unreadNotificationsCount={unreadNotificationsCount}
+              onOpenNotifications={() => setShowNotificationsModal(true)}
               onOpenCreateArticle={() => setIsCreatingArticle(true)}
               onOpenSearch={() => setActiveTab('search')}
               onOpenProfile={() => setActiveTab('profile')}
@@ -124,6 +174,7 @@ export default function App() {
                 <HomeScreen
                   onSelectArticle={handleSelectArticle}
                   onRequireAuth={() => setActiveTab('profile')}
+                  onOpenNotifications={() => setShowNotificationsModal(true)}
                 />
               )}
 
@@ -147,6 +198,7 @@ export default function App() {
                   currentUser={currentUser}
                   onUserUpdated={setCurrentUser}
                   onOpenCreateArticle={() => setIsCreatingArticle(true)}
+                  onOpenNotifications={() => setShowNotificationsModal(true)}
                 />
               )}
             </View>

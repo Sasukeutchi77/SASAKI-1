@@ -77,7 +77,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onSelectArticle }) =
             placeholder="Rechercher par titre, mot-clé, sujet..."
             placeholderTextColor="#64748b"
             value={query}
-            onChangeText={(text) => {
+            onChangeText={(text: string) => {
               setQuery(text);
               handleSearch(text);
             }}
@@ -131,8 +131,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onSelectArticle }) =
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          keyExtractor={(item: Article) => item.id}
+          renderItem={({ item }: { item: Article }) => (
             <ArticleCard article={item} onPress={() => onSelectArticle(item)} />
           )}
           contentContainerStyle={styles.listContent}

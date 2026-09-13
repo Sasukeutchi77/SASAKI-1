@@ -94,8 +94,8 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
       ) : (
         <FlatList
           data={bookmarks}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          keyExtractor={(item: Article) => item.id}
+          renderItem={({ item }: { item: Article }) => (
             <ArticleCard
               article={item}
               onPress={() => onSelectArticle(item)}
