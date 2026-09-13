@@ -280,7 +280,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           ) : (
             <FlatList
               data={notifications}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item: Notification) => item.id}
               renderItem={renderItem}
               contentContainerStyle={styles.listContainer}
             />

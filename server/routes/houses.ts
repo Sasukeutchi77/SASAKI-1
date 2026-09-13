@@ -386,20 +386,14 @@ housesRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
   const data = db.getData();
   const user = req.user!;
 
-  // Strict check: Only accounts with 'journalist' role or principal 'admin' can create a house
-  if (user.role !== 'journalist' && user.role !== 'admin' && !isMasterAdmin(user.email)) {
-    return res.status(403).json({
-      error: 'Seuls les journalistes accrédités par les comptes principaux peuvent fonder une maison de journalistes.',
-    });
-  }
-
-  // Check if user already owns or is member of a house
+  // Allow journalists or authenticated users (citizens, readers) to register a new media house
+  // If the user already owns or belongs to a house, ensure they are informed unless they are master admin
   const existingHouse = (data.mediaHouses || []).find(
     (m) => m.ownerId === user.id || (m.members && m.members.includes(user.id))
   );
   if (existingHouse && !isMasterAdmin(user.email)) {
     return res.status(400).json({
-      error: `Vous êtes déjà rattaché à la maison de journalistes "${existingHouse.name}". Un journaliste ne peut appartenir qu'à une seule maison à la fois.`,
+      error: `Vous êtes déjà rattaché à la maison de presse "${existingHouse.name}". Un membre ne peut appartenir qu'à une seule maison à la fois.`,
     });
   }
 
@@ -458,6 +452,10 @@ housesRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
   // Link user to this new house
   user.mediaId = newHouse.id;
   user.mediaName = newHouse.name;
+  if (user.role !== 'admin' && !isMasterAdmin(user.email)) {
+    user.role = 'journalist';
+    (user as any).accountType = 'journalist';
+  }
 
   await db.persistMediaHouse(newHouse);
   await db.persistUser(user);
@@ -465,8 +463,9 @@ housesRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
   realtimeHub.broadcast('mediaHouse:created', newHouse);
 
   return res.status(201).json({
-    message: `Félicitations ! La maison de journalistes "${newHouse.name}" a été fondée avec succès. Vous en êtes le Chef de rédaction.`,
+    message: `Félicitations ! La maison de presse "${newHouse.name}" a été fondée avec succès. Vous en êtes le Chef de rédaction.`,
     house: newHouse,
+    user: sanitizeMember(user),
   });
 });
 

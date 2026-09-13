@@ -52,6 +52,8 @@ export interface User {
   followingCount?: number;
   isFollowing?: boolean;
   articlesCount?: number;
+  mediaHouseRole?: string;
+  lastLoginAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -84,7 +86,7 @@ export interface Poll {
 export interface Article {
   id: string;
   title: string;
-  slug: string;
+  slug?: string;
   summary: string;
   content: string;
   coverImage?: string;
@@ -133,15 +135,26 @@ export interface MediaHouse {
   name: string;
   slug: string;
   logo: string;
+  coverImage?: string;
+  motto?: string;
+  specialties?: string[];
   description: string;
   ownerId: string;
   ownerName: string;
   members?: string[];
   membersData?: User[];
   isVerified: boolean;
+  trustScore?: number;
+  phone?: string;
+  email?: string;
+  address?: string;
+  website?: string;
+  membersCount?: number;
   articlesCount?: number;
   followersCount?: number;
   isFollowing?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TopMediaHouse {

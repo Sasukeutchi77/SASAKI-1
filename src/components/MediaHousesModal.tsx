@@ -25,6 +25,7 @@ import { api } from '../services/api';
 import { realtime } from '../services/realtime';
 import { VerifiedBadge } from './VerifiedBadge';
 import { MyHouseDashboard } from './MyHouseDashboard';
+import { CreateHouseModal } from './CreateHouseModal';
 
 const LOGO_PRESETS = [
   { name: 'Investigation', url: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=200&auto=format&fit=crop&q=80' },
@@ -45,6 +46,7 @@ interface MediaHousesModalProps {
   onOpenArticle?: (article: Article) => void;
   onOpenProfile?: () => void;
   onOpenCreateArticle?: () => void;
+  onOpenCreateHouse?: () => void;
   initialTab?: 'explore' | 'my-house' | 'governance';
   isPage?: boolean;
 }
@@ -54,6 +56,7 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
   onOpenArticle,
   onOpenProfile,
   onOpenCreateArticle,
+  onOpenCreateHouse,
   initialTab = 'explore',
   isPage = false,
 }) => {
@@ -84,6 +87,7 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
 
   // Creation form state
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
+  const [showCreateHouseModal, setShowCreateHouseModal] = useState<boolean>(false);
   const [newName, setNewName] = useState<string>('');
   const [newDescription, setNewDescription] = useState<string>('');
   const [newLogo, setNewLogo] = useState<string>('');
@@ -102,6 +106,22 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
   const showMsg = (type: 'success' | 'error', message: string) => {
     setFeedback({ type, message });
     setTimeout(() => setFeedback(null), 5000);
+  };
+
+  const handleOpenCreateHouse = () => {
+    if (onOpenCreateHouse) {
+      onOpenCreateHouse();
+    } else {
+      setShowCreateHouseModal(true);
+    }
+  };
+
+  const handleHouseCreatedFromModal = async (newHouse: MediaHouse) => {
+    setShowCreateHouseModal(false);
+    showMsg('success', `La maison de presse "${newHouse.name}" a été fondée avec succès !`);
+    await loadHouses();
+    await loadMyHouse();
+    setActiveTab('my-house');
   };
 
   const loadHouses = async () => {
@@ -485,6 +505,17 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
             <Shield className="w-4 h-4" />
             Gouvernance & Comptes Principaux
           </button>
+
+          {/* Direct CTA button to open CreateHouseModal */}
+          <button
+            id="tab-create-house-direct-btn"
+            type="button"
+            onClick={handleOpenCreateHouse}
+            className="ml-auto hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-cyan-400 to-blue-500 hover:brightness-110 text-black text-xs font-black transition cursor-pointer shadow-[0_0_15px_rgba(0,243,255,0.25)] shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Fonder une Maison</span>
+          </button>
         </div>
 
         {/* Feedback Alert */}
@@ -527,27 +558,25 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                 </div>
               </div>
 
-              {/* Proposal banner for unhoused journalist */}
-              {user?.role === 'journalist' && !myHouse && !loadingMyHouse && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-cyan-950/40 to-blue-950/40 border-2 border-amber-400/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+              {/* Proposal banner for unhoused user or journalist */}
+              {!myHouse && !loadingMyHouse && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-cyan-950/40 to-blue-950/40 border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(0,243,255,0.15)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm font-black text-amber-300">
                       <Crown className="w-4 h-4 text-amber-400" />
-                      <span>Vous êtes journaliste accrédité sans maison de presse</span>
+                      <span>Fondez votre propre Maison de Presse</span>
                     </div>
                     <p className="text-xs text-stone-300">
-                      Pour publier des articles sur PURGE-INFO, vous devez être rattaché à une Maison de Journalistes. Fondez la vôtre dès maintenant et devenez Chef de Rédaction !
+                      Devenez Chef de Rédaction, définissez votre ligne éditoriale indépendante et fédérez jusqu'à 4 confrères pour mener des enquêtes vérifiées.
                     </p>
                   </div>
                   <button
-                    onClick={() => {
-                      setActiveTab('my-house');
-                      setShowCreateForm(true);
-                    }}
+                    id="banner-create-house-action-btn"
+                    onClick={handleOpenCreateHouse}
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-cyan-400 hover:brightness-110 text-black text-xs font-black transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Créer ma propre Maison →</span>
+                    <span>Fonder ma Maison →</span>
                   </button>
                 </div>
               )}
@@ -891,14 +920,22 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                     <span className="text-amber-300 font-medium">
                       Protocole de sécurité & accréditation CSC actif.
                     </span>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <button
+                        id="citizen-direct-create-house-btn"
+                        onClick={handleOpenCreateHouse}
+                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-cyan-400 text-black font-bold shadow-[0_0_12px_rgba(245,158,11,0.3)] hover:brightness-110 transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Crown className="w-3.5 h-3.5" />
+                        <span>Fonder ma Maison de Presse (Chef)</span>
+                      </button>
                       {onOpenProfile && (
                         <button
                           onClick={() => {
                             onClose();
                             onOpenProfile();
                           }}
-                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400 to-amber-400 text-black font-bold shadow-[0_0_12px_rgba(0,243,255,0.3)] hover:brightness-110 transition cursor-pointer flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 hover:text-white transition cursor-pointer flex items-center gap-1.5"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
                           <span>Demander mon accréditation</span>
@@ -951,10 +988,10 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                     {!showCreateForm ? (
                       <button
                         id="start-create-house-btn"
-                        onClick={() => setShowCreateForm(true)}
+                        onClick={handleOpenCreateHouse}
                         className="px-4 py-2 text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 rounded-xl transition shadow-[0_0_15px_rgba(0,243,255,0.3)] cursor-pointer flex items-center gap-2"
                       >
-                        <Plus className="w-4 h-4" /> Fonder ma Maison de Journalistes
+                        <Plus className="w-4 h-4" /> Fonder ma Maison de Presse
                       </button>
                     ) : null}
                   </div>
@@ -1219,19 +1256,37 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-8 pt-6 sm:pt-8 min-w-0">
           {modalContent}
         </div>
+
+        {showCreateHouseModal && (
+          <CreateHouseModal
+            isOpen={showCreateHouseModal}
+            onClose={() => setShowCreateHouseModal(false)}
+            onSuccess={handleHouseCreatedFromModal}
+          />
+        )}
       </div>
     );
   }
 
   return (
-    <div
-      id="media-houses-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fadeIn"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      {modalContent}
-    </div>
+    <>
+      <div
+        id="media-houses-modal-backdrop"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fadeIn"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        {modalContent}
+      </div>
+
+      {showCreateHouseModal && (
+        <CreateHouseModal
+          isOpen={showCreateHouseModal}
+          onClose={() => setShowCreateHouseModal(false)}
+          onSuccess={handleHouseCreatedFromModal}
+        />
+      )}
+    </>
   );
 };

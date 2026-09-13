@@ -843,10 +843,17 @@ export const api = {
   },
 
   async createMediaHouse(data: Partial<MediaHouse>) {
-    return request<{ message: string; house: MediaHouse }>('/api/media-houses', {
+    const res = await request<{ message: string; house: MediaHouse; user?: User }>('/api/media-houses', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+    if (res.user) {
+      const current = await getUser();
+      if (current) {
+        await setUser({ ...current, ...res.user, role: res.user.role || 'journalist' });
+      }
+    }
+    return res;
   },
 
   async updateMediaHouse(id: string, data: Partial<MediaHouse>) {

@@ -601,20 +601,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </Text>
             <TouchableOpacity
               style={styles.mediaHouseBtn}
-              onPress={() => {
-                if (!isJournalist && !isAdmin) {
-                  Alert.alert(
-                    'Accréditation requise',
-                    'La création d’une maison de presse nécessite le statut Journaliste ou Administrateur. Souhaitez-vous déposer une demande d’accréditation ?',
-                    [
-                      { text: 'Plus tard', style: 'cancel' },
-                      { text: 'Postuler maintenant', onPress: () => setShowApplyModal(true) },
-                    ]
-                  );
-                } else {
-                  setShowCreateHouseModal(true);
-                }
-              }}
+              onPress={() => setShowCreateHouseModal(true)}
               activeOpacity={0.8}
             >
               <Text style={styles.mediaHouseBtnText}>🏛️ FONDER UNE MAISON DE PRESSE</Text>
@@ -957,6 +944,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         visible={showCreateHouseModal}
         currentUser={currentUser}
         onSuccess={(house) => {
+          const updatedUser: User = {
+            ...currentUser,
+            mediaId: house.id,
+            mediaName: house.name,
+            mediaHouseRole: 'Chef de Rédaction',
+            role: currentUser.role === 'admin' ? 'admin' : 'journalist',
+            accountType: currentUser.role === 'admin' ? ('admin' as any) : 'journalist',
+            isVerified: true,
+          };
+          onUserUpdated(updatedUser);
           api.getProfile().then((res) => onUserUpdated(res.user)).catch(() => {});
         }}
         onClose={() => setShowCreateHouseModal(false)}

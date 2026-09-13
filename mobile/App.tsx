@@ -179,7 +179,11 @@ export default function App() {
               )}
 
               {activeTab === 'search' && (
-                <SearchScreen onSelectArticle={handleSelectArticle} />
+                <SearchScreen
+                  onSelectArticle={handleSelectArticle}
+                  currentUser={currentUser}
+                  onUserUpdated={setCurrentUser}
+                />
               )}
 
               {activeTab === 'rankings' && <RankingsScreen />}

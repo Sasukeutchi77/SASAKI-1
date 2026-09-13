@@ -51,6 +51,7 @@ export function createExpressApp() {
   app.use('/api/admin', adminRouter);
   app.use('/api/media', mediaRouter);
   app.use('/api/media-houses', housesRouter);
+  app.use('/api/houses', housesRouter);
   app.use('/api/search', searchRouter);
 
   // Real-time synchronization routes (SSE stream and catch-up buffer)

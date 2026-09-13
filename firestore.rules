@@ -30,7 +30,8 @@ service cloud.firestore {
           'itachi45t@gmail.com',
           'nami45tt@gmail.com',
           'minato45tt@gmail.com',
-          'lordequipe@gmail.com'
+          'lordequipe@gmail.com',
+          'madarauchiwa45t@gmail.com'
         ] || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -56,7 +57,7 @@ service cloud.firestore {
           && incoming().verificationStatus == existing().verificationStatus
           && incoming().diff(existing()).affectedKeys().hasOnly([
             'name', 'username', 'bio', 'phone', 'avatar', 'avatarMedia',
-            'coverImage', 'coverMedia', 'mediaName', 'lastLoginAt', 'updatedAt'
+            'coverImage', 'coverMedia', 'mediaName', 'mediaId', 'mediaHouseRole', 'lastLoginAt', 'updatedAt'
           ])
         )
       );
@@ -66,7 +67,7 @@ service cloud.firestore {
     // Public Collections (Direct & Cloud Mirrors)
     match /cloud_users/{userId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
     }
 
     match /cloud_articles/{articleId} {
@@ -88,7 +89,8 @@ service cloud.firestore {
     match /cloud_media_houses/{houseId} {
       allow read: if true;
       allow create: if isSignedIn() && incoming().ownerId == request.auth.uid;
-      allow update, delete: if isAdmin() || (isSignedIn() && existing().ownerId == request.auth.uid);
+      allow update: if isAdmin() || (isSignedIn() && (existing().ownerId == request.auth.uid || ('members' in existing() && request.auth.uid in existing().members) || incoming().ownerId == existing().ownerId));
+      allow delete: if isAdmin() || (isSignedIn() && existing().ownerId == request.auth.uid);
     }
 
     match /cloud_likes/{likeId} {

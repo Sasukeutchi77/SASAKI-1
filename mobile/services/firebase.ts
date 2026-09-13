@@ -29,8 +29,8 @@ import {
   getDocs,
   onSnapshot,
 } from 'firebase/firestore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, Article, Category, Comment, Notification, AccountType, UserRole, VerificationRequest } from '../types';
+import { storage as AsyncStorage } from './storage';
+import { User, Article, Category, Comment, Notification, AccountType, UserRole, VerificationRequest, MediaHouse } from '../types';
 
 export const MASTER_ADMIN_EMAILS = [
   'naruto455t@gmail.com',
@@ -99,10 +99,14 @@ if (isFirebaseConfigured()) {
 
     // Initialisation Firestore optimisée pour React Native / Expo (supporte base nommée et long-polling)
     try {
+      const fsSettings = {
+        experimentalForceLongPolling: true,
+        ignoreUndefinedProperties: true,
+      };
       if (typeof initializeFirestore === 'function') {
         firestore = firestoreDatabaseId
-          ? initializeFirestore(app, { experimentalForceLongPolling: true }, firestoreDatabaseId)
-          : initializeFirestore(app, { experimentalForceLongPolling: true });
+          ? initializeFirestore(app, fsSettings, firestoreDatabaseId)
+          : initializeFirestore(app, fsSettings);
       } else {
         firestore = firestoreDatabaseId ? getFirestore(app, firestoreDatabaseId) : getFirestore(app);
       }
@@ -249,9 +253,9 @@ function sha256Hex(ascii: string): string {
     if (j >> 8) return '';
     words[i >> 2] |= j << (((3 - i) % 4) * 8);
   }
-  words[words[lengthProperty]] = (asciiBitLength / maxWord) | 0;
-  words[words[lengthProperty]] = asciiBitLength;
-  for (j = 0; j < words[lengthProperty]; ) {
+  words[words.length] = (asciiBitLength / maxWord) | 0;
+  words[words.length] = asciiBitLength;
+  for (j = 0; j < words.length; ) {
     const w = words.slice(j, (j += 16));
     const oldHash = hash;
     hash = hash.slice(0, 8);
@@ -380,17 +384,38 @@ export async function fetchUserProfileFromFirestore(uid: string): Promise<User |
 }
 
 /**
+ * Supprime récursivement les propriétés undefined pour compatibilité stricte Firestore
+ */
+export function stripUndefined<T = any>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(stripUndefined) as unknown as T;
+  }
+  if (typeof obj === 'object') {
+    const clean: Record<string, any> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      if (val !== undefined) {
+        clean[key] = stripUndefined(val);
+      }
+    }
+    return clean as unknown as T;
+  }
+  return obj;
+}
+
+/**
  * Enregistre le profil utilisateur dans Firestore (cloud_users et users)
  */
 export async function saveUserProfileToFirestore(user: User & { passwordHash?: string; passwordSalt?: string }): Promise<void> {
   if (!firestore) return;
 
   try {
+    const cleanUser = stripUndefined(user);
     const cloudRef = doc(firestore, 'cloud_users', user.id);
-    await setDoc(cloudRef, user, { merge: true });
+    await setDoc(cloudRef, cleanUser, { merge: true });
 
     const userRef = doc(firestore, 'users', user.id);
-    await setDoc(userRef, user, { merge: true });
+    await setDoc(userRef, cleanUser, { merge: true });
   } catch (err) {
     console.warn('[Firebase Mobile] saveUserProfileToFirestore warning:', err);
   }
@@ -595,7 +620,7 @@ export async function registerWithFirebaseEmailAndProfile(params: {
     email: cleanEmail,
     role: isAdmin ? 'admin' : 'citoyen',
     accountType: isAdmin ? ('admin' as any) : 'citoyen',
-    avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(userId)}`,
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
     bio: isAdmin ? 'Compte Administrateur Officiel PURGE' : 'Citoyen et lecteur sur le réseau factuel PURGE.',
     isVerified: isAdmin,
     verificationStatus: isAdmin ? 'approved' : 'none',
@@ -799,6 +824,62 @@ export async function fetchArticlesFromCloud(options: {
     console.warn('[Firebase Mobile] Erreur chargement cloud_articles:', err);
     return [];
   }
+}
+
+/**
+ * Enregistre un article directement dans Cloud Firestore
+ */
+export async function saveArticleToCloud(article: Article): Promise<void> {
+  if (!firestore) return;
+  try {
+    const clean = stripUndefined(article);
+    const cloudRef = doc(firestore, 'cloud_articles', article.id);
+    await setDoc(cloudRef, clean, { merge: true });
+
+    const localRef = doc(firestore, 'articles', article.id);
+    await setDoc(localRef, clean, { merge: true });
+  } catch (err) {
+    console.warn('[Firebase Mobile] saveArticleToCloud warning:', err);
+  }
+}
+
+/**
+ * Enregistre une Maison de Presse directement dans Cloud Firestore
+ */
+export async function saveMediaHouseToCloud(house: MediaHouse): Promise<void> {
+  if (!firestore) return;
+  try {
+    const clean = stripUndefined(house);
+    const cloudRef = doc(firestore, 'cloud_media_houses', house.id);
+    await setDoc(cloudRef, clean, { merge: true });
+
+    const localRef = doc(firestore, 'media_houses', house.id);
+    await setDoc(localRef, clean, { merge: true });
+  } catch (err) {
+    console.warn('[Firebase Mobile] saveMediaHouseToCloud warning:', err);
+  }
+}
+
+/**
+ * Récupère les Maisons de Presse directement depuis Cloud Firestore
+ */
+export async function fetchMediaHousesFromCloud(): Promise<MediaHouse[]> {
+  if (!firestore) return [];
+  try {
+    const cloudRef = collection(firestore, 'cloud_media_houses');
+    const snap = await getDocs(cloudRef);
+    if (!snap.empty) {
+      return snap.docs.map((d) => d.data() as MediaHouse);
+    }
+    const localRef = collection(firestore, 'media_houses');
+    const localSnap = await getDocs(localRef);
+    if (!localSnap.empty) {
+      return localSnap.docs.map((d) => d.data() as MediaHouse);
+    }
+  } catch (err) {
+    console.warn('[Firebase Mobile] fetchMediaHousesFromCloud warning:', err);
+  }
+  return [];
 }
 
 /**

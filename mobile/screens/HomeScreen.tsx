@@ -338,7 +338,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   Aucun article ne correspond à cette sélection pour l'instant.
                 </Text>
               </View>
-            ) : null
+            ) : undefined
           }
           refreshControl={
             <RefreshControl

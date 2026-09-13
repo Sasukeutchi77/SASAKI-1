@@ -7,6 +7,7 @@ import { db } from '../db';
 import { MediaRecord, MediaUsageType, CloudinaryMedia } from '../../src/types';
 import { mediaUploadLimiter } from '../security/rateLimiter';
 import { sanitizeText } from '../security/sanitizer';
+import { isMasterAdmin } from '../config/masterAccounts';
 
 export const mediaRouter = Router();
 
@@ -168,7 +169,7 @@ mediaRouter.post('/upload', requireAuth, mediaUploadLimiter, async (req: Authent
 
   // Role & Permissions Validation:
   // Regular readers cannot upload article assets or videos!
-  const isPrivileged = user.role === 'admin' || user.role === 'journalist';
+  const isPrivileged = user.role === 'admin' || user.role === 'journalist' || isMasterAdmin(user.email);
   if (!isPrivileged) {
     if (type === 'video') {
       return res.status(403).json({

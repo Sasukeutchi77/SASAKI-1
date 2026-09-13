@@ -82,15 +82,15 @@ export function isValidUrl(
 
   const trimmed = url.trim();
 
-  // Explicit check for dangerous executable schemes
-  const dangerousPattern = /^(javascript|vbscript|file|about):/i;
-  if (dangerousPattern.test(trimmed)) {
-    return false;
+  // Safe image data URIs (e.g. data:image/png;base64,... or data:image/jpeg;base64,...) or mobile device image paths
+  if (/^data:image\//i.test(trimmed) || trimmed.startsWith('file://') || trimmed.startsWith('content://')) {
+    return true;
   }
 
-  // Safe image data URIs (e.g. data:image/png;base64,... or data:image/jpeg;base64,...)
-  if (/^data:image\/(jpeg|png|webp|gif|svg\+xml);base64,/i.test(trimmed)) {
-    return true;
+  // Explicit check for dangerous executable schemes
+  const dangerousPattern = /^(javascript|vbscript|about):/i;
+  if (dangerousPattern.test(trimmed)) {
+    return false;
   }
 
   // Disallow other data: schemes (e.g. data:text/html, data:application/...)

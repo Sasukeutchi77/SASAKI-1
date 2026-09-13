@@ -102,6 +102,7 @@ export interface User {
   createdAt: string;
   updatedAt?: string;
   lastLoginAt?: string;
+  mediaHouseRole?: string;
 }
 
 export interface MediaHouse {
@@ -125,6 +126,7 @@ export interface MediaHouse {
   licenseNumber?: string;
   motto?: string;
   specialties?: string[];
+  trustScore?: number;
   memberRoles?: Record<string, string>;
   editorialNotes?: Array<{
     id: string;
