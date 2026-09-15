@@ -260,26 +260,24 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, asy
   }
 
   const { mediaName, pressCardNumber, motivation, documentUrl } = req.body;
-  if (!pressCardNumber || !motivation) {
-    return res.status(400).json({ error: 'Le numéro de carte de presse et votre motivation sont obligatoires.' });
+  if (!motivation) {
+    return res.status(400).json({ error: 'Votre motivation et vos thématiques d’enquête sont obligatoires.' });
   }
 
-  const cleanCardNumber = sanitizeText(pressCardNumber, { maxLength: 50, allowNewlines: false });
+  const rawCardNumber = (pressCardNumber && String(pressCardNumber).trim()) || 'Candidat Citoyen / Enquêteur Indépendant';
+  const cleanCardNumber = sanitizeText(rawCardNumber, { maxLength: 50, allowNewlines: false }) || 'Candidat Citoyen / Enquêteur Indépendant';
   const cleanMotivation = sanitizeText(motivation, { maxLength: 1000 });
   const cleanMediaName = mediaName ? sanitizeText(mediaName, { maxLength: 100, allowNewlines: false }) : (user.mediaName || user.name);
-
-  if (cleanCardNumber.length < 3) {
-    return res.status(400).json({ error: 'Le numéro de carte de presse est invalide.' });
-  }
 
   if (cleanMotivation.length < 15) {
     return res.status(400).json({ error: 'Veuillez rédiger une motivation plus détaillée (minimum 15 caractères).' });
   }
 
-  let cleanDocUrl: string | undefined = undefined;
-  if (documentUrl) {
-    if (isValidUrl(documentUrl)) {
-      cleanDocUrl = documentUrl.trim();
+  let cleanDocUrl: string = '';
+  if (documentUrl && typeof documentUrl === 'string' && documentUrl.trim().length > 0) {
+    const trimmed = documentUrl.trim();
+    if (isValidUrl(trimmed)) {
+      cleanDocUrl = trimmed;
     } else {
       return res.status(400).json({ error: 'L’URL du document justificatif est invalide.' });
     }

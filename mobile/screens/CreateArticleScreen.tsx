@@ -9,8 +9,9 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
-import { Category, Article } from '../types';
+import { Category, Article, MediaHouse, User } from '../types';
 import { api } from '../services/api';
 import {
   pickImageFromGallery,
@@ -22,17 +23,31 @@ import { ImageSelectModal } from '../components/ImageSelectModal';
 interface CreateArticleScreenProps {
   onBack: () => void;
   onArticleCreated: (article: Article) => void;
+  initialMediaHouseId?: string;
+  initialMediaHouseName?: string;
+  currentUser?: User | null;
 }
 
 export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
   onBack,
   onArticleCreated,
+  initialMediaHouseId,
+  initialMediaHouseName,
+  currentUser,
 }) => {
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [targetMediaHouseId, setTargetMediaHouseId] = useState<string | undefined>(
+    initialMediaHouseId || currentUser?.mediaId
+  );
+  const [targetMediaHouseName, setTargetMediaHouseName] = useState<string | undefined>(
+    initialMediaHouseName || currentUser?.mediaName
+  );
+  const [availableHouses, setAvailableHouses] = useState<MediaHouse[]>([]);
+  const [showHousePicker, setShowHousePicker] = useState<boolean>(false);
   const [pickedImage, setPickedImage] = useState<PickImageResult | null>(null);
   const [directCoverUrl, setDirectCoverUrl] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState<boolean>(false);
@@ -48,6 +63,14 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
         }
       })
       .catch((err) => console.warn('Erreur catégories:', err));
+
+    api.getMediaHouses()
+      .then((res) => {
+        if (res?.mediaHouses) {
+          setAvailableHouses(res.mediaHouses);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleSelectCover = async (result: { url?: string; pickedResult?: PickImageResult }) => {
@@ -96,10 +119,17 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
         content: content.trim(),
         categoryId: selectedCategoryId,
         coverImage: coverImageUrl,
+        mediaHouseId: targetMediaHouseId,
+        mediaHouseName: targetMediaHouseName,
         status: 'published',
       });
 
-      Alert.alert('Succès', 'Votre article a été publié avec succès !');
+      Alert.alert(
+        'Succès',
+        targetMediaHouseName
+          ? `Votre article a été publié avec succès au nom de « ${targetMediaHouseName} » !`
+          : 'Votre article a été publié avec succès !'
+      );
       onArticleCreated(res.article);
     } catch (err: any) {
       Alert.alert('Erreur', err.message || 'Impossible de publier l’article.');
@@ -139,6 +169,41 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
             <Text style={styles.statusText}>{uploadStatus}</Text>
           </View>
         )}
+
+        {/* Affiliation Maison de Presse Éditrice */}
+        <View style={styles.houseCardSection}>
+          <View style={styles.houseCardHeader}>
+            <View style={styles.houseCardIconBox}>
+              <Text style={styles.houseCardIcon}>🏛️</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.houseCardLabel}>MAISON DE PRESSE ÉDITRICE</Text>
+              <Text style={styles.houseCardName}>
+                {targetMediaHouseName ? `« ${targetMediaHouseName} »` : 'Journaliste Indépendant'}
+              </Text>
+            </View>
+            {targetMediaHouseName && (
+              <View style={styles.houseCardBadge}>
+                <Text style={styles.houseCardBadgeText}>✓ ÉDITION OFFICIELLE</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.houseCardNote}>
+            {targetMediaHouseName
+              ? `Cette enquête sera directement archivée et diffusée sous la bannière éditoriale de « ${targetMediaHouseName} ».`
+              : "L'article sera publié sous votre nom d'auteur indépendant."}
+          </Text>
+
+          {availableHouses.length > 0 && (
+            <TouchableOpacity
+              style={styles.changeHouseBtn}
+              onPress={() => setShowHousePicker(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.changeHouseBtnText}>🔄 Changer ou vérifier la maison d'édition ›</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Sélection d'image de couverture */}
         <View style={styles.section}>
@@ -252,6 +317,75 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
         onSelectImage={handleSelectCover}
         onClose={() => setShowImageModal(false)}
       />
+
+      {/* Modal Sélecteur de Maison d'Édition */}
+      <Modal visible={showHousePicker} transparent animationType="fade" onRequestClose={() => setShowHousePicker(false)}>
+        <View style={styles.pickerBackdrop}>
+          <View style={styles.pickerDialog}>
+            <Text style={styles.pickerDialogTitle}>Sélectionner la Rédaction d'Édition</Text>
+            <Text style={styles.pickerDialogSub}>
+              Choisissez sous quelle maison de presse agréée sera publiée cette enquête.
+            </Text>
+
+            <ScrollView style={{ maxHeight: 280, marginVertical: 12 }}>
+              {/* Option Indépendant */}
+              <TouchableOpacity
+                style={[
+                  styles.pickerOptionItem,
+                  !targetMediaHouseId && styles.activePickerOptionItem,
+                ]}
+                onPress={() => {
+                  setTargetMediaHouseId(undefined);
+                  setTargetMediaHouseName(undefined);
+                  setShowHousePicker(false);
+                }}
+              >
+                <Text style={styles.pickerOptionIcon}>🖋️</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pickerOptionTitle}>Journaliste Indépendant</Text>
+                  <Text style={styles.pickerOptionDesc}>Publication à titre individuel</Text>
+                </View>
+                {!targetMediaHouseId && <Text style={styles.checkIcon}>✓</Text>}
+              </TouchableOpacity>
+
+              {availableHouses.map((h) => {
+                const isSelected = targetMediaHouseId === h.id || targetMediaHouseName === h.name;
+                return (
+                  <TouchableOpacity
+                    key={h.id}
+                    style={[
+                      styles.pickerOptionItem,
+                      isSelected && styles.activePickerOptionItem,
+                    ]}
+                    onPress={() => {
+                      setTargetMediaHouseId(h.id);
+                      setTargetMediaHouseName(h.name);
+                      setShowHousePicker(false);
+                    }}
+                  >
+                    <Text style={styles.pickerOptionIcon}>🏛️</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.pickerOptionTitle}>{h.name}</Text>
+                      <Text style={styles.pickerOptionDesc} numberOfLines={1}>
+                        {h.motto || 'Maison de presse agréée'}
+                      </Text>
+                    </View>
+                    {isSelected && <Text style={styles.checkIcon}>✓</Text>}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.closePickerBtn}
+              onPress={() => setShowHousePicker(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.closePickerBtnText}>FERMER</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -454,5 +588,144 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 11,
     fontWeight: 'bold',
+  },
+  houseCardSection: {
+    backgroundColor: '#0c1228',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.25)',
+  },
+  houseCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  houseCardIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  houseCardIcon: {
+    fontSize: 18,
+  },
+  houseCardLabel: {
+    color: '#06b6d4',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  houseCardName: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  houseCardBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#10b981',
+  },
+  houseCardBadgeText: {
+    color: '#10b981',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  houseCardNote: {
+    color: '#94a3b8',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  changeHouseBtn: {
+    marginTop: 10,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+  },
+  changeHouseBtnText: {
+    color: '#00d2ff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  pickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(2, 5, 18, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  pickerDialog: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#0c1228',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  pickerDialogTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  pickerDialogSub: {
+    color: '#94a3b8',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  pickerOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#131b38',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    gap: 12,
+  },
+  activePickerOptionItem: {
+    borderColor: '#00d2ff',
+    backgroundColor: 'rgba(0, 210, 255, 0.1)',
+  },
+  pickerOptionIcon: {
+    fontSize: 22,
+  },
+  pickerOptionTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  pickerOptionDesc: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  checkIcon: {
+    color: '#00d2ff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  closePickerBtn: {
+    backgroundColor: '#1e293b',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  closePickerBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
 });

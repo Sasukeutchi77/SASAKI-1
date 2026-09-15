@@ -15,6 +15,7 @@ import { Article, Category, MediaHouse, User } from '../types';
 import { api } from '../services/api';
 import { ArticleCard } from '../components/ArticleCard';
 import { CreateHouseModal } from '../components/CreateHouseModal';
+import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
 
 interface SearchScreenProps {
   onSelectArticle: (article: Article) => void;
@@ -42,6 +43,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
   const [houseQuery, setHouseQuery] = useState('');
   const [loadingHouses, setLoadingHouses] = useState(false);
   const [showCreateHouseModal, setShowCreateHouseModal] = useState(false);
+  const [selectedHouseDetail, setSelectedHouseDetail] = useState<MediaHouse | null>(null);
+  const [showHouseDetailModal, setShowHouseDetailModal] = useState(false);
 
   useEffect(() => {
     api.getCategories()
@@ -212,7 +215,24 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               data={results}
               keyExtractor={(item: Article) => item.id}
               renderItem={({ item }: { item: Article }) => (
-                <ArticleCard article={item} onPress={() => onSelectArticle(item)} />
+                <ArticleCard
+                  article={item}
+                  onPress={() => onSelectArticle(item)}
+                  onPressHouse={(houseName, houseId) => {
+                    const match = houses.find((h) => h.id === houseId || h.name.toLowerCase() === houseName.toLowerCase());
+                    if (match) {
+                      setSelectedHouseDetail(match);
+                      setShowHouseDetailModal(true);
+                    } else if (houseId) {
+                      api.getMediaHouseById(houseId).then((res) => {
+                        if (res?.house) {
+                          setSelectedHouseDetail(res.house);
+                          setShowHouseDetailModal(true);
+                        }
+                      });
+                    }
+                  }}
+                />
               )}
               contentContainerStyle={styles.listContent}
             />
@@ -284,7 +304,15 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               </View>
             ) : (
               filteredHouses.map((house) => (
-                <View key={house.id} style={styles.houseCard}>
+                <TouchableOpacity
+                  key={house.id}
+                  style={styles.houseCard}
+                  onPress={() => {
+                    setSelectedHouseDetail(house);
+                    setShowHouseDetailModal(true);
+                  }}
+                  activeOpacity={0.85}
+                >
                   {house.coverImage ? (
                     <Image source={{ uri: house.coverImage }} style={styles.houseCover} resizeMode="cover" />
                   ) : null}
@@ -338,7 +366,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                       </View>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </View>
@@ -368,6 +396,14 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           onClose={() => setShowCreateHouseModal(false)}
         />
       )}
+
+      {/* Modal Détails Maison de Presse */}
+      <MediaHouseDetailModal
+        visible={showHouseDetailModal}
+        house={selectedHouseDetail}
+        currentUser={currentUser}
+        onClose={() => setShowHouseDetailModal(false)}
+      />
     </View>
   );
 };

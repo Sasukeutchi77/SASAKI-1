@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Building2,
@@ -90,9 +90,27 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
   const [uploadingCover, setUploadingCover] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [existingHouse, setExistingHouse] = useState<MediaHouse | null>(null);
+  const [checkingExisting, setCheckingExisting] = useState<boolean>(false);
 
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      setCheckingExisting(true);
+      api.getMyMediaHouse()
+        .then((res) => {
+          if (res.house) {
+            setExistingHouse(res.house);
+          } else {
+            setExistingHouse(null);
+          }
+        })
+        .catch(() => setExistingHouse(null))
+        .finally(() => setCheckingExisting(false));
+    }
+  }, [isOpen, user?.id]);
 
   if (!isOpen) return null;
 
@@ -285,8 +303,43 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
             </div>
           )}
 
-          {/* Not signed in warning */}
-          {!user ? (
+          {/* Duplicate protection banner if journalist already owns or belongs to a house */}
+          {existingHouse && user?.role !== 'admin' ? (
+            <div className="p-8 text-center space-y-5">
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+                <Shield className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-base font-black text-white">
+                  Limite Déontologique : 1 seule maison par journaliste
+                </h3>
+                <p className="text-xs text-stone-300 max-w-md mx-auto leading-relaxed">
+                  Conformément aux règles éditoriales de PURGE, chaque compte de journaliste accrédité ne peut créer ou posséder qu'<strong>une seule maison de presse</strong>.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-cyan-950/40 border border-cyan-500/30 max-w-md mx-auto text-left space-y-1">
+                <span className="text-[10px] text-cyan-400 uppercase font-bold tracking-wider">Votre Maison de Presse Active</span>
+                <div className="text-sm font-bold text-white flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-cyan-400" />
+                  <span>« {existingHouse.name} »</span>
+                </div>
+                <div className="text-xs text-stone-400">
+                  Statut : {existingHouse.ownerId === user?.id ? 'Chef de Rédaction (Fondateur)' : 'Journaliste Membre'}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:brightness-110 cursor-pointer"
+                >
+                  Fermer & Accéder à ma Maison
+                </button>
+              </div>
+            </div>
+          ) : !user ? (
             <div className="p-6 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-center space-y-4">
               <Shield className="w-10 h-10 text-amber-400 mx-auto" />
               <div>
@@ -310,6 +363,13 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
             </div>
           ) : (
             <form id="create-house-form" onSubmit={handleSubmit} className="space-y-6">
+              {/* Deontology Banner */}
+              <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 flex items-center gap-2.5 text-xs text-cyan-200">
+                <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>
+                  <strong>Règle Déontologique :</strong> Chaque compte de journaliste est strictement limité à <strong>une seule maison de presse</strong>. Vous en deviendrez le Chef de Rédaction officiel.
+                </span>
+              </div>
               {/* Executive Notice */}
               <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 flex items-start gap-3">
                 <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />

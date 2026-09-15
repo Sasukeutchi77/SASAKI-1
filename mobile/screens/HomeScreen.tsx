@@ -8,30 +8,41 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  ScrollView,
 } from 'react-native';
-import { Article, Category, Poll } from '../types';
+import { Article, Category, Poll, MediaHouse, User } from '../types';
 import { api, CURATED_FALLBACK_ARTICLES } from '../services/api';
 import { ArticleCard } from '../components/ArticleCard';
 import { CategoryPills } from '../components/CategoryPills';
+import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
 
 interface HomeScreenProps {
   onSelectArticle: (article: Article) => void;
   onRequireAuth?: () => void;
   onOpenNotifications?: () => void;
+  onOpenTrustSystem?: () => void;
+  currentUser?: User | null;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectArticle,
   onRequireAuth,
   onOpenNotifications,
+  onOpenTrustSystem,
+  currentUser,
 }) => {
   const [articles, setArticles] = useState<Article[]>(CURATED_FALLBACK_ARTICLES);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
-  const [feedType, setFeedType] = useState<'foryou' | 'trending' | 'latest'>('foryou');
+  const [feedType, setFeedType] = useState<'foryou' | 'trending' | 'latest' | 'following' | 'houses'>('foryou');
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Maisons de presse & Modale
+  const [mediaHouses, setMediaHouses] = useState<MediaHouse[]>([]);
+  const [selectedHouse, setSelectedHouse] = useState<MediaHouse | null>(null);
+  const [showHouseModal, setShowHouseModal] = useState<boolean>(false);
 
   // Sondage citoyen interactif du jour
   const [poll, setPoll] = useState<Poll>({
@@ -48,12 +59,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const fetchCategories = async () => {
     try {
-      const res = await api.getCategories();
-      if (res.categories && res.categories.length > 0) {
-        setCategories(res.categories);
+      const [catRes, houseRes] = await Promise.all([
+        api.getCategories(),
+        api.getMediaHouses(),
+      ]);
+      if (catRes.categories && catRes.categories.length > 0) {
+        setCategories(catRes.categories);
+      }
+      if (houseRes.mediaHouses && houseRes.mediaHouses.length > 0) {
+        setMediaHouses(houseRes.mediaHouses);
       }
     } catch (e) {
-      console.warn('[HomeScreen] Erreur chargement catégories:', e);
+      console.warn('[HomeScreen] Erreur chargement catégories/maisons:', e);
     }
   };
 
@@ -254,6 +271,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             Dépêches ⏱
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.feedTab, feedType === 'following' && styles.activeFeedTab]}
+          onPress={() => {
+            if (!currentUser && onRequireAuth) {
+              onRequireAuth();
+            } else {
+              setFeedType('following');
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.feedTabText, feedType === 'following' && styles.activeFeedTabText]}>
+            Abonnements 👥
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.feedTab, feedType === 'houses' && styles.activeFeedTab]}
+          onPress={() => setFeedType('houses')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.feedTabText, feedType === 'houses' && styles.activeFeedTabText]}>
+            Maisons 🏛️
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* 4. Barre horizontale des 6 Catégories Officielles */}
@@ -262,6 +305,47 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         selectedCategoryId={selectedCategoryId}
         onSelectCategory={setSelectedCategoryId}
       />
+
+      {/* 5. Carte Système de Confiance (Parité avec la version Web) */}
+      <View style={styles.trustCard}>
+        <View style={styles.trustCardHeader}>
+          <View style={styles.trustShieldIconBox}>
+            <Text style={styles.trustShieldEmoji}>🛡️</Text>
+          </View>
+          <View style={styles.trustTitleCol}>
+            <Text style={styles.trustTitle}>SYSTÈME DE CONFIANCE & DÉONTOLOGIE</Text>
+            <Text style={styles.trustSubtitle}>3 Niveaux de Vérification Certifiée</Text>
+          </View>
+          {onOpenTrustSystem && (
+            <TouchableOpacity
+              style={styles.trustDiscoverBtn}
+              onPress={onOpenTrustSystem}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.trustDiscoverBtnText}>Découvrir ›</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Text style={styles.trustDesc}>
+          Toutes les publications sont signées, sourcées et rédigées par des journalistes et rédactions accrédités.
+        </Text>
+
+        <View style={styles.trustLevelsRow}>
+          <View style={styles.trustLevelPill}>
+            <Text style={styles.trustLevelNum}>Niv. 1</Text>
+            <Text style={styles.trustLevelLabel}>Journaliste</Text>
+          </View>
+          <View style={[styles.trustLevelPill, styles.trustLevelPillGreen]}>
+            <Text style={[styles.trustLevelNum, styles.trustLevelNumGreen]}>Niv. 2</Text>
+            <Text style={styles.trustLevelLabel}>Maison Presse</Text>
+          </View>
+          <View style={[styles.trustLevelPill, styles.trustLevelPillGold]}>
+            <Text style={[styles.trustLevelNum, styles.trustLevelNumGold]}>Niv. 3</Text>
+            <Text style={styles.trustLevelLabel}>Article Factuel</Text>
+          </View>
+        </View>
+      </View>
 
       {/* 5. Sondage Citoyen du Jour Interactif */}
       <View style={styles.pollCard}>
@@ -317,6 +401,51 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <ActivityIndicator size="large" color="#06b6d4" />
           <Text style={styles.loadingText}>Chargement des dépêches en direct...</Text>
         </View>
+      ) : feedType === 'houses' ? (
+        <FlatList
+          data={mediaHouses}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={renderHeader}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.houseFeedCard}
+              onPress={() => {
+                setSelectedHouse(item);
+                setShowHouseModal(true);
+              }}
+              activeOpacity={0.85}
+            >
+              {item.coverImage && (
+                <Image source={{ uri: item.coverImage }} style={styles.houseFeedCover} />
+              )}
+              <View style={styles.houseFeedBody}>
+                <View style={styles.houseFeedHeader}>
+                  <Image
+                    source={{
+                      uri:
+                        item.logo ||
+                        'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=150&auto=format&fit=crop&q=80',
+                    }}
+                    style={styles.houseFeedLogo}
+                  />
+                  <View style={styles.houseFeedTitleCol}>
+                    <Text style={styles.houseFeedName}>{item.name}</Text>
+                    <Text style={styles.houseFeedMotto}>« {item.motto || 'Information Indépendante'} »</Text>
+                  </View>
+                </View>
+                <Text style={styles.houseFeedDesc} numberOfLines={2}>
+                  {item.description || 'Rédaction engagée sur la vérité et l’investigation critique.'}
+                </Text>
+                <View style={styles.houseFeedStatsRow}>
+                  <Text style={styles.houseFeedStatItem}>📰 {item.articlesCount || 0} enquêtes</Text>
+                  <Text style={styles.houseFeedStatItem}>👥 {item.followersCount || 0} abonnés</Text>
+                  <Text style={styles.houseFeedStatScore}>⭐ {item.trustScore || 95}% confiance</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={styles.listContent}
+        />
       ) : (
         <FlatList
           data={feedArticles}
@@ -327,6 +456,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               onPress={() => onSelectArticle(item)}
               onToggleLike={() => handleToggleLike(item)}
               onToggleBookmark={() => handleToggleBookmark(item)}
+              onPressHouse={(houseName, houseId) => {
+                const match = mediaHouses.find((h) => h.id === houseId || h.name.toLowerCase() === houseName.toLowerCase());
+                if (match) {
+                  setSelectedHouse(match);
+                  setShowHouseModal(true);
+                } else if (houseId) {
+                  api.getMediaHouseById(houseId).then((res) => {
+                    if (res?.house) {
+                      setSelectedHouse(res.house);
+                      setShowHouseModal(true);
+                    }
+                  });
+                }
+              }}
             />
           )}
           ListHeaderComponent={renderHeader}
@@ -351,6 +494,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           contentContainerStyle={styles.listContent}
         />
       )}
+
+      {/* Modal Détails Maison de Presse */}
+      <MediaHouseDetailModal
+        visible={showHouseModal}
+        house={selectedHouse}
+        currentUser={currentUser}
+        onClose={() => setShowHouseModal(false)}
+      />
     </View>
   );
 };
@@ -533,6 +684,107 @@ const styles = StyleSheet.create({
     color: '#06b6d4',
     fontWeight: '800',
   },
+  trustCard: {
+    backgroundColor: 'rgba(6, 182, 212, 0.06)',
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+  },
+  trustCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  trustShieldIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.4)',
+  },
+  trustShieldEmoji: {
+    fontSize: 16,
+  },
+  trustTitleCol: {
+    flex: 1,
+  },
+  trustTitle: {
+    color: '#ffffff',
+    fontSize: 11.5,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+  },
+  trustSubtitle: {
+    color: '#00d2ff',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 1,
+  },
+  trustDiscoverBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.4)',
+  },
+  trustDiscoverBtnText: {
+    color: '#00d2ff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  trustDesc: {
+    color: '#94a3b8',
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginBottom: 10,
+  },
+  trustLevelsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  trustLevelPill: {
+    flex: 1,
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    borderRadius: 8,
+    paddingVertical: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.25)',
+  },
+  trustLevelPillGreen: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  trustLevelPillGold: {
+    backgroundColor: 'rgba(234, 179, 8, 0.1)',
+    borderColor: 'rgba(234, 179, 8, 0.25)',
+  },
+  trustLevelNum: {
+    color: '#00d2ff',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  trustLevelNumGreen: {
+    color: '#10b981',
+  },
+  trustLevelNumGold: {
+    color: '#eab308',
+  },
+  trustLevelLabel: {
+    color: '#94a3b8',
+    fontSize: 9.5,
+    fontWeight: '700',
+    marginTop: 1,
+  },
   pollCard: {
     marginHorizontal: 16,
     marginTop: 14,
@@ -663,5 +915,69 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 13,
     textAlign: 'center',
+  },
+  houseFeedCard: {
+    backgroundColor: '#081028',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.25)',
+    overflow: 'hidden',
+  },
+  houseFeedCover: {
+    width: '100%',
+    height: 110,
+  },
+  houseFeedBody: {
+    padding: 14,
+  },
+  houseFeedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  houseFeedLogo: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: '#06b6d4',
+    marginRight: 10,
+  },
+  houseFeedTitleCol: {
+    flex: 1,
+  },
+  houseFeedName: {
+    color: '#f8fafc',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  houseFeedMotto: {
+    color: '#64748b',
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  houseFeedDesc: {
+    color: '#94a3b8',
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: 10,
+  },
+  houseFeedStatsRow: {
+    flexDirection: 'row',
+    gap: 14,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  houseFeedStatItem: {
+    color: '#94a3b8',
+    fontSize: 11,
+  },
+  houseFeedStatScore: {
+    color: '#f59e0b',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
 });

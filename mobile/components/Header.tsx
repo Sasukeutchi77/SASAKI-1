@@ -9,6 +9,7 @@ interface HeaderProps {
   onOpenSearch?: () => void;
   onOpenProfile?: () => void;
   onOpenNotifications?: () => void;
+  onOpenTrustSystem?: () => void;
   unreadNotificationsCount?: number;
 }
 
@@ -19,13 +20,18 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearch,
   onOpenProfile,
   onOpenNotifications,
+  onOpenTrustSystem,
   unreadNotificationsCount = 0,
 }) => {
   const canPublish = user && (isJournalistRole(user.role) || isAdminRole(user.role));
 
   return (
     <View style={styles.header}>
-      <View style={styles.leftGroup}>
+      <TouchableOpacity
+        style={styles.leftGroup}
+        onPress={onOpenTrustSystem}
+        activeOpacity={0.8}
+      >
         <Image
           source={require('../assets/icon.png')}
           style={styles.logo}
@@ -33,23 +39,32 @@ export const Header: React.FC<HeaderProps> = ({
         />
         <View>
           <View style={styles.titleRow}>
-            <Text style={styles.logoText}>PURGE</Text>
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>DIRECT</Text>
+            <Text style={styles.logoText}>
+              purge<Text style={styles.logoTextCyan}>-info</Text>
+            </Text>
+            <View style={styles.sorsaBadge}>
+              <Text style={styles.sorsaBadgeText}>Sorsa Tech</Text>
             </View>
           </View>
-          {title ? (
-            <Text style={styles.subTitle} numberOfLines={1}>
-              {title}
-            </Text>
-          ) : (
-            <Text style={styles.subTitle}>DÉPÊCHES & INVESTIGATIONS</Text>
-          )}
+          <View style={styles.devRow}>
+            <Text style={styles.devLabel}>DEV: </Text>
+            <Text style={styles.devCompany}>SASAKI-COMPAGNIE</Text>
+          </View>
         </View>
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.rightGroup}>
+        {onOpenTrustSystem && (
+          <TouchableOpacity
+            style={styles.trustShieldBtn}
+            onPress={onOpenTrustSystem}
+            activeOpacity={0.7}
+            accessibilityLabel="Système de Confiance & Charte"
+          >
+            <Text style={styles.trustShieldIcon}>🛡️</Text>
+          </TouchableOpacity>
+        )}
+
         {canPublish && onOpenCreateArticle && (
           <TouchableOpacity
             style={styles.actionBtn}
@@ -139,41 +154,59 @@ const styles = StyleSheet.create({
   },
   logoText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
-    letterSpacing: 1.5,
+    letterSpacing: -0.5,
   },
-  liveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-    borderColor: '#ef4444',
+  logoTextCyan: {
+    color: '#00d2ff',
+  },
+  sorsaBadge: {
+    backgroundColor: 'rgba(29, 104, 255, 0.2)',
+    borderColor: 'rgba(0, 210, 255, 0.4)',
     borderWidth: 0.8,
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
     marginLeft: 6,
   },
-  liveDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#ef4444',
-    marginRight: 4,
-  },
-  liveText: {
-    color: '#ef4444',
-    fontSize: 9,
+  sorsaBadgeText: {
+    color: '#00d2ff',
+    fontSize: 8,
     fontWeight: '900',
     letterSpacing: 0.5,
-  },
-  subTitle: {
-    color: '#94a3b8',
-    fontSize: 9,
-    fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  },
+  devRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 1,
+  },
+  devLabel: {
+    color: 'rgba(147, 197, 253, 0.6)',
+    fontSize: 8.5,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  devCompany: {
+    color: '#00d2ff',
+    fontSize: 8.5,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    fontFamily: 'monospace',
+  },
+  trustShieldBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  trustShieldIcon: {
+    fontSize: 14,
   },
   rightGroup: {
     flexDirection: 'row',

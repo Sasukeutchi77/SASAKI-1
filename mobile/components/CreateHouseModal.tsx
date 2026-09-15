@@ -108,6 +108,13 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
   };
 
   const handleSubmit = async () => {
+    if ((currentUser?.mediaName || currentUser?.mediaId) && currentUser?.role !== 'admin') {
+      setErrorMessage(
+        `Chaque compte de journaliste ne peut créer qu'une seule maison de presse. Vous êtes déjà rattaché à « ${currentUser.mediaName || 'votre maison'} ».`
+      );
+      return;
+    }
+
     const cleanName = name.trim();
     if (!cleanName || cleanName.length < 3) {
       setErrorMessage('Le nom de la maison de presse doit comporter au moins 3 caractères.');
@@ -187,15 +194,34 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
             </Text>
           </View>
 
+          {/* Règle Déontologique 1 Maison par Journaliste */}
+          {(currentUser?.mediaName || currentUser?.mediaId) && currentUser?.role !== 'admin' ? (
+            <View style={styles.limitCard}>
+              <Text style={styles.limitIcon}>🛡️</Text>
+              <Text style={styles.limitTitle}>LIMITE DÉONTOLOGIQUE ATTEINTE</Text>
+              <Text style={styles.limitDesc}>
+                Chaque compte de journaliste est strictement limité à une seule maison de presse. Vous êtes actuellement affilié à la maison :
+              </Text>
+              <View style={styles.limitActiveBox}>
+                <Text style={styles.limitActiveName}>« {currentUser.mediaName || 'Maison Active'} »</Text>
+              </View>
+              <TouchableOpacity onPress={onClose} style={styles.limitCloseBtn} activeOpacity={0.8}>
+                <Text style={styles.limitCloseBtnText}>RETOUR À MON PROFIL</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
           {errorMessage && (
             <View style={styles.errorBox}>
               <Text style={styles.errorText}>⚠️ {errorMessage}</Text>
             </View>
           )}
 
-          {/* Section 1 : Identité de la maison */}
-          <View style={styles.formSection}>
-            <Text style={styles.sectionHeading}>1. IDENTITÉ & LIGNE ÉDITORIALE</Text>
+          {(!currentUser?.mediaName && !currentUser?.mediaId) || currentUser?.role === 'admin' ? (
+            <>
+              {/* Section 1 : Identité de la maison */}
+              <View style={styles.formSection}>
+                <Text style={styles.sectionHeading}>1. IDENTITÉ & LIGNE ÉDITORIALE</Text>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nom de la Maison de Presse *</Text>
@@ -362,6 +388,8 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
               <Text style={styles.bigSubmitBtnText}>🏛️ FONDER LA MAISON DE PRESSE</Text>
             )}
           </TouchableOpacity>
+          </>
+        ) : null}
         </ScrollView>
 
         {/* Modal Sélecteur d'image (Galerie + URL + Presets) */}
@@ -609,5 +637,59 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+  limitCard: {
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  limitIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  limitTitle: {
+    color: '#f59e0b',
+    fontSize: 14,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  limitDesc: {
+    color: '#94a3b8',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  limitActiveBox: {
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  limitActiveName: {
+    color: '#06b6d4',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  limitCloseBtn: {
+    backgroundColor: '#06b6d4',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  limitCloseBtnText: {
+    color: '#020512',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });

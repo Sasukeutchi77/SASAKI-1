@@ -100,6 +100,7 @@ export interface Article {
   authorAvatar?: string;
   authorRole?: string;
   authorIsVerified?: boolean;
+  mediaId?: string;
   mediaName?: string;
   status: ArticleStatus;
   viewsCount: number;
@@ -107,6 +108,7 @@ export interface Article {
   commentsCount: number;
   tags?: string[];
   readTime?: number;
+  trustScore?: number;
   poll?: Poll;
   isLiked?: boolean;
   isBookmarked?: boolean;

@@ -8,25 +8,50 @@ import {
   Image,
   RefreshControl,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
-import { TopMediaHouse, TopJournalist } from '../types';
+import { TopMediaHouse, TopJournalist, Article, User, MediaHouse } from '../types';
 import { api } from '../services/api';
+import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
 
-export const RankingsScreen: React.FC = () => {
-  const [tab, setTab] = useState<'houses' | 'journalists'>('houses');
+interface RankingsScreenProps {
+  onSelectArticle?: (article: Article) => void;
+  currentUser?: User | null;
+  onOpenAuth?: () => void;
+}
+
+export const RankingsScreen: React.FC<RankingsScreenProps> = ({
+  onSelectArticle,
+  currentUser,
+  onOpenAuth,
+}) => {
+  const [tab, setTab] = useState<'houses' | 'journalists' | 'articles'>('houses');
   const [houses, setHouses] = useState<TopMediaHouse[]>([]);
   const [journalists, setJournalists] = useState<TopJournalist[]>([]);
+  const [topArticles, setTopArticles] = useState<Article[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFormula, setShowFormula] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Media house modal state
+  const [selectedHouse, setSelectedHouse] = useState<MediaHouse | null>(null);
+  const [showHouseModal, setShowHouseModal] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState<Record<string, boolean>>({});
 
   const fetchRankings = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
 
     try {
-      const data = await api.getTopRankings();
-      setHouses(data.topHouses || []);
-      setJournalists(data.topJournalists || []);
+      const [rankingsData, articlesData] = await Promise.all([
+        api.getTopRankings(),
+        api.getArticles({ sort: 'views', limit: 20 }),
+      ]);
+
+      setHouses(rankingsData.topHouses || []);
+      setJournalists(rankingsData.topJournalists || []);
+      setTopArticles(articlesData.articles || []);
     } catch (e) {
       console.warn('Erreur classements:', e);
     } finally {
@@ -37,18 +62,100 @@ export const RankingsScreen: React.FC = () => {
 
   useEffect(() => {
     fetchRankings();
-  }, []);
+  }, [currentUser?.id]);
+
+  const handleToggleFollow = async (id: string, type: 'house' | 'journalist') => {
+    if (!currentUser && onOpenAuth) {
+      onOpenAuth();
+      return;
+    }
+
+    setFollowingLoading((prev) => ({ ...prev, [id]: true }));
+
+    try {
+      if (type === 'house') {
+        const res = await api.followMediaHouse(id);
+        setHouses((prev) =>
+          prev.map((h) =>
+            h.id === id
+              ? { ...h, isFollowing: res.isFollowing, followersCount: res.followersCount }
+              : h
+          )
+        );
+      } else {
+        const res = await api.followUser(id);
+        setJournalists((prev) =>
+          prev.map((j) =>
+            j.id === id
+              ? { ...j, isFollowing: res.isFollowing, followersCount: res.followersCount }
+              : j
+          )
+        );
+      }
+    } catch (e) {
+      console.warn('Erreur follow:', e);
+    } finally {
+      setFollowingLoading((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const handleOpenHouse = async (house: TopMediaHouse) => {
+    try {
+      const res = await api.getMediaHouseById(house.id);
+      if (res?.house) {
+        setSelectedHouse(res.house);
+        setShowHouseModal(true);
+      } else {
+        setSelectedHouse(house as any);
+        setShowHouseModal(true);
+      }
+    } catch {
+      setSelectedHouse(house as any);
+      setShowHouseModal(true);
+    }
+  };
 
   const getRankBadge = (rank: number) => {
-    if (rank === 1) return { color: '#eab308', text: '🥇 1er' };
-    if (rank === 2) return { color: '#94a3b8', text: '🥈 2e' };
-    if (rank === 3) return { color: '#b45309', text: '🥉 3e' };
-    return { color: '#00d2ff', text: `#${rank}` };
+    if (rank === 1) return { color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)', text: '🥇 1er' };
+    if (rank === 2) return { color: '#cbd5e1', bg: 'rgba(203, 213, 225, 0.15)', text: '🥈 2e' };
+    if (rank === 3) return { color: '#d97706', bg: 'rgba(217, 119, 6, 0.15)', text: '🥉 3e' };
+    return { color: '#00d2ff', bg: 'rgba(0, 210, 255, 0.1)', text: `#${rank}` };
   };
+
+  const filteredHouses = houses.filter((h) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      h.name.toLowerCase().includes(q) ||
+      h.bio?.toLowerCase().includes(q) ||
+      h.specialties?.some((s) => s.toLowerCase().includes(q))
+    );
+  });
+
+  const filteredJournalists = journalists.filter((j) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      j.name.toLowerCase().includes(q) ||
+      j.mediaName?.toLowerCase().includes(q) ||
+      j.bio?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredArticles = topArticles.filter((a) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      a.title.toLowerCase().includes(q) ||
+      a.authorName?.toLowerCase().includes(q) ||
+      a.mediaName?.toLowerCase().includes(q) ||
+      a.categoryName?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <View style={styles.container}>
-      {/* Sélecteur d'onglet */}
+      {/* 3 Onglets comme sur le Web */}
       <View style={styles.tabsHeader}>
         <TouchableOpacity
           style={[styles.tabBtn, tab === 'houses' && styles.activeTabBtn]}
@@ -56,7 +163,7 @@ export const RankingsScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Text style={[styles.tabText, tab === 'houses' && styles.activeTabText]}>
-            🏛 Maisons de Presse
+            🏛️ Rédactions
           </Text>
         </TouchableOpacity>
 
@@ -66,15 +173,48 @@ export const RankingsScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Text style={[styles.tabText, tab === 'journalists' && styles.activeTabText]}>
-            🖋 Top Journalistes
+            🖋️ Journalistes
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabBtn, tab === 'articles' && styles.activeTabBtn]}
+          onPress={() => setTab('articles')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, tab === 'articles' && styles.activeTabText]}>
+            📰 Enquêtes
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Barre de Recherche rapide dans le classement */}
+      <View style={styles.searchBarWrapper}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder={
+            tab === 'houses'
+              ? 'Filtrer les maisons de presse...'
+              : tab === 'journalists'
+              ? 'Filtrer les journalistes...'
+              : 'Filtrer les meilleures enquêtes...'
+          }
+          placeholderTextColor="#64748b"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
+            <Text style={styles.clearBtnText}>✕</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading && !refreshing ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#00d2ff" />
-          <Text style={styles.loadingText}>Calcul des indices de réputation...</Text>
+          <Text style={styles.loadingText}>Calcul des indices de notoriété en temps réel...</Text>
         </View>
       ) : (
         <ScrollView
@@ -88,30 +228,68 @@ export const RankingsScreen: React.FC = () => {
             />
           }
         >
-          <View style={styles.banner}>
-            <Text style={styles.bannerTitle}>
-              {tab === 'houses' ? 'LE TOP 7 DES MAISONS' : 'LE TOP 7 DES PLUMES'}
-            </Text>
+          {/* Bannière Déontologique & Notoriété */}
+          <TouchableOpacity
+            style={styles.banner}
+            onPress={() => setShowFormula(!showFormula)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.bannerTopRow}>
+              <Text style={styles.bannerTitle}>
+                {tab === 'houses'
+                  ? 'LE TOP DES MAISONS DE PRESSE'
+                  : tab === 'journalists'
+                  ? 'LE TOP DES PLUMES D’ÉLITE'
+                  : 'LES ENQUÊTES LES PLUS LUES & FIABLES'}
+              </Text>
+              <Text style={styles.infoPill}>{showFormula ? '▲ Masquer' : 'ℹ️ Formule'}</Text>
+            </View>
             <Text style={styles.bannerSubtitle}>
-              Indice calculé sur la rigueur journalistique, l'impact des enquêtes et la confiance citoyenne.
+              Indexé sur la rigueur journalistique, l'impact des révélations et la confiance citoyenne.
             </Text>
-          </View>
+            {showFormula && (
+              <View style={styles.formulaBox}>
+                <Text style={styles.formulaText}>
+                  📊 <Text style={{ color: '#00d2ff', fontWeight: 'bold' }}>Indice = </Text>
+                  (Audience vérifiée × 0.4) + (Score Déontologique × 0.4) + (Fidélité des Abonnés × 0.2)
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
-          {tab === 'houses' ? (
-            houses.length === 0 ? (
-              <Text style={styles.emptyText}>Aucune maison répertoriée pour le moment.</Text>
+          {/* Onglet 1 : Maisons de Presse */}
+          {tab === 'houses' && (
+            filteredHouses.length === 0 ? (
+              <Text style={styles.emptyText}>Aucune maison trouvée pour cette recherche.</Text>
             ) : (
-              houses.map((house, idx) => {
-                const badge = getRankBadge(house.rank || idx + 1);
+              filteredHouses.map((house, idx) => {
+                const rank = house.rank || idx + 1;
+                const badge = getRankBadge(rank);
+                const isFollowing = Boolean(house.isFollowing);
+
                 return (
-                  <View key={house.id || idx} style={styles.rankCard}>
-                    <View style={[styles.rankIndicator, { borderColor: badge.color }]}>
+                  <TouchableOpacity
+                    key={house.id || idx}
+                    style={styles.rankCard}
+                    onPress={() => handleOpenHouse(house)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
                       <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
                     </View>
 
+                    <Image
+                      source={{
+                        uri:
+                          house.logo ||
+                          'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=200&auto=format&fit=crop&q=80',
+                      }}
+                      style={styles.houseLogo}
+                    />
+
                     <View style={styles.infoWrapper}>
                       <View style={styles.titleRow}>
-                        <Text style={styles.name}>{house.name}</Text>
+                        <Text style={styles.name} numberOfLines={1}>{house.name}</Text>
                         {house.isVerified && <Text style={styles.verified}> ✓</Text>}
                       </View>
                       {house.bio ? (
@@ -121,63 +299,159 @@ export const RankingsScreen: React.FC = () => {
                       ) : null}
 
                       <View style={styles.metricsRow}>
-                        <Text style={styles.metric}>
-                          📰 {house.articlesCount || 0} enquêtes
-                        </Text>
-                        <Text style={styles.metric}>
-                          👥 {house.followersCount || 0} abonnés
-                        </Text>
+                        <Text style={styles.metric}>📰 {house.articlesCount || 0} dépêches</Text>
+                        <Text style={styles.metric}>👥 {house.followersCount || 0} abonnés</Text>
                       </View>
                     </View>
+
+                    {/* Bouton S'abonner */}
+                    <TouchableOpacity
+                      style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                      onPress={() => handleToggleFollow(house.id, 'house')}
+                      disabled={followingLoading[house.id]}
+                      activeOpacity={0.7}
+                    >
+                      {followingLoading[house.id] ? (
+                        <ActivityIndicator size="small" color="#00d2ff" />
+                      ) : (
+                        <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                          {isFollowing ? '✓ Suivi' : '+ Suivre'}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                );
+              })
+            )
+          )}
+
+          {/* Onglet 2 : Journalistes */}
+          {tab === 'journalists' && (
+            filteredJournalists.length === 0 ? (
+              <Text style={styles.emptyText}>Aucun journaliste trouvé.</Text>
+            ) : (
+              filteredJournalists.map((j, idx) => {
+                const rank = j.rank || idx + 1;
+                const badge = getRankBadge(rank);
+                const isFollowing = Boolean(j.isFollowing);
+
+                return (
+                  <View key={j.id || idx} style={styles.rankCard}>
+                    <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
+                      <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
+                    </View>
+
+                    {j.avatar ? (
+                      <Image source={{ uri: j.avatar }} style={styles.avatar} />
+                    ) : (
+                      <View style={styles.avatarPlaceholder}>
+                        <Text style={styles.avatarInitial}>
+                          {j.name ? j.name.charAt(0).toUpperCase() : 'J'}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.infoWrapper}>
+                      <View style={styles.titleRow}>
+                        <Text style={styles.name} numberOfLines={1}>{j.name}</Text>
+                        {j.isVerified && <Text style={styles.verified}> ✓</Text>}
+                      </View>
+                      <Text style={styles.mediaTag}>
+                        {j.mediaName || (j.role === 'admin' ? 'Direction Éditoriale' : 'Journaliste Accrédité')}
+                      </Text>
+
+                      <View style={styles.metricsRow}>
+                        <Text style={styles.metric}>📰 {j.articlesCount || 0} articles</Text>
+                        <Text style={styles.metric}>👥 {j.followersCount || 0} abonnés</Text>
+                      </View>
+                    </View>
+
+                    {/* Bouton Suivre la plume */}
+                    {currentUser?.id !== j.id && (
+                      <TouchableOpacity
+                        style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                        onPress={() => handleToggleFollow(j.id, 'journalist')}
+                        disabled={followingLoading[j.id]}
+                        activeOpacity={0.7}
+                      >
+                        {followingLoading[j.id] ? (
+                          <ActivityIndicator size="small" color="#00d2ff" />
+                        ) : (
+                          <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                            {isFollowing ? '✓ Suivi' : '+ Suivre'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
                   </View>
                 );
               })
             )
-          ) : journalists.length === 0 ? (
-            <Text style={styles.emptyText}>Aucun journaliste classé pour le moment.</Text>
-          ) : (
-            journalists.map((j, idx) => {
-              const badge = getRankBadge(j.rank || idx + 1);
-              return (
-                <View key={j.id || idx} style={styles.rankCard}>
-                  <View style={[styles.rankIndicator, { borderColor: badge.color }]}>
-                    <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
-                  </View>
+          )}
 
-                  {j.avatar ? (
-                    <Image source={{ uri: j.avatar }} style={styles.avatar} />
-                  ) : (
-                    <View style={styles.avatarPlaceholder}>
-                      <Text style={styles.avatarInitial}>
-                        {j.name ? j.name.charAt(0).toUpperCase() : 'J'}
-                      </Text>
-                    </View>
-                  )}
+          {/* Onglet 3 : Enquêtes Vedettes */}
+          {tab === 'articles' && (
+            filteredArticles.length === 0 ? (
+              <Text style={styles.emptyText}>Aucun article classé trouvé.</Text>
+            ) : (
+              filteredArticles.map((article, idx) => {
+                const rank = idx + 1;
+                const badge = getRankBadge(rank);
 
-                  <View style={styles.infoWrapper}>
-                    <View style={styles.titleRow}>
-                      <Text style={styles.name}>{j.name}</Text>
-                      {j.isVerified && <Text style={styles.verified}> ✓</Text>}
+                return (
+                  <TouchableOpacity
+                    key={article.id || idx}
+                    style={styles.articleRankCard}
+                    onPress={() => onSelectArticle && onSelectArticle(article)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.articleRankTop}>
+                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
+                        <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
+                      </View>
+                      <View style={styles.catBadge}>
+                        <Text style={styles.catBadgeText}>{article.categoryName || 'INVESTIGATION'}</Text>
+                      </View>
+                      <Text style={styles.articleViews}>👁️ {article.viewsCount || 0} lectures</Text>
                     </View>
-                    <Text style={styles.mediaTag}>
-                      {j.mediaName || 'Journaliste Indépendant'}
-                    </Text>
 
-                    <View style={styles.metricsRow}>
-                      <Text style={styles.metric}>
-                        📰 {j.articlesCount || 0} articles
-                      </Text>
-                      <Text style={styles.metric}>
-                        👥 {j.followersCount || 0} lecteurs
-                      </Text>
+                    <View style={styles.articleMainRow}>
+                      <Image
+                        source={{
+                          uri:
+                            article.coverImage ||
+                            'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&auto=format&fit=crop&q=80',
+                        }}
+                        style={styles.articleThumbnail}
+                      />
+                      <View style={styles.articleTextCol}>
+                        <Text style={styles.articleTitle} numberOfLines={2}>
+                          {article.title}
+                        </Text>
+                        <Text style={styles.articleMeta} numberOfLines={1}>
+                          Par {article.authorName} • {article.mediaName || 'PURGE'}
+                        </Text>
+                        <View style={styles.articleBottomStats}>
+                          <Text style={styles.articleLikes}>❤️ {article.likesCount || 0} soutiens</Text>
+                          <Text style={styles.articleTrust}>⭐ {article.trustScore || 98}% fiabilité</Text>
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                </View>
-              );
-            })
+                  </TouchableOpacity>
+                );
+              })
+            )
           )}
         </ScrollView>
       )}
+
+      {/* Modal Détails Maison de Presse */}
+      <MediaHouseDetailModal
+        visible={showHouseModal}
+        house={selectedHouse}
+        currentUser={currentUser}
+        onClose={() => setShowHouseModal(false)}
+      />
     </View>
   );
 };
@@ -189,31 +463,72 @@ const styles = StyleSheet.create({
   },
   tabsHeader: {
     flexDirection: 'row',
-    backgroundColor: '#020512',
+    backgroundColor: '#040818',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: 'rgba(6, 182, 212, 0.25)',
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   activeTabBtn: {
     borderBottomWidth: 2,
     borderBottomColor: '#00d2ff',
+    backgroundColor: 'rgba(0, 210, 255, 0.08)',
   },
   tabText: {
     color: '#64748b',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   activeTabText: {
-    color: '#ffffff',
+    color: '#00d2ff',
     fontWeight: '800',
+  },
+  searchBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#090e24',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+  },
+  searchIcon: {
+    fontSize: 13,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 12,
+    paddingVertical: 8,
+  },
+  clearBtn: {
+    padding: 4,
+  },
+  clearBtnText: {
+    color: '#64748b',
+    fontSize: 12,
   },
   scrollList: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 40,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    marginTop: 12,
   },
   banner: {
     backgroundColor: 'rgba(29, 104, 255, 0.1)',
@@ -221,48 +536,78 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: 'rgba(0, 210, 255, 0.25)',
-    marginBottom: 16,
+    marginBottom: 14,
+  },
+  bannerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   bannerTitle: {
     color: '#00d2ff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
-    letterSpacing: 1,
-    marginBottom: 4,
+    letterSpacing: 0.8,
+  },
+  infoPill: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '700',
   },
   bannerSubtitle: {
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 11,
     lineHeight: 16,
+  },
+  formulaBox: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 210, 255, 0.2)',
+  },
+  formulaText: {
+    color: '#e2e8f0',
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: 'monospace',
   },
   rankCard: {
     backgroundColor: '#0c1228',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 14,
+    padding: 12,
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(6, 182, 212, 0.15)',
   },
   rankIndicator: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    marginRight: 12,
-    minWidth: 44,
-    alignItems: 'center',
+    marginRight: 10,
   },
   rankText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
+  },
+  houseLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    marginRight: 12,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
   },
   avatarPlaceholder: {
     width: 44,
@@ -271,7 +616,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e293b',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
   },
   avatarInitial: {
     color: '#00d2ff',
@@ -280,6 +627,7 @@ const styles = StyleSheet.create({
   },
   infoWrapper: {
     flex: 1,
+    marginRight: 8,
   },
   titleRow: {
     flexDirection: 'row',
@@ -287,7 +635,7 @@ const styles = StyleSheet.create({
   },
   name: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
   },
   verified: {
@@ -297,39 +645,122 @@ const styles = StyleSheet.create({
   },
   bio: {
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2,
+    lineHeight: 15,
   },
   mediaTag: {
-    color: '#00d2ff',
+    color: '#38bdf8',
     fontSize: 11,
-    fontWeight: '600',
     marginTop: 2,
   },
   metricsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 6,
+    gap: 10,
+    marginTop: 4,
   },
   metric: {
     color: '#64748b',
-    fontSize: 11,
+    fontSize: 10.5,
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  followBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.4)',
+    minWidth: 68,
     alignItems: 'center',
-    padding: 24,
   },
-  loadingText: {
-    color: '#94a3b8',
-    fontSize: 13,
-    marginTop: 12,
+  followingBtn: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+  },
+  followBtnText: {
+    color: '#00d2ff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  followingBtnText: {
+    color: '#10b981',
+    fontSize: 11,
+    fontWeight: '800',
   },
   emptyText: {
     color: '#64748b',
+    fontSize: 12,
     textAlign: 'center',
-    marginTop: 32,
-    fontStyle: 'italic',
+    marginVertical: 24,
+  },
+  articleRankCard: {
+    backgroundColor: '#0c1228',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.15)',
+  },
+  articleRankTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  catBadge: {
+    backgroundColor: 'rgba(29, 104, 255, 0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 'auto',
+  },
+  catBadgeText: {
+    color: '#38bdf8',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  articleViews: {
+    color: '#94a3b8',
+    fontSize: 10.5,
+  },
+  articleMainRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  articleThumbnail: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  articleTextCol: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  articleTitle: {
+    color: '#ffffff',
+    fontSize: 12.5,
+    fontWeight: '800',
+    lineHeight: 17,
+  },
+  articleMeta: {
+    color: '#64748b',
+    fontSize: 10.5,
+    marginTop: 2,
+  },
+  articleBottomStats: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  articleLikes: {
+    color: '#f43f5e',
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  articleTrust: {
+    color: '#eab308',
+    fontSize: 10.5,
+    fontWeight: '700',
   },
 });

@@ -7,6 +7,7 @@ interface ArticleCardProps {
   onPress: () => void;
   onToggleLike?: () => void;
   onToggleBookmark?: () => void;
+  onPressHouse?: (houseName: string, houseId?: string) => void;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
@@ -14,28 +15,36 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   onPress,
   onToggleLike,
   onToggleBookmark,
+  onPressHouse,
 }) => {
   const defaultCover =
     'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop&q=80';
   const coverUri = article.coverImage || article.coverMedia?.url || defaultCover;
+  const trustScore = article.trustScore || 96;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
-      {/* Image de couverture avec Badge Catégorie */}
+      {/* Image de couverture avec Badge Catégorie & Fiabilité */}
       <View style={styles.imageWrapper}>
         <Image source={{ uri: coverUri }} style={styles.coverImage} resizeMode="cover" />
-        <View style={styles.badgeContainer}>
-          {article.categoryName && (
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryBadgeText}>{article.categoryName}</Text>
-            </View>
-          )}
-          {article.readTime && (
-            <View style={styles.readTimeBadge}>
-              <Text style={styles.readTimeText}>⏱ {article.readTime} min</Text>
-            </View>
-          )}
+        <View style={styles.topBadgesRow}>
+          <View style={styles.badgeLeft}>
+            {article.categoryName && (
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>{article.categoryName}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.trustBadge}>
+            <Text style={styles.trustBadgeText}>⭐ {trustScore}% FIABILITÉ</Text>
+          </View>
         </View>
+
+        {article.readTime && (
+          <View style={styles.readTimePill}>
+            <Text style={styles.readTimeText}>⏱ {article.readTime} min</Text>
+          </View>
+        )}
       </View>
 
       {/* Contenu Texte */}
@@ -50,7 +59,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           </Text>
         ) : null}
 
-        {/* Ligne Auteur */}
+        {/* Tags thématiques */}
+        {article.tags && article.tags.length > 0 && (
+          <View style={styles.tagsRow}>
+            {article.tags.slice(0, 3).map((t, idx) => (
+              <Text key={idx} style={styles.tagText}>
+                #{t.replace(/^#/, '')}
+              </Text>
+            ))}
+          </View>
+        )}
+
+        {/* Ligne Auteur & Maison de Presse */}
         <View style={styles.authorRow}>
           {article.authorAvatar ? (
             <Image source={{ uri: article.authorAvatar }} style={styles.authorAvatar} />
@@ -68,9 +88,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </Text>
               {article.authorIsVerified && <Text style={styles.verifiedIcon}> ✓</Text>}
             </View>
-            <Text style={styles.mediaHouseName} numberOfLines={1}>
-              {article.mediaName || 'PURGE Rédaction'}
-            </Text>
+            <TouchableOpacity
+              onPress={() => onPressHouse && onPressHouse(article.mediaName || '', article.mediaId)}
+              disabled={!onPressHouse}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.mediaHouseName} numberOfLines={1}>
+                🏛️ {article.mediaName || 'PURGE Rédaction Centrale'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -114,17 +140,17 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#0c1228',
-    borderRadius: 14,
+    backgroundColor: '#081028',
+    borderRadius: 16,
     marginHorizontal: 16,
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(6, 182, 212, 0.2)',
   },
   imageWrapper: {
     width: '100%',
-    height: 180,
+    height: 190,
     position: 'relative',
     backgroundColor: '#020512',
   },
@@ -132,34 +158,56 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  badgeContainer: {
+  topBadgesRow: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
+    top: 10,
+    left: 10,
+    right: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  badgeLeft: {
+    flexDirection: 'row',
+  },
   categoryBadge: {
-    backgroundColor: 'rgba(2, 5, 18, 0.85)',
+    backgroundColor: 'rgba(2, 5, 18, 0.88)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#00d2ff',
+    borderColor: '#06b6d4',
   },
   categoryBadgeText: {
-    color: '#00d2ff',
-    fontSize: 10,
+    color: '#06b6d4',
+    fontSize: 9,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  readTimeBadge: {
-    backgroundColor: 'rgba(2, 5, 18, 0.85)',
+  trustBadge: {
+    backgroundColor: 'rgba(2, 5, 18, 0.88)',
+    borderWidth: 1,
+    borderColor: '#f59e0b',
     paddingHorizontal: 8,
     paddingVertical: 4,
+    borderRadius: 6,
+  },
+  trustBadgeText: {
+    color: '#f59e0b',
+    fontSize: 9,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  readTimePill: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(2, 5, 18, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
   },
   readTimeText: {
@@ -171,7 +219,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   title: {
-    color: '#ffffff',
+    color: '#f8fafc',
     fontSize: 16,
     fontWeight: '800',
     lineHeight: 22,
@@ -181,7 +229,17 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 13,
     lineHeight: 18,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  tagText: {
+    color: '#06b6d4',
+    fontSize: 11,
+    fontWeight: '600',
   },
   authorRow: {
     flexDirection: 'row',
@@ -190,22 +248,26 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   authorAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#06b6d4',
   },
   authorPlaceholder: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#1e293b',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#0c1a3b',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#06b6d4',
   },
   authorInitial: {
-    color: '#00d2ff',
+    color: '#06b6d4',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -217,12 +279,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   authorName: {
-    color: '#ffffff',
+    color: '#f8fafc',
     fontSize: 12,
     fontWeight: '700',
   },
   verifiedIcon: {
-    color: '#00d2ff',
+    color: '#06b6d4',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -230,6 +292,7 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 11,
     fontWeight: '500',
+    marginTop: 1,
   },
   footerRow: {
     flexDirection: 'row',
@@ -268,3 +331,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 });
+

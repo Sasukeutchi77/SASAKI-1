@@ -109,6 +109,14 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
   };
 
   const handleOpenCreateHouse = () => {
+    if (myHouse && user?.role !== 'admin') {
+      showMsg(
+        'error',
+        `Chaque compte de journaliste ne peut créer qu'une seule maison de presse. Vous êtes déjà affilié(e) à « ${myHouse.name} ».`
+      );
+      setActiveTab('my-house');
+      return;
+    }
     if (onOpenCreateHouse) {
       onOpenCreateHouse();
     } else {
@@ -506,16 +514,32 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
             Gouvernance & Comptes Principaux
           </button>
 
-          {/* Direct CTA button to open CreateHouseModal */}
-          <button
-            id="tab-create-house-direct-btn"
-            type="button"
-            onClick={handleOpenCreateHouse}
-            className="ml-auto hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-cyan-400 to-blue-500 hover:brightness-110 text-black text-xs font-black transition cursor-pointer shadow-[0_0_15px_rgba(0,243,255,0.25)] shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Fonder une Maison</span>
-          </button>
+          {/* Direct CTA button to open CreateHouseModal or MyHouse indicator */}
+          {myHouse ? (
+            <button
+              id="tab-my-house-badge-btn"
+              type="button"
+              onClick={() => {
+                setActiveTab('my-house');
+                setSelectedHouseDetail(null);
+              }}
+              className="ml-auto hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-xs font-bold transition cursor-pointer hover:border-cyan-400 shrink-0"
+              title="Vous êtes affilié(e) à cette maison"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{myHouse.name}</span>
+            </button>
+          ) : (
+            <button
+              id="tab-create-house-direct-btn"
+              type="button"
+              onClick={handleOpenCreateHouse}
+              className="ml-auto hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-cyan-400 to-blue-500 hover:brightness-110 text-black text-xs font-black transition cursor-pointer shadow-[0_0_15px_rgba(0,243,255,0.25)] shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Fonder une Maison</span>
+            </button>
+          )}
         </div>
 
         {/* Feedback Alert */}

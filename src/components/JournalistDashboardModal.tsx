@@ -27,6 +27,7 @@ import { api } from '../services/api';
 import { MediaUploader } from './media/MediaUploader';
 import { getThumbnailUrl } from '../services/cloudinary';
 import { VerifiedBadge } from './VerifiedBadge';
+import { JournalistHouseTab } from './JournalistHouseTab';
 
 interface JournalistDashboardModalProps {
   onClose: () => void;
@@ -46,7 +47,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
   const { user, refreshUser } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'articles' | 'verification' | 'media'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'verification' | 'media' | 'house'>('articles');
   const [myHouse, setMyHouse] = useState<MediaHouse | null>(null);
 
   // Media library state
@@ -277,24 +278,22 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
               </div>
             </div>
 
-            {onOpenMediaHouses && (
-              <button
-                type="button"
-                onClick={onOpenMediaHouses}
-                className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 rounded-lg text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span>{myHouse ? 'Gérer ma Maison' : 'Fonder / Rejoindre une Maison'}</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setActiveTab('house')}
+              className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 rounded-lg text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>{myHouse ? 'Accéder à ma Maison' : 'Fonder ma Maison (1 max)'}</span>
+            </button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-cyan-500/30 px-6 bg-[#101428] shrink-0 font-mono transition-all">
+        <div className="flex border-b border-cyan-500/30 px-6 bg-[#101428] shrink-0 font-mono transition-all overflow-x-auto">
           <button
             onClick={() => setActiveTab('articles')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'articles'
                 ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
                 : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
@@ -302,9 +301,32 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
           >
             Mes Articles ({articles.length})
           </button>
+
+          <button
+            id="tab-journalist-house-btn"
+            onClick={() => setActiveTab('house')}
+            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              activeTab === 'house'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Maison de Journaliste</span>
+            {myHouse ? (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-bold">
+                {myHouse.name}
+              </span>
+            ) : (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-500/40 font-bold animate-pulse">
+                À Fonder (1 max)
+              </span>
+            )}
+          </button>
+
           <button
             onClick={() => setActiveTab('verification')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === 'verification'
                 ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
                 : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
@@ -316,7 +338,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
 
           <button
             onClick={() => setActiveTab('media')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === 'media'
                 ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
                 : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
@@ -731,6 +753,15 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                 </div>
               )}
             </div>
+          )}
+
+          {/* TAB 4: MAISON DE JOURNALISTE */}
+          {activeTab === 'house' && (
+            <JournalistHouseTab
+              onOpenArticle={onOpenArticle}
+              onOpenCreateArticle={onOpenCreateArticle}
+              onHouseChanged={(h) => setMyHouse(h)}
+            />
           )}
         </div>
       </div>

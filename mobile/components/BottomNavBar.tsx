@@ -14,11 +14,11 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   unreadBookmarks = 0,
 }) => {
   const tabs: { id: NavigationTab; label: string; icon: string }[] = [
-    { id: 'feed', label: 'Actualités', icon: '📰' },
+    { id: 'feed', label: 'Dépêches', icon: '📰' },
     { id: 'search', label: 'Explorer', icon: '🔍' },
     { id: 'rankings', label: 'Top 7', icon: '🏆' },
-    { id: 'bookmarks', label: 'Favoris', icon: '🔖' },
-    { id: 'profile', label: 'Profil', icon: '👤' },
+    { id: 'bookmarks', label: 'Archives', icon: '🔖' },
+    { id: 'profile', label: 'Compte', icon: '👤' },
   ];
 
   return (
@@ -32,6 +32,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             onPress={() => onTabChange(tab.id)}
             activeOpacity={0.7}
           >
+            {isActive && <View style={styles.activeIndicator} />}
             <View style={styles.iconWrapper}>
               <Text style={[styles.iconText, isActive && styles.activeIconText]}>{tab.icon}</Text>
               {tab.id === 'bookmarks' && unreadBookmarks > 0 && (
@@ -41,7 +42,6 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
               )}
             </View>
             <Text style={[styles.tabLabel, isActive && styles.activeTabLabel]}>{tab.label}</Text>
-            {isActive && <View style={styles.activeIndicator} />}
           </TouchableOpacity>
         );
       })}
@@ -51,10 +51,10 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
 const styles = StyleSheet.create({
   navBar: {
-    height: 60,
+    height: 62,
     backgroundColor: '#020512',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 210, 255, 0.15)',
+    borderTopColor: 'rgba(6, 182, 212, 0.25)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 6,
     position: 'relative',
+    height: '100%',
   },
   activeTabBtn: {
     transform: [{ scale: 1.05 }],
@@ -75,32 +76,33 @@ const styles = StyleSheet.create({
   },
   iconText: {
     fontSize: 18,
-    opacity: 0.6,
+    opacity: 0.55,
   },
   activeIconText: {
     opacity: 1,
   },
   tabLabel: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     marginTop: 2,
+    letterSpacing: 0.3,
   },
   activeTabLabel: {
-    color: '#00d2ff',
+    color: '#06b6d4',
     fontWeight: '800',
   },
   activeIndicator: {
     position: 'absolute',
     top: 0,
-    width: 24,
-    height: 2.5,
-    backgroundColor: '#00d2ff',
+    width: 28,
+    height: 3,
+    backgroundColor: '#06b6d4',
     borderRadius: 2,
-    shadowColor: '#00d2ff',
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#06b6d4',
+    shadowOpacity: 0.9,
+    shadowRadius: 5,
+    elevation: 4,
   },
   badge: {
     position: 'absolute',
@@ -120,3 +122,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+

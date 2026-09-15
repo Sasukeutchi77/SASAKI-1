@@ -11,7 +11,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { User, isJournalistRole, isAdminRole, VerificationRequest } from '../types';
+import { User, isJournalistRole, isAdminRole, VerificationRequest, MediaHouse, Article } from '../types';
 import { api } from '../services/api';
 import { pickImageFromGallery, uploadPickedImageToCloudinary } from '../services/imagePicker';
 import {
@@ -22,12 +22,15 @@ import {
 import { EditProfileModal } from '../components/EditProfileModal';
 import { CreateHouseModal } from '../components/CreateHouseModal';
 import { ImageSelectModal } from '../components/ImageSelectModal';
+import { JournalistHouseSection } from '../components/JournalistHouseSection';
+import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
 
 interface ProfileScreenProps {
   currentUser: User | null;
   onUserUpdated: (user: User | null) => void;
-  onOpenCreateArticle?: () => void;
+  onOpenCreateArticle?: (houseId?: string, houseName?: string) => void;
   onOpenNotifications?: () => void;
+  onSelectArticle?: (article: Article) => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -35,6 +38,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onUserUpdated,
   onOpenCreateArticle,
   onOpenNotifications,
+  onSelectArticle,
 }) => {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -50,6 +54,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showCreateHouseModal, setShowCreateHouseModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [selectedHouseForDetail, setSelectedHouseForDetail] = useState<MediaHouse | null>(null);
 
   // État du formulaire de candidature journaliste (Citoyen -> Journaliste)
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -162,7 +167,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         mediaName: applyMediaName.trim() || 'Média Indépendant',
         pressCardNumber: applyPressCard.trim() || 'Candidat Citoyen / Enquêteur',
         motivation: applyMotivation.trim(),
-        documentUrl: applyPortfolioUrl.trim() || undefined,
+        documentUrl: applyPortfolioUrl.trim() || '',
       });
 
       const updatedUser: User = {
@@ -313,27 +318,24 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   };
 
-  const handleTestNotification = async () => {
+  const handleToggleNotifications = async () => {
     try {
       const granted = await requestNotificationPermission();
       setNotificationsActive(granted);
 
-      if (!granted) {
+      if (granted) {
+        Alert.alert(
+          'Notifications activées',
+          'Vous recevrez en temps réel les alertes prioritaires, décrets et nouvelles enquêtes certifiées.'
+        );
+      } else {
         Alert.alert(
           'Autorisation requise',
           'Veuillez activer les notifications dans les paramètres Android de l’application pour recevoir les alertes.'
         );
-        return;
       }
-
-      await triggerLocalNotification({
-        title: '🚨 DÉPÊCHE OFFICIELLE • PURGE',
-        body: 'Le système de notifications est actif et certifié sur cet appareil.',
-        data: { origin: 'profile_test' },
-      });
-      Alert.alert('Notification envoyée', 'Une alerte a été émise sur votre barre de statut Android.');
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Impossible d’émettre la notification.');
+      console.warn('[ProfileScreen] Erreur permissions notifications:', err);
     }
   };
 
@@ -561,54 +563,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* SECTION MAISON DE PRESSE & RÉSEAU ÉDITORIAL */}
-      <View style={styles.mediaHouseCard}>
-        <View style={styles.mediaHouseHeaderRow}>
-          <View>
-            <Text style={styles.mediaHouseTitle}>🏛️ MAISON DE PRESSE</Text>
-            <Text style={styles.mediaHouseSub}>Réseau éditorial officiel</Text>
-          </View>
-          <View style={styles.mediaHouseBadge}>
-            <Text style={styles.mediaHouseBadgeText}>
-              {currentUser.mediaName ? 'AFFILIÉ' : 'ACCÈS LIBRE'}
-            </Text>
-          </View>
-        </View>
-
-        {currentUser.mediaName ? (
-          <View style={styles.mediaHouseBody}>
-            <View style={styles.mediaHouseInfoBox}>
-              <Text style={styles.mediaHouseLabel}>Votre Maison de Presse :</Text>
-              <Text style={styles.mediaHouseNameText}>« {currentUser.mediaName} »</Text>
-              <Text style={styles.mediaHouseRoleText}>
-                Statut : {currentUser.mediaHouseRole || (isAdmin ? 'Directeur de Rédaction' : 'Journaliste Accrédité')}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.mediaHouseBtn}
-              onPress={() => setShowCreateHouseModal(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.mediaHouseBtnText}>🏛️ FONDER UNE NOUVELLE MAISON</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.mediaHouseBody}>
-            <Text style={styles.mediaHouseDesc}>
-              {isJournalist || isAdmin
-                ? 'Fondez votre propre maison de presse d’investigation, invitez des journalistes confrères et publiez vos enquêtes sous une marque éditoriale reconnue.'
-                : 'Les maisons de presse regroupent les journalistes et directeurs de rédaction. Devenez journaliste ou fondez votre rédaction officielle.'}
-            </Text>
-            <TouchableOpacity
-              style={styles.mediaHouseBtn}
-              onPress={() => setShowCreateHouseModal(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.mediaHouseBtnText}>🏛️ FONDER UNE MAISON DE PRESSE</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      {/* ESPACE MAISON DE PRESSE & RÉDACTION OFFICIELLE */}
+      <JournalistHouseSection
+        currentUser={currentUser}
+        onOpenCreateArticleForHouse={(houseId, houseName) => {
+          if (onOpenCreateArticle) {
+            onOpenCreateArticle(houseId, houseName);
+          }
+        }}
+        onOpenHouseModal={(h) => setSelectedHouseForDetail(h)}
+        onSelectArticle={onSelectArticle}
+        onCreateHouse={() => setShowCreateHouseModal(true)}
+        onUserUpdated={onUserUpdated}
+      />
 
       {/* ESPACE CITOYEN : Candidature au Statut Journaliste */}
       {!isJournalist && !isAdmin && (

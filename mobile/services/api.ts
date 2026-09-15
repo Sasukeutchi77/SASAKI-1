@@ -933,6 +933,8 @@ export const api = {
     coverImage?: string;
     tags?: string[];
     status?: 'published' | 'draft';
+    mediaHouseId?: string;
+    mediaHouseName?: string;
   }): Promise<{ article: Article; message: string }> {
     const user = await getUser();
     const now = new Date().toISOString();
@@ -940,6 +942,9 @@ export const api = {
 
     const categoriesRes = await this.getCategories().catch(() => ({ categories: OFFICIAL_CATEGORIES }));
     const cat = categoriesRes.categories.find((c) => c.id === data.categoryId);
+
+    const targetMediaId = data.mediaHouseId || user?.mediaId;
+    const targetMediaName = data.mediaHouseName || user?.mediaName || 'PURGE INDÉPENDANT';
 
     const newArticle: Article = {
       id: articleId,
@@ -956,7 +961,8 @@ export const api = {
       authorAvatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       authorRole: user?.role || 'journalist',
       authorIsVerified: user?.isVerified ?? true,
-      mediaName: user?.mediaName || 'PURGE INDÉPENDANT',
+      mediaId: targetMediaId,
+      mediaName: targetMediaName,
       status: data.status || 'published',
       viewsCount: 1,
       likesCount: 0,
@@ -974,7 +980,11 @@ export const api = {
     try {
       const res = await apiRequest<{ article: Article; message: string }>('/api/articles', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          mediaId: targetMediaId,
+          mediaName: targetMediaName,
+        }),
       });
       if (res?.article) return res;
     } catch (err) {
@@ -1049,10 +1059,10 @@ export const api = {
         userId: user.id,
         userName: user.name,
         userEmail: user.email,
-        mediaName: data.mediaName,
-        pressCardNumber: data.pressCardNumber,
+        mediaName: data.mediaName || user.mediaName || 'Média Indépendant',
+        pressCardNumber: data.pressCardNumber || 'Candidat Citoyen / Enquêteur',
         motivation: data.motivation,
-        documentUrl: data.documentUrl,
+        documentUrl: data.documentUrl ? data.documentUrl.trim() : '',
       });
       const updatedUser: User = { ...user, verificationStatus: 'pending' };
       await setUser(updatedUser);

@@ -687,22 +687,23 @@ export async function submitVerificationRequestToFirestore(requestData: {
   if (!firestore) throw new Error('Firestore n’est pas initialisé.');
 
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const cleanDocUrl = requestData.documentUrl ? requestData.documentUrl.trim() : '';
   const newRequest: VerificationRequest = {
     id: requestId,
     userId: requestData.userId,
-    userName: requestData.userName,
-    userEmail: requestData.userEmail,
-    mediaName: requestData.mediaName || 'Média Indépendant',
-    pressCardNumber: requestData.pressCardNumber || 'Non renseigné',
-    motivation: requestData.motivation,
-    documentUrl: requestData.documentUrl,
+    userName: requestData.userName || 'Citoyen',
+    userEmail: requestData.userEmail || '',
+    mediaName: (requestData.mediaName && requestData.mediaName.trim()) || 'Média Indépendant',
+    pressCardNumber: (requestData.pressCardNumber && requestData.pressCardNumber.trim()) || 'Candidat Citoyen / Enquêteur',
+    motivation: (requestData.motivation && requestData.motivation.trim()) || '',
+    documentUrl: cleanDocUrl,
     status: 'pending',
     createdAt: new Date().toISOString(),
   };
 
-  // 1. Sauvegarder dans cloud_verification_requests
+  // 1. Sauvegarder dans cloud_verification_requests avec stripUndefined pour éliminer tout champ undefined
   const reqRef = doc(firestore, 'cloud_verification_requests', requestId);
-  await setDoc(reqRef, newRequest);
+  await setDoc(reqRef, stripUndefined(newRequest));
 
   // 2. Mettre à jour le statut dans le profil utilisateur Firestore
   try {
@@ -714,6 +715,16 @@ export async function submitVerificationRequestToFirestore(requestData: {
   } catch (updateErr) {
     console.warn('[Firebase] Warning updating user verificationStatus:', updateErr);
   }
+
+  // 3. Mettre à jour le cache utilisateur local
+  try {
+    const raw = await AsyncStorage.getItem('purge_mobile_user');
+    if (raw) {
+      const u = JSON.parse(raw);
+      u.verificationStatus = 'pending';
+      await AsyncStorage.setItem('purge_mobile_user', JSON.stringify(u));
+    }
+  } catch {}
 
   return newRequest;
 }
@@ -778,16 +789,17 @@ export async function reviewVerificationRequestInFirestore(
     isVerified: decision === 'approved',
     role: decision === 'approved' ? 'journalist' : 'citoyen',
     accountType: decision === 'approved' ? 'journalist' : 'citoyen',
-    mediaName: decision === 'approved' ? (reqData.mediaName || 'Média Agréé') : undefined,
+    mediaName: decision === 'approved' ? (reqData.mediaName || 'Média Agréé') : '',
     updatedAt: now,
   };
 
   try {
+    const cleanUpdates = stripUndefined(targetUpdates);
     const userRef = doc(firestore, 'users', targetUserId);
-    await setDoc(userRef, targetUpdates, { merge: true });
+    await setDoc(userRef, cleanUpdates, { merge: true });
 
     const cloudUserRef = doc(firestore, 'cloud_users', targetUserId);
-    await setDoc(cloudUserRef, targetUpdates, { merge: true });
+    await setDoc(cloudUserRef, cleanUpdates, { merge: true });
   } catch (err) {
     console.warn('[Firebase] Erreur mise à jour utilisateur promu:', err);
   }
@@ -948,7 +960,7 @@ export async function addCommentToCloud(
     };
 
     const docRef = doc(firestore, 'cloud_comments', newComment.id);
-    await setDoc(docRef, newComment);
+    await setDoc(docRef, stripUndefined(newComment));
     return newComment;
   } catch (err) {
     console.warn('[Firebase Mobile] Erreur ajout commentaire cloud:', err);

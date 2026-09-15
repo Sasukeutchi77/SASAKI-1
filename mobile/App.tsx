@@ -15,6 +15,7 @@ import { RankingsScreen } from './screens/RankingsScreen';
 import { BookmarksScreen } from './screens/BookmarksScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { CreateArticleScreen } from './screens/CreateArticleScreen';
+import { TrustSystemModal } from './components/TrustSystemModal';
 import {
   initNotifications,
   requestNotificationPermission,
@@ -30,6 +31,7 @@ export default function App() {
   const [unreadBookmarks, setUnreadBookmarks] = useState<number>(0);
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(2);
+  const [showTrustModal, setShowTrustModal] = useState<boolean>(false);
 
   // Initialisation au démarrage : Authentification & Notifications
   useEffect(() => {
@@ -167,6 +169,7 @@ export default function App() {
               onOpenCreateArticle={() => setIsCreatingArticle(true)}
               onOpenSearch={() => setActiveTab('search')}
               onOpenProfile={() => setActiveTab('profile')}
+              onOpenTrustSystem={() => setShowTrustModal(true)}
             />
 
             <View style={styles.screenBody}>
@@ -175,6 +178,8 @@ export default function App() {
                   onSelectArticle={handleSelectArticle}
                   onRequireAuth={() => setActiveTab('profile')}
                   onOpenNotifications={() => setShowNotificationsModal(true)}
+                  onOpenTrustSystem={() => setShowTrustModal(true)}
+                  currentUser={currentUser}
                 />
               )}
 
@@ -186,7 +191,13 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'rankings' && <RankingsScreen />}
+              {activeTab === 'rankings' && (
+                <RankingsScreen
+                  onSelectArticle={handleSelectArticle}
+                  currentUser={currentUser}
+                  onOpenAuth={() => setActiveTab('profile')}
+                />
+              )}
 
               {activeTab === 'bookmarks' && (
                 <BookmarksScreen
@@ -211,6 +222,16 @@ export default function App() {
               activeTab={activeTab}
               onTabChange={setActiveTab}
               unreadBookmarks={unreadBookmarks}
+            />
+
+            {/* Modale Système de Confiance & Charte Déontologique */}
+            <TrustSystemModal
+              visible={showTrustModal}
+              onClose={() => setShowTrustModal(false)}
+              onOpenAuth={() => {
+                setShowTrustModal(false);
+                setActiveTab('profile');
+              }}
             />
           </View>
         )}

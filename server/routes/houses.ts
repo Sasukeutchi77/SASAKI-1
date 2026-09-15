@@ -199,7 +199,12 @@ housesRouter.get('/my-house', requireAuth, (req: AuthenticatedRequest, res: Resp
   );
 
   if (!house) {
-    return res.json({ house: null });
+    return res.json({
+      house: null,
+      canCreate: true,
+      hasCreatedHouse: false,
+      isChef: false,
+    });
   }
 
   const memberIds = house.members && Array.isArray(house.members) ? house.members : [house.ownerId];
@@ -231,6 +236,8 @@ housesRouter.get('/my-house', requireAuth, (req: AuthenticatedRequest, res: Resp
       totalArticles: houseArticles.length,
     },
     isChef,
+    hasCreatedHouse: house.ownerId === user.id,
+    canCreate: false,
     maxJournalists: MAX_JOURNALISTS_PER_HOUSE,
     canAddMembers: isChef && memberIds.length < MAX_JOURNALISTS_PER_HOUSE,
   });
@@ -386,14 +393,24 @@ housesRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
   const data = db.getData();
   const user = req.user!;
 
-  // Allow journalists or authenticated users (citizens, readers) to register a new media house
-  // If the user already owns or belongs to a house, ensure they are informed unless they are master admin
-  const existingHouse = (data.mediaHouses || []).find(
-    (m) => m.ownerId === user.id || (m.members && m.members.includes(user.id))
-  );
-  if (existingHouse && !isMasterAdmin(user.email)) {
+  // Règle déontologique absolue : Chaque compte de journaliste ne peut créer qu'UNE SEULE maison de presse
+  const ownedHouse = (data.mediaHouses || []).find((m) => m.ownerId === user.id);
+  if (ownedHouse && !isMasterAdmin(user.email)) {
     return res.status(400).json({
-      error: `Vous êtes déjà rattaché à la maison de presse "${existingHouse.name}". Un membre ne peut appartenir qu'à une seule maison à la fois.`,
+      error: `Chaque compte de journaliste ne peut créer qu'une seule maison de presse. Vous avez déjà fondé « ${ownedHouse.name} ». Vous ne pouvez pas en créer une seconde.`,
+      house: ownedHouse,
+    });
+  }
+
+  const existingMemberHouse = (data.mediaHouses || []).find(
+    (m) =>
+      (m.members && Array.isArray(m.members) && m.members.includes(user.id)) ||
+      (user.mediaId && m.id === user.mediaId)
+  );
+  if (existingMemberHouse && !isMasterAdmin(user.email)) {
+    return res.status(400).json({
+      error: `Vous appartenez déjà à la maison de presse « ${existingMemberHouse.name} ». Un journaliste ne peut être rattaché qu'à une seule maison à la fois.`,
+      house: existingMemberHouse,
     });
   }
 
