@@ -13,7 +13,7 @@ import { Comment, User } from '../types';
 interface CommentSectionProps {
   comments: Comment[];
   currentUser: User | null;
-  onAddComment: (content: string) => Promise<void>;
+  onAddComment: (content: string, parentId?: string) => Promise<void>;
   onOpenAuth?: () => void;
 }
 
@@ -25,30 +25,137 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 }) => {
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; authorName: string } | null>(null);
+  const [likedCommentIds, setLikedCommentIds] = useState<Record<string, boolean>>({});
 
   const handleSubmit = async () => {
     if (!content.trim() || submitting) return;
     setSubmitting(true);
     try {
-      await onAddComment(content.trim());
+      await onAddComment(content.trim(), replyingTo?.id);
       setContent('');
+      setReplyingTo(null);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const toggleLikeComment = (commentId: string) => {
+    setLikedCommentIds((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  };
+
+  // Séparation en commentaires racines et réponses hiérarchiques
+  const rootComments = comments.filter((c) => !c.parentId);
+  const getReplies = (parentId: string) => comments.filter((c) => c.parentId === parentId);
+
+  const renderCommentItem = (comment: Comment, isReply = false) => {
+    const isLiked = Boolean(likedCommentIds[comment.id] || comment.isLiked);
+    const likesCount = (comment.likesCount || 0) + (likedCommentIds[comment.id] && !comment.isLiked ? 1 : 0);
+
+    return (
+      <View
+        key={comment.id}
+        style={[styles.commentItem, isReply && styles.replyCommentItem]}
+      >
+        {comment.authorAvatar ? (
+          <Image
+            source={{ uri: comment.authorAvatar }}
+            style={[styles.commentAvatar, isReply && styles.replyAvatar]}
+          />
+        ) : (
+          <View
+            style={[
+              styles.commentAvatarPlaceholder,
+              isReply && styles.replyAvatarPlaceholder,
+            ]}
+          >
+            <Text style={styles.commentAvatarInitial}>
+              {comment.authorName ? comment.authorName.charAt(0).toUpperCase() : 'U'}
+            </Text>
+          </View>
+        )}
+        <View style={styles.commentBody}>
+          <View style={styles.authorHeader}>
+            <Text style={styles.commentAuthorName}>{comment.authorName}</Text>
+            {comment.authorIsVerified && <Text style={styles.verifiedBadge}>✓</Text>}
+            {comment.authorRole === 'journalist' && (
+              <View style={styles.journalistBadge}>
+                <Text style={styles.journalistBadgeText}>Journaliste</Text>
+              </View>
+            )}
+            <Text style={styles.commentTime}>
+              {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'Récent'}
+            </Text>
+          </View>
+
+          <Text style={styles.commentContent}>{comment.content}</Text>
+
+          {/* Actions : Répondre & Soutenir */}
+          <View style={styles.commentActionsRow}>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => toggleLikeComment(comment.id)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.actionEmoji}>{isLiked ? '❤️' : '🤍'}</Text>
+              <Text style={[styles.actionLabel, isLiked && styles.activeActionLabel]}>
+                {likesCount > 0 ? likesCount : 'Soutenir'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => {
+                setReplyingTo({ id: comment.id, authorName: comment.authorName });
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.actionEmoji}>↩️</Text>
+              <Text style={styles.actionLabel}>Répondre</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>
-        Espace Débat ({comments.length})
-      </Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.sectionTitle}>
+          Espace Débat & Confrérie ({comments.length})
+        </Text>
+        <Text style={styles.sectionSub}>Débats modérés & sourcés</Text>
+      </View>
 
       {/* Zone de saisie commentaire */}
       {currentUser ? (
         <View style={styles.inputCard}>
+          {replyingTo && (
+            <View style={styles.replyingToBanner}>
+              <Text style={styles.replyingToText}>
+                ↩ En réponse à <Text style={styles.replyingToAuthor}>@{replyingTo.authorName}</Text>
+              </Text>
+              <TouchableOpacity
+                onPress={() => setReplyingTo(null)}
+                style={styles.cancelReplyBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.cancelReplyText}>Annuler ✕</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <TextInput
             style={styles.textInput}
-            placeholder="Partagez votre point de vue factuel..."
+            placeholder={
+              replyingTo
+                ? `Répondre à @${replyingTo.authorName}...`
+                : 'Partagez votre point de vue factuel...'
+            }
             placeholderTextColor="#64748b"
             value={content}
             onChangeText={setContent}
@@ -69,7 +176,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               {submitting ? (
                 <ActivityIndicator size="small" color="#ffffff" />
               ) : (
-                <Text style={styles.sendBtnText}>PUBLIER</Text>
+                <Text style={styles.sendBtnText}>
+                  {replyingTo ? 'RÉPONDRE' : 'PUBLIER'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -86,38 +195,29 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         </TouchableOpacity>
       )}
 
-      {/* Liste des commentaires */}
+      {/* Liste hiérarchique des commentaires */}
       <View style={styles.commentsList}>
         {comments.length === 0 ? (
-          <Text style={styles.emptyText}>Soyez le premier à commenter cet article.</Text>
+          <Text style={styles.emptyText}>Soyez le premier à commenter cette enquête.</Text>
         ) : (
-          comments.map((comment) => (
-            <View key={comment.id} style={styles.commentItem}>
-              {comment.authorAvatar ? (
-                <Image source={{ uri: comment.authorAvatar }} style={styles.commentAvatar} />
-              ) : (
-                <View style={styles.commentAvatarPlaceholder}>
-                  <Text style={styles.commentAvatarInitial}>
-                    {comment.authorName ? comment.authorName.charAt(0).toUpperCase() : 'U'}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.commentBody}>
-                <View style={styles.authorHeader}>
-                  <Text style={styles.commentAuthorName}>{comment.authorName}</Text>
-                  {comment.authorIsVerified && (
-                    <Text style={styles.verifiedBadge}>✓</Text>
-                  )}
-                  {comment.authorRole === 'journalist' && (
-                    <View style={styles.journalistBadge}>
-                      <Text style={styles.journalistBadgeText}>Journaliste</Text>
+          rootComments.map((root) => {
+            const replies = getReplies(root.id);
+            return (
+              <View key={root.id} style={styles.threadContainer}>
+                {renderCommentItem(root, false)}
+
+                {/* Réponses imbriquées */}
+                {replies.length > 0 && (
+                  <View style={styles.repliesWrapper}>
+                    <View style={styles.threadGuideLine} />
+                    <View style={styles.repliesList}>
+                      {replies.map((reply) => renderCommentItem(reply, true))}
                     </View>
-                  )}
-                </View>
-                <Text style={styles.commentContent}>{comment.content}</Text>
+                  </View>
+                )}
               </View>
-            </View>
-          ))
+            );
+          })
         )}
       </View>
     </View>
@@ -128,19 +228,58 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 12,
+  },
   sectionTitle: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '800',
-    marginBottom: 12,
+  },
+  sectionSub: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '500',
   },
   inputCard: {
     backgroundColor: '#0c1228',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.2)',
+    borderColor: 'rgba(0, 210, 255, 0.25)',
     marginBottom: 16,
+  },
+  replyingToBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.25)',
+  },
+  replyingToText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  replyingToAuthor: {
+    color: '#38bdf8',
+    fontWeight: '700',
+  },
+  cancelReplyBtn: {
+    padding: 2,
+  },
+  cancelReplyText: {
+    color: '#ef4444',
+    fontSize: 11,
+    fontWeight: '700',
   },
   textInput: {
     color: '#ffffff',
@@ -162,7 +301,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   sendBtn: {
-    backgroundColor: '#1d68ff',
+    backgroundColor: '#00d2ff',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 6,
@@ -171,9 +310,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   sendBtnText: {
-    color: '#ffffff',
+    color: '#020512',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
   loginPrompt: {
@@ -191,7 +330,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   commentsList: {
-    gap: 12,
+    gap: 14,
+  },
+  threadContainer: {
+    marginBottom: 4,
   },
   emptyText: {
     color: '#64748b',
@@ -202,17 +344,28 @@ const styles = StyleSheet.create({
   },
   commentItem: {
     flexDirection: 'row',
-    backgroundColor: '#0c1228',
+    backgroundColor: '#081028',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  replyCommentItem: {
+    backgroundColor: '#060c20',
+    borderColor: 'rgba(6, 182, 212, 0.15)',
+    padding: 10,
   },
   commentAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
     marginRight: 10,
+  },
+  replyAvatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    marginRight: 8,
   },
   commentAvatarPlaceholder: {
     width: 32,
@@ -223,9 +376,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
   },
+  replyAvatarPlaceholder: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#1e293b',
+    marginRight: 8,
+  },
   commentAvatarInitial: {
     color: '#00d2ff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   commentBody: {
@@ -236,6 +396,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
     gap: 6,
+    flexWrap: 'wrap',
   },
   commentAuthorName: {
     color: '#ffffff',
@@ -258,9 +419,57 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
   },
+  commentTime: {
+    color: '#64748b',
+    fontSize: 10,
+    marginLeft: 'auto',
+  },
   commentContent: {
     color: '#cbd5e1',
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 19,
+  },
+  commentActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 8,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 2,
+  },
+  actionEmoji: {
+    fontSize: 12,
+  },
+  actionLabel: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  activeActionLabel: {
+    color: '#ef4444',
+    fontWeight: 'bold',
+  },
+  repliesWrapper: {
+    flexDirection: 'row',
+    marginLeft: 18,
+    marginTop: 8,
+  },
+  threadGuideLine: {
+    width: 2,
+    backgroundColor: 'rgba(6, 182, 212, 0.25)',
+    marginRight: 10,
+    borderRadius: 1,
+  },
+  repliesList: {
+    flex: 1,
+    gap: 8,
   },
 });
+

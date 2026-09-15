@@ -44,6 +44,12 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Filtres multicritères avancés
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [selectedHouseFilter, setSelectedHouseFilter] = useState('');
+  const [minTrustScore, setMinTrustScore] = useState(0);
+
   // Trending topic chips
   const trendingTopics = [
     '🔥 Décrets officiels',
@@ -149,6 +155,27 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
       h.specialties?.some((s) => s.toLowerCase().includes(q))
     );
   });
+
+  // Filtrage multicritères avancé sur les dépêches trouvées
+  const filteredResults = results.filter((a) => {
+    if (minTrustScore > 0 && (a.trustScore || 90) < minTrustScore) return false;
+    if (authorFilter.trim()) {
+      const match = a.authorName?.toLowerCase().includes(authorFilter.toLowerCase().trim());
+      if (!match) return false;
+    }
+    if (selectedHouseFilter) {
+      const match =
+        a.mediaName?.toLowerCase() === selectedHouseFilter.toLowerCase() ||
+        a.mediaId === selectedHouseFilter;
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  const activeFiltersCount =
+    (authorFilter.trim() ? 1 : 0) +
+    (selectedHouseFilter ? 1 : 0) +
+    (minTrustScore > 0 ? 1 : 0);
 
   return (
     <View style={styles.container}>
@@ -278,9 +305,28 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           {/* Barre de métriques et tri si recherche active */}
           {(hasSearched || query.length > 0 || selectedCategory.length > 0) && (
             <View style={styles.resultsControlBar}>
-              <Text style={styles.resultsCountText}>
-                {results.length} dépêche{results.length > 1 ? 's' : ''} trouvée{results.length > 1 ? 's' : ''}
-              </Text>
+              <View style={styles.resultsCountGroup}>
+                <Text style={styles.resultsCountText}>
+                  {filteredResults.length} dépêche{filteredResults.length > 1 ? 's' : ''}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.advancedFilterToggleBtn,
+                    (showAdvancedFilters || activeFiltersCount > 0) && styles.advancedFilterToggleBtnActive,
+                  ]}
+                  onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.advancedFilterToggleText,
+                      (showAdvancedFilters || activeFiltersCount > 0) && styles.advancedFilterToggleTextActive,
+                    ]}
+                  >
+                    ⚙️ Filtres {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
               <View style={styles.sortButtonsRow}>
                 <TouchableOpacity
@@ -314,23 +360,102 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             </View>
           )}
 
+          {/* Panneau Déroulant : Filtres Multicritères Avancés */}
+          {showAdvancedFilters && (
+            <View style={styles.advancedFiltersPanel}>
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>✍️ Auteur / Journaliste</Text>
+                <TextInput
+                  style={styles.filterTextInput}
+                  placeholder="Ex: Itachi, Minato, Citoyen..."
+                  placeholderTextColor="#64748b"
+                  value={authorFilter}
+                  onChangeText={setAuthorFilter}
+                />
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>🏛️ Maison de Presse</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterPillsScroll}>
+                  <TouchableOpacity
+                    style={[styles.filterPill, !selectedHouseFilter && styles.filterPillActive]}
+                    onPress={() => setSelectedHouseFilter('')}
+                  >
+                    <Text style={[styles.filterPillText, !selectedHouseFilter && styles.filterPillTextActive]}>
+                      Toutes
+                    </Text>
+                  </TouchableOpacity>
+                  {houses.slice(0, 8).map((h) => (
+                    <TouchableOpacity
+                      key={h.id}
+                      style={[styles.filterPill, selectedHouseFilter === h.id && styles.filterPillActive]}
+                      onPress={() => setSelectedHouseFilter(selectedHouseFilter === h.id ? '' : h.id)}
+                    >
+                      <Text style={[styles.filterPillText, selectedHouseFilter === h.id && styles.filterPillTextActive]}>
+                        {h.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>⭐ Fiabilité Minimale</Text>
+                <View style={styles.trustFilterRow}>
+                  {[
+                    { label: 'Tous', val: 0 },
+                    { label: '≥ 80%', val: 80 },
+                    { label: '≥ 90%', val: 90 },
+                    { label: '≥ 95%', val: 95 },
+                  ].map((tier) => (
+                    <TouchableOpacity
+                      key={tier.val}
+                      style={[styles.filterPill, minTrustScore === tier.val && styles.filterPillActive]}
+                      onPress={() => setMinTrustScore(tier.val)}
+                    >
+                      <Text style={[styles.filterPillText, minTrustScore === tier.val && styles.filterPillTextActive]}>
+                        {tier.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {activeFiltersCount > 0 && (
+                <TouchableOpacity
+                  style={styles.clearFiltersBtn}
+                  onPress={() => {
+                    setAuthorFilter('');
+                    setSelectedHouseFilter('');
+                    setMinTrustScore(0);
+                  }}
+                >
+                  <Text style={styles.clearFiltersText}>✕ Réinitialiser les filtres avancés</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {/* État de chargement */}
           {loading ? (
             <View style={styles.centerContainer}>
               <ActivityIndicator size="large" color="#00d2ff" />
               <Text style={styles.loadingText}>Recherche en cours...</Text>
             </View>
-          ) : hasSearched && results.length === 0 ? (
+          ) : hasSearched && filteredResults.length === 0 ? (
             <View style={styles.centerContainer}>
               <Text style={styles.noResultsTitle}>Aucun résultat trouvé</Text>
               <Text style={styles.noResultsSub}>
-                Essayez d'autres mots-clés ou explorez une catégorie différente.
+                Essayez d'autres critères ou désactivez certains filtres avancés.
               </Text>
               <TouchableOpacity
                 style={styles.resetSearchBtn}
                 onPress={() => {
                   setQuery('');
                   setSelectedCategory('');
+                  setAuthorFilter('');
+                  setSelectedHouseFilter('');
+                  setMinTrustScore(0);
                   setResults([]);
                   setHasSearched(false);
                 }}
@@ -340,11 +465,12 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             </View>
           ) : (
             <FlatList
-              data={results}
+              data={filteredResults}
               keyExtractor={(item: Article) => item.id}
               renderItem={({ item }: { item: Article }) => (
                 <ArticleCard
                   article={item}
+                  highlightQuery={query}
                   onPress={() => onSelectArticle(item)}
                   onPressHouse={(houseName, houseId) => {
                     const match = houses.find((h) => h.id === houseId || h.name.toLowerCase() === houseName.toLowerCase());
@@ -869,10 +995,102 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
+  resultsCountGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   resultsCountText: {
     color: '#00d2ff',
     fontSize: 12,
     fontWeight: '800',
+  },
+  advancedFilterToggleBtn: {
+    backgroundColor: '#0c1630',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  advancedFilterToggleBtnActive: {
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: '#06b6d4',
+  },
+  advancedFilterToggleText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  advancedFilterToggleTextActive: {
+    color: '#38bdf8',
+  },
+  advancedFiltersPanel: {
+    backgroundColor: '#0a1024',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(6, 182, 212, 0.25)',
+    gap: 12,
+  },
+  filterSection: {
+    gap: 6,
+  },
+  filterSectionTitle: {
+    color: '#cbd5e1',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  filterTextInput: {
+    backgroundColor: '#060c1d',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#ffffff',
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  filterPillsScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  trustFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterPill: {
+    backgroundColor: '#081028',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  filterPillActive: {
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: '#06b6d4',
+  },
+  filterPillText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  filterPillTextActive: {
+    color: '#38bdf8',
+    fontWeight: '800',
+  },
+  clearFiltersBtn: {
+    alignSelf: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 4,
+  },
+  clearFiltersText: {
+    color: '#ef4444',
+    fontSize: 11,
+    fontWeight: '700',
   },
   sortButtonsRow: {
     flexDirection: 'row',

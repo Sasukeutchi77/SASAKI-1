@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Category, Article, MediaHouse, User } from '../types';
 import { api } from '../services/api';
 import {
@@ -53,6 +54,91 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
   const [showImageModal, setShowImageModal] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  // Sauvegarde automatique du brouillon local
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [hasPendingDraft, setHasPendingDraft] = useState<boolean>(false);
+  const [pendingDraftData, setPendingDraftData] = useState<any>(null);
+
+  // Vérifier s'il y a un brouillon non publié au chargement
+  useEffect(() => {
+    const checkDraft = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('@purge_article_draft');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.title || parsed.content || parsed.summary) {
+            setPendingDraftData(parsed);
+            setHasPendingDraft(true);
+          }
+        }
+      } catch (e) {
+        console.warn('Erreur lecture brouillon:', e);
+      }
+    };
+    checkDraft();
+  }, []);
+
+  // Sauvegarde automatique périodique si l'utilisateur saisit du texte
+  useEffect(() => {
+    if (!title.trim() && !content.trim() && !summary.trim()) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const timeStr = new Date().toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const draftPayload = {
+          title,
+          summary,
+          content,
+          selectedCategoryId,
+          targetMediaHouseId,
+          targetMediaHouseName,
+          directCoverUrl,
+          savedAt: timeStr,
+        };
+        await AsyncStorage.setItem('@purge_article_draft', JSON.stringify(draftPayload));
+        setDraftSavedAt(timeStr);
+      } catch (e) {
+        console.warn('Erreur sauvegarde automatique du brouillon:', e);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [
+    title,
+    summary,
+    content,
+    selectedCategoryId,
+    targetMediaHouseId,
+    targetMediaHouseName,
+    directCoverUrl,
+  ]);
+
+  const handleRestoreDraft = () => {
+    if (pendingDraftData) {
+      if (pendingDraftData.title) setTitle(pendingDraftData.title);
+      if (pendingDraftData.summary) setSummary(pendingDraftData.summary);
+      if (pendingDraftData.content) setContent(pendingDraftData.content);
+      if (pendingDraftData.selectedCategoryId) setSelectedCategoryId(pendingDraftData.selectedCategoryId);
+      if (pendingDraftData.targetMediaHouseId) setTargetMediaHouseId(pendingDraftData.targetMediaHouseId);
+      if (pendingDraftData.targetMediaHouseName) setTargetMediaHouseName(pendingDraftData.targetMediaHouseName);
+      if (pendingDraftData.directCoverUrl) setDirectCoverUrl(pendingDraftData.directCoverUrl);
+      setDraftSavedAt(pendingDraftData.savedAt || 'restauré');
+    }
+    setHasPendingDraft(false);
+  };
+
+  const handleDiscardDraft = async () => {
+    try {
+      await AsyncStorage.removeItem('@purge_article_draft');
+    } catch {}
+    setHasPendingDraft(false);
+    setPendingDraftData(null);
+    setDraftSavedAt(null);
+  };
 
   useEffect(() => {
     if (initialMediaHouseId) {
@@ -144,6 +230,9 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
           ? `Votre article a été publié avec succès au nom de « ${targetMediaHouseName} » !`
           : 'Votre article a été publié avec succès !'
       );
+      try {
+        await AsyncStorage.removeItem('@purge_article_draft');
+      } catch {}
       onArticleCreated(res.article);
     } catch (err: any) {
       Alert.alert('Erreur', err.message || 'Impossible de publier l’article.');
@@ -162,7 +251,14 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
         <TouchableOpacity style={styles.cancelBtn} onPress={onBack} disabled={submitting}>
           <Text style={styles.cancelBtnText}>ANNULER</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>RÉDACTION D'ENQUÊTE</Text>
+        <View style={styles.headerTitleCenter}>
+          <Text style={styles.headerTitle}>RÉDACTION D'ENQUÊTE</Text>
+          {draftSavedAt && (
+            <Text style={styles.draftSavedNotice}>
+              ● Brouillon auto-enregistré ({draftSavedAt})
+            </Text>
+          )}
+        </View>
         <TouchableOpacity
           style={[styles.publishBtn, submitting && styles.publishBtnDisabled]}
           onPress={handlePublish}
@@ -177,6 +273,32 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        {/* Bannière de restauration de brouillon */}
+        {hasPendingDraft && (
+          <View style={styles.draftRecoveryBanner}>
+            <View style={styles.draftRecoveryInfo}>
+              <Text style={styles.draftRecoveryTitle}>📝 Brouillon antérieur détecté</Text>
+              <Text style={styles.draftRecoverySub}>
+                Un travail en cours ({pendingDraftData?.title ? `« ${pendingDraftData.title.slice(0, 30)}... »` : 'texte non titré'}) a été sauvegardé.
+              </Text>
+            </View>
+            <View style={styles.draftRecoveryActions}>
+              <TouchableOpacity
+                style={styles.draftRestoreBtn}
+                onPress={handleRestoreDraft}
+              >
+                <Text style={styles.draftRestoreBtnText}>Restaurer</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.draftDiscardBtn}
+                onPress={handleDiscardDraft}
+              >
+                <Text style={styles.draftDiscardBtnText}>Ignorer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {uploadStatus && (
           <View style={styles.statusBar}>
             <ActivityIndicator size="small" color="#00d2ff" />
@@ -419,11 +541,71 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
   },
+  headerTitleCenter: {
+    alignItems: 'center',
+  },
   headerTitle: {
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1,
+  },
+  draftSavedNotice: {
+    color: '#10b981',
+    fontSize: 9,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  draftRecoveryBanner: {
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 14,
+    flexDirection: 'column',
+    gap: 10,
+  },
+  draftRecoveryInfo: {
+    gap: 4,
+  },
+  draftRecoveryTitle: {
+    color: '#38bdf8',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  draftRecoverySub: {
+    color: '#94a3b8',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  draftRecoveryActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  draftRestoreBtn: {
+    backgroundColor: '#06b6d4',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  draftRestoreBtnText: {
+    color: '#020512',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  draftDiscardBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  draftDiscardBtnText: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '700',
   },
   cancelBtn: {
     padding: 6,

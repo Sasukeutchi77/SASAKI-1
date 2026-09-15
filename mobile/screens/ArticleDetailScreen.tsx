@@ -45,6 +45,8 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
   // Ergonomie de lecture & Progression
   const [fontSizeDelta, setFontSizeDelta] = useState(0); // -2, 0, 2, 4
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isImmersive, setIsImmersive] = useState(false);
+  const lastScrollY = useRef(0);
   const [extraReactions, setExtraReactions] = useState<{ useful: boolean; factchecked: boolean }>({
     useful: false,
     factchecked: false,
@@ -133,9 +135,9 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
     }
   };
 
-  const handleAddComment = async (content: string) => {
+  const handleAddComment = async (content: string, parentId?: string) => {
     try {
-      const res = await api.addComment(article.id, content);
+      const res = await api.addComment(article.id, content, parentId);
       if (res.comment) {
         setComments((prev) => [res.comment, ...prev]);
         setArticle((prev) => ({
@@ -197,43 +199,70 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Top Header Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <Text style={styles.backBtnText}>‹ RETOUR DÉPÊCHES</Text>
-        </TouchableOpacity>
-
-        <View style={styles.topBarActions}>
-          {/* Contrôle taille de texte */}
-          <View style={styles.fontControlsGroup}>
-            <TouchableOpacity
-              style={styles.fontBtn}
-              onPress={() => setFontSizeDelta((prev) => Math.max(-2, prev - 2))}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.fontBtnText}>A-</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fontBtn}
-              onPress={() => setFontSizeDelta((prev) => Math.min(6, prev + 2))}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.fontBtnText}>A+</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.topActionBtn} onPress={handleShare} activeOpacity={0.7}>
-            <Text style={styles.topActionIcon}>📤</Text>
+      {/* Top Header Bar ou Barre Flottante Immersion */}
+      {isImmersive ? (
+        <View style={styles.floatingImmersiveBar}>
+          <TouchableOpacity style={styles.floatingBackBtn} onPress={onBack} activeOpacity={0.7}>
+            <Text style={styles.floatingBackText}>‹</Text>
           </TouchableOpacity>
+          <View style={styles.floatingProgressBadge}>
+            <Text style={styles.floatingProgressText}>📖 {Math.round(scrollProgress)}% lu</Text>
+          </View>
           <TouchableOpacity
-            style={styles.topActionBtn}
-            onPress={handleToggleBookmark}
+            style={styles.floatingExitBtn}
+            onPress={() => setIsImmersive(false)}
             activeOpacity={0.7}
           >
-            <Text style={styles.topActionIcon}>{article.isBookmarked ? '🔖' : '📑'}</Text>
+            <Text style={styles.floatingExitText}>✕ Quitter immersion</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      ) : (
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
+            <Text style={styles.backBtnText}>‹ RETOUR DÉPÊCHES</Text>
+          </TouchableOpacity>
+
+          <View style={styles.topBarActions}>
+            {/* Contrôle taille de texte */}
+            <View style={styles.fontControlsGroup}>
+              <TouchableOpacity
+                style={styles.fontBtn}
+                onPress={() => setFontSizeDelta((prev) => Math.max(-2, prev - 2))}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.fontBtnText}>A-</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.fontBtn}
+                onPress={() => setFontSizeDelta((prev) => Math.min(6, prev + 2))}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.fontBtnText}>A+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Bouton Immersion */}
+            <TouchableOpacity
+              style={styles.topActionBtn}
+              onPress={() => setIsImmersive(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.topActionIcon}>📖</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.topActionBtn} onPress={handleShare} activeOpacity={0.7}>
+              <Text style={styles.topActionIcon}>📤</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.topActionBtn}
+              onPress={handleToggleBookmark}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.topActionIcon}>{article.isBookmarked ? '🔖' : '📑'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Barre de progression de lecture */}
       <View style={styles.progressBarTrack}>
@@ -250,6 +279,16 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
             const pct = (contentOffset.y / maxScroll) * 100;
             setScrollProgress(Math.min(100, Math.max(0, pct)));
           }
+
+          // Détection automatique du sens de défilement pour le mode immersion
+          const curY = contentOffset.y;
+          const diff = curY - lastScrollY.current;
+          if (curY > 200 && diff > 35 && !isImmersive) {
+            setIsImmersive(true);
+          } else if (diff < -35 && isImmersive) {
+            setIsImmersive(false);
+          }
+          lastScrollY.current = curY;
         }}
         scrollEventThrottle={16}
       >
@@ -487,6 +526,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+  },
+  floatingImmersiveBar: {
+    height: 48,
+    backgroundColor: 'rgba(2, 5, 18, 0.92)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 210, 255, 0.3)',
+  },
+  floatingBackBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#081028',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.4)',
+  },
+  floatingBackText: {
+    color: '#06b6d4',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: -2,
+  },
+  floatingProgressBadge: {
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.25)',
+  },
+  floatingProgressText: {
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  floatingExitBtn: {
+    backgroundColor: '#081028',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  floatingExitText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
   },
   backBtn: {
     paddingVertical: 6,

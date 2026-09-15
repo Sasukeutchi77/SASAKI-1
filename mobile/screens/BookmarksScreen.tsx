@@ -9,10 +9,25 @@ import {
   ActivityIndicator,
   TextInput,
   Alert,
+  Modal,
+  ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Article, User } from '../types';
 import { api } from '../services/api';
 import { ArticleCard } from '../components/ArticleCard';
+
+const OFFLINE_CACHE_KEY = '@purge_offline_bookmarks_cache';
+const BOOKMARK_FOLDERS_KEY = '@purge_bookmarks_folders';
+const CUSTOM_FOLDERS_KEY = '@purge_custom_folders';
+
+const DEFAULT_FOLDERS = [
+  'all',
+  'Enquêtes sensibles',
+  'Politique & Décrets',
+  'À lire plus tard',
+  'Analyses de fond',
+];
 
 interface BookmarksScreenProps {
   currentUser: User | null;
@@ -33,6 +48,84 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
+  // Dossiers thématiques
+  const [folders, setFolders] = useState<string[]>(DEFAULT_FOLDERS);
+  const [selectedFolder, setSelectedFolder] = useState<string>('all');
+  const [articleFolderMap, setArticleFolderMap] = useState<Record<string, string>>({});
+  const [showNewFolderModal, setShowNewFolderModal] = useState<boolean>(false);
+  const [newFolderName, setNewFolderName] = useState<string>('');
+  const [assignFolderArticle, setAssignFolderArticle] = useState<Article | null>(null);
+
+  // Cache Hors-Ligne
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
+  const [cachedCount, setCachedCount] = useState<number>(0);
+
+  // Initialisation des dossiers et du mapping sauvegardé
+  useEffect(() => {
+    loadFoldersAndMapping();
+  }, []);
+
+  const loadFoldersAndMapping = async () => {
+    try {
+      const [storedFolders, storedMapping] = await Promise.all([
+        AsyncStorage.getItem(CUSTOM_FOLDERS_KEY),
+        AsyncStorage.getItem(BOOKMARK_FOLDERS_KEY),
+      ]);
+      if (storedFolders) {
+        const parsed = JSON.parse(storedFolders);
+        if (Array.isArray(parsed)) {
+          const merged = Array.from(new Set([...DEFAULT_FOLDERS, ...parsed]));
+          setFolders(merged);
+        }
+      }
+      if (storedMapping) {
+        setArticleFolderMap(JSON.parse(storedMapping));
+      }
+    } catch (e) {
+      console.warn('Erreur chargement dossiers thématiques:', e);
+    }
+  };
+
+  const saveFolderMapping = async (newMap: Record<string, string>) => {
+    setArticleFolderMap(newMap);
+    try {
+      await AsyncStorage.setItem(BOOKMARK_FOLDERS_KEY, JSON.stringify(newMap));
+    } catch (e) {
+      console.warn('Erreur persistance mapping dossiers:', e);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    const trimmed = newFolderName.trim();
+    if (!trimmed) {
+      Alert.alert('Nom requis', 'Veuillez saisir un intitulé pour le dossier.');
+      return;
+    }
+    if (folders.includes(trimmed)) {
+      Alert.alert('Dossier existant', 'Ce dossier thématique existe déjà.');
+      return;
+    }
+
+    const updatedFolders = [...folders, trimmed];
+    setFolders(updatedFolders);
+    setSelectedFolder(trimmed);
+    setNewFolderName('');
+    setShowNewFolderModal(false);
+
+    try {
+      const customOnes = updatedFolders.filter((f) => !DEFAULT_FOLDERS.includes(f));
+      await AsyncStorage.setItem(CUSTOM_FOLDERS_KEY, JSON.stringify(customOnes));
+    } catch (e) {
+      console.warn('Erreur sauvegarde dossier:', e);
+    }
+  };
+
+  const handleAssignFolder = async (articleId: string, folder: string) => {
+    const nextMap = { ...articleFolderMap, [articleId]: folder };
+    await saveFolderMapping(nextMap);
+    setAssignFolderArticle(null);
+  };
+
   const fetchBookmarks = async (isRefresh = false) => {
     if (!currentUser) {
       setLoading(false);
@@ -46,10 +139,36 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
     try {
       const res = await api.getBookmarks();
       if (res.bookmarks) {
-        setBookmarks(res.bookmarks.map((a) => ({ ...a, isBookmarked: true })));
+        const enriched = res.bookmarks.map((a) => ({ ...a, isBookmarked: true }));
+        setBookmarks(enriched);
+        setCachedCount(enriched.length);
+        setIsOfflineMode(false);
+
+        // Sauvegarde dans le cache hors-ligne
+        await AsyncStorage.setItem(
+          OFFLINE_CACHE_KEY,
+          JSON.stringify({
+            bookmarks: enriched,
+            savedAt: new Date().toISOString(),
+          })
+        );
       }
     } catch (e) {
-      console.warn('Erreur chargement favoris:', e);
+      console.warn('Erreur chargement favoris en ligne, bascule sur cache hors-ligne:', e);
+      // Récupération depuis le cache hors-ligne local
+      try {
+        const cachedRaw = await AsyncStorage.getItem(OFFLINE_CACHE_KEY);
+        if (cachedRaw) {
+          const parsed = JSON.parse(cachedRaw);
+          if (parsed.bookmarks && Array.isArray(parsed.bookmarks)) {
+            setBookmarks(parsed.bookmarks);
+            setCachedCount(parsed.bookmarks.length);
+            setIsOfflineMode(true);
+          }
+        }
+      } catch (cacheErr) {
+        console.warn('Erreur lecture cache hors-ligne:', cacheErr);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -110,7 +229,7 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
     return bookmarks.reduce((acc, b) => acc + (b.readTime || 4), 0);
   }, [bookmarks]);
 
-  // Filtered bookmarks by search and category
+  // Filtered bookmarks by search, category and folder
   const filteredBookmarks = useMemo(() => {
     return bookmarks.filter((art) => {
       const matchesCategory =
@@ -119,6 +238,11 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
         art.categoryName === selectedCategory;
 
       if (!matchesCategory) return false;
+
+      const articleFolder = articleFolderMap[art.id] || 'all';
+      const matchesFolder = selectedFolder === 'all' || articleFolder === selectedFolder;
+      if (!matchesFolder) return false;
+
       if (!searchQuery.trim()) return true;
 
       const q = searchQuery.toLowerCase();
@@ -129,7 +253,7 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
         (art.mediaName && art.mediaName.toLowerCase().includes(q))
       );
     });
-  }, [bookmarks, searchQuery, selectedCategory]);
+  }, [bookmarks, searchQuery, selectedCategory, selectedFolder, articleFolderMap]);
 
   if (!currentUser) {
     return (
@@ -148,6 +272,15 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Bannière Hors-Ligne si applicable */}
+      {isOfflineMode && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>
+            💾 Mode Hors-Ligne actif • {cachedCount} enquête{cachedCount > 1 ? 's' : ''} disponible{cachedCount > 1 ? 's' : ''} en local
+          </Text>
+        </View>
+      )}
+
       {/* En-tête avec métriques */}
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
@@ -180,6 +313,53 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
                 <Text style={styles.clearIcon}>✕</Text>
               </TouchableOpacity>
             )}
+          </View>
+        )}
+
+        {/* Sélecteur de Dossiers Thématiques */}
+        {bookmarks.length > 0 && (
+          <View style={styles.folderSection}>
+            <View style={styles.folderHeaderRow}>
+              <Text style={styles.folderSectionTitle}>📁 DOSSIERS THÉMATIQUES</Text>
+              <TouchableOpacity
+                style={styles.newFolderBtn}
+                onPress={() => setShowNewFolderModal(true)}
+              >
+                <Text style={styles.newFolderBtnText}>+ NOUVEAU DOSSIER</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.folderScroll}
+            >
+              {folders.map((folder) => {
+                const count =
+                  folder === 'all'
+                    ? bookmarks.length
+                    : bookmarks.filter((b) => articleFolderMap[b.id] === folder).length;
+                return (
+                  <TouchableOpacity
+                    key={folder}
+                    style={[
+                      styles.folderChip,
+                      selectedFolder === folder && styles.folderChipActive,
+                    ]}
+                    onPress={() => setSelectedFolder(folder)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.folderChipText,
+                        selectedFolder === folder && styles.folderChipTextActive,
+                      ]}
+                    >
+                      {folder === 'all' ? '🗂️ Tous les favoris' : `📁 ${folder}`} ({count})
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         )}
 
@@ -218,24 +398,40 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
         <FlatList
           data={filteredBookmarks}
           keyExtractor={(item: Article) => item.id}
-          renderItem={({ item }: { item: Article }) => (
-            <ArticleCard
-              article={item}
-              onPress={() => onSelectArticle(item)}
-              onToggleBookmark={() => handleRemoveBookmark(item)}
-            />
-          )}
+          renderItem={({ item }: { item: Article }) => {
+            const currentFolder = articleFolderMap[item.id];
+            return (
+              <View style={styles.articleCardWrapper}>
+                <ArticleCard
+                  article={item}
+                  onPress={() => onSelectArticle(item)}
+                  onToggleBookmark={() => handleRemoveBookmark(item)}
+                />
+                <View style={styles.articleFolderBar}>
+                  <Text style={styles.articleFolderLabel}>
+                    {currentFolder ? `📁 Classé dans : ${currentFolder}` : '📁 Non classé dans un dossier'}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.changeFolderBtn}
+                    onPress={() => setAssignFolderArticle(item)}
+                  >
+                    <Text style={styles.changeFolderBtnText}>Changer de dossier</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          }}
           ListEmptyComponent={
             <View style={styles.centerContainer}>
               <Text style={styles.emptyIcon}>📑</Text>
               <Text style={styles.title}>
-                {searchQuery || selectedCategory !== 'all'
+                {searchQuery || selectedCategory !== 'all' || selectedFolder !== 'all'
                   ? 'Aucun résultat correspondant'
                   : 'Aucun article enregistré'}
               </Text>
               <Text style={styles.sub}>
-                {searchQuery || selectedCategory !== 'all'
-                  ? 'Modifiez votre recherche ou réinitialisez les filtres de catégorie.'
+                {searchQuery || selectedCategory !== 'all' || selectedFolder !== 'all'
+                  ? 'Modifiez vos filtres de dossier, catégorie ou terme de recherche.'
                   : "Appuyez sur l'icône de signet d'un article dans le fil pour l'ajouter à vos favoris."}
               </Text>
               <TouchableOpacity style={styles.exploreBtn} onPress={onOpenFeed} activeOpacity={0.8}>
@@ -254,6 +450,105 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
           contentContainerStyle={styles.listContent}
         />
       )}
+
+      {/* Modal Création Nouveau Dossier */}
+      <Modal
+        visible={showNewFolderModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowNewFolderModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>📁 Nouveau Dossier Thématique</Text>
+            <Text style={styles.modalSub}>
+              Organisez vos enquêtes citoyennes par sujet ou niveau de priorité.
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Ex: Dossier Révélations 2026"
+              placeholderTextColor="#64748b"
+              value={newFolderName}
+              onChangeText={setNewFolderName}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => {
+                  setNewFolderName('');
+                  setShowNewFolderModal(false);
+                }}
+              >
+                <Text style={styles.modalCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmBtn}
+                onPress={handleCreateFolder}
+              >
+                <Text style={styles.modalConfirmText}>Créer le dossier</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Affectation à un Dossier */}
+      <Modal
+        visible={Boolean(assignFolderArticle)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAssignFolderArticle(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>📁 Classer l'enquête</Text>
+            <Text style={styles.modalSub} numberOfLines={2}>
+              {assignFolderArticle?.title}
+            </Text>
+            <ScrollView style={{ maxHeight: 220, marginVertical: 8 }}>
+              {folders
+                .filter((f) => f !== 'all')
+                .map((folder) => {
+                  const isAssigned =
+                    assignFolderArticle && articleFolderMap[assignFolderArticle.id] === folder;
+                  return (
+                    <TouchableOpacity
+                      key={folder}
+                      style={[
+                        styles.folderSelectItem,
+                        isAssigned && styles.folderSelectItemActive,
+                      ]}
+                      onPress={() => {
+                        if (assignFolderArticle) {
+                          handleAssignFolder(assignFolderArticle.id, folder);
+                        }
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.folderSelectText,
+                          isAssigned && styles.folderSelectTextActive,
+                        ]}
+                      >
+                        📁 {folder}
+                      </Text>
+                      {isAssigned && <Text style={{ color: '#00d2ff', fontWeight: 'bold' }}>✓</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setAssignFolderArticle(null)}
+              >
+                <Text style={styles.modalCancelText}>Fermer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -406,6 +701,200 @@ const styles = StyleSheet.create({
   exploreBtnText: {
     color: '#00d2ff',
     fontSize: 12,
+    fontWeight: '800',
+  },
+  // Bannière Hors-Ligne
+  offlineBanner: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(6, 182, 212, 0.3)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  offlineBannerText: {
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  // Section Dossiers Thématiques
+  folderSection: {
+    marginTop: 12,
+    gap: 8,
+  },
+  folderHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  folderSectionTitle: {
+    color: '#06b6d4',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  newFolderBtn: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+  },
+  newFolderBtnText: {
+    color: '#38bdf8',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  folderScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  folderChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  folderChipActive: {
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: '#06b6d4',
+  },
+  folderChipText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  folderChipTextActive: {
+    color: '#38bdf8',
+    fontWeight: '800',
+  },
+  // Wrapper Article Card & Barre de classement
+  articleCardWrapper: {
+    marginBottom: 8,
+  },
+  articleFolderBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#070d1e',
+    marginHorizontal: 16,
+    marginTop: -8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  articleFolderLabel: {
+    color: '#94a3b8',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  changeFolderBtn: {
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  changeFolderBtnText: {
+    color: '#38bdf8',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  // Modals (Création & Affectation)
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(2, 5, 18, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalBox: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#0c142c',
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+    gap: 10,
+  },
+  modalTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  modalSub: {
+    color: '#94a3b8',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  modalInput: {
+    backgroundColor: '#060c1d',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#ffffff',
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 6,
+  },
+  modalCancelBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  modalCancelText: {
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  modalConfirmBtn: {
+    backgroundColor: '#06b6d4',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  modalConfirmText: {
+    color: '#020512',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  folderSelectItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  folderSelectItemActive: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderColor: '#06b6d4',
+  },
+  folderSelectText: {
+    color: '#e2e8f0',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  folderSelectTextActive: {
+    color: '#38bdf8',
     fontWeight: '800',
   },
 });

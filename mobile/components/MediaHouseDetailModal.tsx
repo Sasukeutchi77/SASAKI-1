@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  TextInput,
 } from 'react-native';
 import { MediaHouse, Article, User } from '../types';
 import { api } from '../services/api';
@@ -21,6 +22,14 @@ interface MediaHouseDetailModalProps {
   onClose: () => void;
   onSelectArticle?: (article: Article) => void;
   onRequireAuth?: () => void;
+}
+
+interface EditorialMember {
+  id: string;
+  name: string;
+  role: 'admin' | 'editor' | 'freelancer';
+  title?: string;
+  articlesCount?: number;
 }
 
 export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
@@ -37,13 +46,93 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'articles' | 'charter' | 'team'>('articles');
 
+  // Gestion d'équipe éditoriale (Rôles & Permissions)
+  const [teamMembers, setTeamMembers] = useState<EditorialMember[]>([]);
+  const [showAddMemberModal, setShowAddMemberModal] = useState<boolean>(false);
+  const [newMemberName, setNewMemberName] = useState<string>('');
+  const [newMemberTitle, setNewMemberTitle] = useState<string>('');
+  const [newMemberRole, setNewMemberRole] = useState<'admin' | 'editor' | 'freelancer'>('editor');
+
+  const isHouseAdmin = Boolean(
+    currentUser && house && (currentUser.id === house.ownerId || currentUser.role === 'admin')
+  );
+
   useEffect(() => {
     if (house) {
       setIsFollowing(Boolean(house.isFollowing));
       setFollowersCount(house.followersCount || 0);
       loadArticles(house.id);
+
+      // Équipe éditoriale initiale
+      const baseTeam: EditorialMember[] = [
+        {
+          id: house.ownerId || 'owner-1',
+          name: house.ownerName || 'Directeur de Rédaction',
+          role: 'admin',
+          title: 'Directeur de la Publication & Fondateur',
+          articlesCount: 16,
+        },
+        {
+          id: 'editor-2',
+          name: 'Alexandre Renard',
+          role: 'editor',
+          title: 'Grand Reporter d’Investigation',
+          articlesCount: 9,
+        },
+        {
+          id: 'freelancer-3',
+          name: 'Camille Vane',
+          role: 'freelancer',
+          title: 'Correspondant Étranger & Pigiste',
+          articlesCount: 4,
+        },
+      ];
+      setTeamMembers(baseTeam);
     }
   }, [house]);
+
+  const handleChangeRole = (memberId: string, nextRole: 'admin' | 'editor' | 'freelancer') => {
+    setTeamMembers((prev) =>
+      prev.map((m) => (m.id === memberId ? { ...m, role: nextRole } : m))
+    );
+    Alert.alert('Rôle mis à jour', `Le statut éditorial du membre a été actualisé.`);
+  };
+
+  const handleAddMember = () => {
+    if (!newMemberName.trim()) {
+      Alert.alert('Nom requis', 'Veuillez saisir le nom ou pseudonyme du membre.');
+      return;
+    }
+    const newMember: EditorialMember = {
+      id: 'member-' + Date.now(),
+      name: newMemberName.trim(),
+      role: newMemberRole,
+      title: newMemberTitle.trim() || (newMemberRole === 'admin' ? 'Administrateur' : newMemberRole === 'editor' ? 'Rédacteur' : 'Pigiste'),
+      articlesCount: 0,
+    };
+    setTeamMembers((prev) => [...prev, newMember]);
+    setNewMemberName('');
+    setNewMemberTitle('');
+    setShowAddMemberModal(false);
+    Alert.alert('Recrutement réussi', `${newMember.name} a été intégré(e) à la rédaction en tant que ${newMemberRole === 'admin' ? 'Administrateur' : newMemberRole === 'editor' ? 'Rédacteur' : 'Pigiste'}.`);
+  };
+
+  const handleRemoveMember = (memberId: string, memberName: string) => {
+    Alert.alert(
+      'Retirer de la rédaction',
+      `Êtes-vous certain de vouloir retirer ${memberName} de la maison de presse ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Confirmer le retrait',
+          style: 'destructive',
+          onPress: () => {
+            setTeamMembers((prev) => prev.filter((m) => m.id !== memberId));
+          },
+        },
+      ]
+    );
+  };
 
   const loadArticles = async (houseId: string) => {
     setLoadingArticles(true);
@@ -212,6 +301,16 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                   📜 Charte & Bureau
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalTab, activeTab === 'team' && styles.modalTabActive]}
+                onPress={() => setActiveTab('team')}
+              >
+                <Text
+                  style={[styles.modalTabText, activeTab === 'team' && styles.modalTabTextActive]}
+                >
+                  👥 Rédaction ({teamMembers.length})
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Tab: Dépêches */}
@@ -315,8 +414,207 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                 </View>
               </View>
             )}
+
+            {/* Tab: Équipe Éditoriale & Permissions */}
+            {activeTab === 'team' && (
+              <View style={styles.teamSection}>
+                <View style={styles.teamHeaderRow}>
+                  <View>
+                    <Text style={styles.teamSectionTitle}>RÉSEAU ÉDITORIAL & COLLABORATEURS</Text>
+                    <Text style={styles.teamSectionSub}>
+                      {teamMembers.length} plume{teamMembers.length > 1 ? 's' : ''} agréée{teamMembers.length > 1 ? 's' : ''} sous contrat
+                    </Text>
+                  </View>
+                  {isHouseAdmin && (
+                    <TouchableOpacity
+                      style={styles.addMemberBtn}
+                      onPress={() => setShowAddMemberModal(true)}
+                    >
+                      <Text style={styles.addMemberBtnText}>+ RECRUTER</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Légende Rôles & Permissions */}
+                <View style={styles.rolesLegendCard}>
+                  <Text style={styles.rolesLegendTitle}>HIÉRARCHIE & POUVOIRS ÉDITORIAUX</Text>
+                  <View style={styles.legendRow}>
+                    <Text style={styles.legendBadgeAdmin}>👑 Administrateur</Text>
+                    <Text style={styles.legendDesc}>Direction, recrutement & publication sans visa</Text>
+                  </View>
+                  <View style={styles.legendRow}>
+                    <Text style={styles.legendBadgeEditor}>✍️ Rédacteur</Text>
+                    <Text style={styles.legendDesc}>Enquêtes d'investigation officielles avec visa direct</Text>
+                  </View>
+                  <View style={styles.legendRow}>
+                    <Text style={styles.legendBadgeFreelancer}>📋 Pigiste</Text>
+                    <Text style={styles.legendDesc}>Dépêches indépendantes soumises à validation préalable</Text>
+                  </View>
+                </View>
+
+                {/* Liste des membres */}
+                <View style={styles.membersList}>
+                  {teamMembers.map((member) => {
+                    const isOwner = member.id === house.ownerId;
+                    return (
+                      <View key={member.id} style={styles.memberCard}>
+                        <View style={styles.memberInfoRow}>
+                          <View style={styles.memberAvatar}>
+                            <Text style={styles.memberAvatarInitial}>
+                              {member.name.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <View style={styles.memberDetails}>
+                            <View style={styles.memberNameLine}>
+                              <Text style={styles.memberName}>{member.name}</Text>
+                              <View
+                                style={[
+                                  styles.roleBadge,
+                                  member.role === 'admin' && styles.roleBadgeAdmin,
+                                  member.role === 'editor' && styles.roleBadgeEditor,
+                                  member.role === 'freelancer' && styles.roleBadgeFreelancer,
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.roleBadgeText,
+                                    member.role === 'admin' && styles.roleBadgeTextAdmin,
+                                    member.role === 'editor' && styles.roleBadgeTextEditor,
+                                    member.role === 'freelancer' && styles.roleBadgeTextFreelancer,
+                                  ]}
+                                >
+                                  {member.role === 'admin'
+                                    ? '👑 Administrateur'
+                                    : member.role === 'editor'
+                                    ? '✍️ Rédacteur'
+                                    : '📋 Pigiste'}
+                                </Text>
+                              </View>
+                            </View>
+                            <Text style={styles.memberTitle}>{member.title || 'Journaliste'}</Text>
+                            {member.articlesCount !== undefined && (
+                              <Text style={styles.memberStats}>
+                                {member.articlesCount} dépêche{member.articlesCount > 1 ? 's' : ''} signée{member.articlesCount > 1 ? 's' : ''}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Contrôles d'administration des rôles */}
+                        {isHouseAdmin && !isOwner && (
+                          <View style={styles.adminControlsRow}>
+                            <Text style={styles.changeRoleLabel}>Rôle :</Text>
+                            <View style={styles.rolePickerRow}>
+                              {(['admin', 'editor', 'freelancer'] as const).map((r) => (
+                                <TouchableOpacity
+                                  key={r}
+                                  style={[
+                                    styles.roleOptionBtn,
+                                    member.role === r && styles.roleOptionBtnActive,
+                                  ]}
+                                  onPress={() => handleChangeRole(member.id, r)}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.roleOptionBtnText,
+                                      member.role === r && styles.roleOptionBtnTextActive,
+                                    ]}
+                                  >
+                                    {r === 'admin' ? 'Admin' : r === 'editor' ? 'Rédacteur' : 'Pigiste'}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                            <TouchableOpacity
+                              style={styles.removeMemberBtn}
+                              onPress={() => handleRemoveMember(member.id, member.name)}
+                            >
+                              <Text style={styles.removeMemberBtnText}>Retirer</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
           </View>
         </ScrollView>
+
+        {/* Modal Recrutement Membre */}
+        <Modal
+          visible={showAddMemberModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowAddMemberModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.addMemberModalContent}>
+              <Text style={styles.addMemberModalTitle}>🏛️ Recruter un Journaliste</Text>
+              <Text style={styles.addMemberModalSub}>
+                Attribuez une accréditation de presse et définissez le niveau de permissions au sein de la rédaction.
+              </Text>
+
+              <Text style={styles.inputFieldLabel}>Nom / Pseudonyme de la plume</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Ex: Minato Namikaze"
+                placeholderTextColor="#64748b"
+                value={newMemberName}
+                onChangeText={setNewMemberName}
+              />
+
+              <Text style={styles.inputFieldLabel}>Titre officiel ou spécialité</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Ex: Envoyé Spécial Arènes"
+                placeholderTextColor="#64748b"
+                value={newMemberTitle}
+                onChangeText={setNewMemberTitle}
+              />
+
+              <Text style={styles.inputFieldLabel}>Rôle & Permissions</Text>
+              <View style={styles.roleSelectionRow}>
+                {[
+                  { key: 'admin', label: '👑 Admin' },
+                  { key: 'editor', label: '✍️ Rédacteur' },
+                  { key: 'freelancer', label: '📋 Pigiste' },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.roleSelectChip,
+                      newMemberRole === item.key && styles.roleSelectChipActive,
+                    ]}
+                    onPress={() => setNewMemberRole(item.key as any)}
+                  >
+                    <Text
+                      style={[
+                        styles.roleSelectChipText,
+                        newMemberRole === item.key && styles.roleSelectChipTextActive,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalActionsRow}>
+                <TouchableOpacity
+                  style={styles.cancelModalBtn}
+                  onPress={() => setShowAddMemberModal(false)}
+                >
+                  <Text style={styles.cancelModalBtnText}>Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.confirmModalBtn} onPress={handleAddMember}>
+                  <Text style={styles.confirmModalBtnText}>Intégrer à l'Équipe</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </Modal>
   );
@@ -693,5 +991,313 @@ const styles = StyleSheet.create({
     color: '#06b6d4',
     fontSize: 11,
     fontWeight: 'bold',
+  },
+  // Style Équipe Éditoriale
+  teamSection: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 14,
+  },
+  teamHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  teamSectionTitle: {
+    color: '#06b6d4',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  teamSectionSub: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  addMemberBtn: {
+    backgroundColor: '#06b6d4',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  addMemberBtnText: {
+    color: '#020512',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  rolesLegendCard: {
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 6,
+  },
+  rolesLegendTitle: {
+    color: '#e2e8f0',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendBadgeAdmin: {
+    color: '#f59e0b',
+    fontSize: 10,
+    fontWeight: '700',
+    width: 100,
+  },
+  legendBadgeEditor: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '700',
+    width: 100,
+  },
+  legendBadgeFreelancer: {
+    color: '#10b981',
+    fontSize: 10,
+    fontWeight: '700',
+    width: 100,
+  },
+  legendDesc: {
+    color: '#94a3b8',
+    fontSize: 10,
+    flex: 1,
+  },
+  membersList: {
+    gap: 10,
+  },
+  memberCard: {
+    backgroundColor: '#0c142c',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  memberInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderWidth: 1,
+    borderColor: '#06b6d4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarInitial: {
+    color: '#38bdf8',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  memberDetails: {
+    flex: 1,
+  },
+  memberNameLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  memberName: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  roleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  roleBadgeAdmin: {
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderColor: '#f59e0b',
+  },
+  roleBadgeEditor: {
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    borderColor: '#38bdf8',
+  },
+  roleBadgeFreelancer: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderColor: '#10b981',
+  },
+  roleBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  roleBadgeTextAdmin: {
+    color: '#f59e0b',
+  },
+  roleBadgeTextEditor: {
+    color: '#38bdf8',
+  },
+  roleBadgeTextFreelancer: {
+    color: '#10b981',
+  },
+  memberTitle: {
+    color: '#94a3b8',
+    fontSize: 11,
+  },
+  memberStats: {
+    color: '#64748b',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  adminControlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    paddingTop: 8,
+    marginTop: 8,
+  },
+  changeRoleLabel: {
+    color: '#64748b',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  rolePickerRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  roleOptionBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  roleOptionBtnActive: {
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: '#06b6d4',
+  },
+  roleOptionBtnText: {
+    color: '#64748b',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  roleOptionBtnTextActive: {
+    color: '#38bdf8',
+    fontWeight: '800',
+  },
+  removeMemberBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  removeMemberBtnText: {
+    color: '#ef4444',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  // Modal Recrutement
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(2, 5, 18, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  addMemberModalContent: {
+    width: '100%',
+    backgroundColor: '#0c142c',
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+    gap: 10,
+  },
+  addMemberModalTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  addMemberModalSub: {
+    color: '#94a3b8',
+    fontSize: 11,
+    lineHeight: 16,
+    marginBottom: 4,
+  },
+  inputFieldLabel: {
+    color: '#cbd5e1',
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalInput: {
+    backgroundColor: '#060c1d',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#ffffff',
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  roleSelectionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 2,
+  },
+  roleSelectChip: {
+    flex: 1,
+    backgroundColor: '#060c1d',
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+  },
+  roleSelectChipActive: {
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: '#06b6d4',
+  },
+  roleSelectChipText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  roleSelectChipTextActive: {
+    color: '#38bdf8',
+    fontWeight: '800',
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 8,
+  },
+  cancelModalBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  cancelModalBtnText: {
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  confirmModalBtn: {
+    backgroundColor: '#06b6d4',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  confirmModalBtnText: {
+    color: '#020512',
+    fontSize: 12,
+    fontWeight: '900',
   },
 });

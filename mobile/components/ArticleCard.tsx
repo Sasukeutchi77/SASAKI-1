@@ -8,6 +8,7 @@ interface ArticleCardProps {
   onToggleLike?: () => void;
   onToggleBookmark?: () => void;
   onPressHouse?: (houseName: string, houseId?: string) => void;
+  highlightQuery?: string;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
@@ -16,11 +17,46 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   onToggleLike,
   onToggleBookmark,
   onPressHouse,
+  highlightQuery,
 }) => {
   const defaultCover =
     'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop&q=80';
   const coverUri = article.coverImage || article.coverMedia?.url || defaultCover;
   const trustScore = article.trustScore || 96;
+
+  const renderHighlightedText = (text: string, query?: string, isTitle = false) => {
+    const q = query?.trim();
+    if (!q || !text) {
+      return (
+        <Text style={isTitle ? styles.title : styles.summary} numberOfLines={2}>
+          {text}
+        </Text>
+      );
+    }
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    const parts = text.split(regex);
+
+    return (
+      <Text style={isTitle ? styles.title : styles.summary} numberOfLines={2}>
+        {parts.map((part, index) =>
+          regex.test(part) ? (
+            <Text
+              key={index}
+              style={[
+                isTitle ? styles.title : styles.summary,
+                styles.highlightedChunk,
+              ]}
+            >
+              {part}
+            </Text>
+          ) : (
+            <Text key={index}>{part}</Text>
+          )
+        )}
+      </Text>
+    );
+  };
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
@@ -56,15 +92,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
       {/* Contenu Texte */}
       <View style={styles.contentWrapper}>
-        <Text style={styles.title} numberOfLines={2}>
-          {article.title}
-        </Text>
+        {renderHighlightedText(article.title, highlightQuery, true)}
 
-        {article.summary ? (
-          <Text style={styles.summary} numberOfLines={2}>
-            {article.summary}
-          </Text>
-        ) : null}
+        {article.summary
+          ? renderHighlightedText(article.summary, highlightQuery, false)
+          : null}
 
         {/* Tags thématiques */}
         {article.tags && article.tags.length > 0 && (
@@ -254,6 +286,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 8,
+  },
+  highlightedChunk: {
+    backgroundColor: 'rgba(6, 182, 212, 0.25)',
+    color: '#38bdf8',
+    fontWeight: '900',
   },
   tagsRow: {
     flexDirection: 'row',

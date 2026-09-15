@@ -57,6 +57,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   });
   const [userVoted, setUserVoted] = useState<string | null>(null);
 
+  // Filtre temporel & Pagination infinie
+  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
   const fetchCategories = async () => {
     try {
       const [catRes, houseRes] = await Promise.all([
@@ -76,8 +82,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const fetchArticles = useCallback(
     async (isRefresh = false) => {
-      if (isRefresh) setRefreshing(true);
-      else if (articles.length === 0) setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+        setPage(1);
+        setHasMore(true);
+      } else if (articles.length === 0) {
+        setLoading(true);
+      }
       setError(null);
 
       try {
@@ -89,6 +100,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         if (res.articles && res.articles.length > 0) {
           setArticles(res.articles);
+          setHasMore(res.articles.length >= 10);
         }
       } catch (err: any) {
         console.warn('[HomeScreen] Erreur chargement articles, conservation des dépêches en cache:', err);
@@ -99,6 +111,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     },
     [feedType, selectedCategoryId, articles.length]
   );
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore || feedType === 'houses') return;
+    setLoadingMore(true);
+    try {
+      const res = await api.getArticles({
+        feed: feedType,
+        category: selectedCategoryId || undefined,
+        limit: 15,
+        page: page + 1,
+      });
+
+      if (res.articles && res.articles.length > 0) {
+        setArticles((prev) => {
+          const existingIds = new Set(prev.map((a) => a.id));
+          const fresh = res.articles.filter((a) => !existingIds.has(a.id));
+          if (fresh.length === 0) {
+            setHasMore(false);
+            return prev;
+          }
+          return [...prev, ...fresh];
+        });
+        setPage((p) => p + 1);
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.warn('[HomeScreen] Erreur chargement pagination:', err);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -160,9 +205,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     });
   };
 
-  // Article à la Une (Premier article du flux sélectionné)
-  const heroArticle = articles.length > 0 ? articles[0] : null;
-  const feedArticles = articles.length > 1 ? articles.slice(1) : [];
+  // Filtrage temporel des articles
+  const filteredArticles = useMemo(() => {
+    if (timeFilter === 'all') return articles;
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    return articles.filter((a) => {
+      const artTime = new Date(a.createdAt).getTime();
+      const diff = now - artTime;
+      if (timeFilter === 'today') return diff <= oneDay * 1.5;
+      if (timeFilter === 'week') return diff <= oneDay * 7;
+      if (timeFilter === 'month') return diff <= oneDay * 30;
+      return true;
+    });
+  }, [articles, timeFilter]);
+
+  // Article à la Une (Premier article du flux filtré)
+  const heroArticle = filteredArticles.length > 0 ? filteredArticles[0] : null;
+  const feedArticles = filteredArticles.length > 1 ? filteredArticles.slice(1) : [];
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
@@ -180,6 +240,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           Décret officiel n°44 : Règles Sanctuaires et Délimitation des Arènes
         </Text>
         <Text style={styles.flashArrow}>›</Text>
+      </TouchableOpacity>
+
+      {/* 1.1 Bannière Alerte "Dernière Minute" (Breaking News) */}
+      <TouchableOpacity
+        style={styles.breakingBanner}
+        activeOpacity={0.88}
+        onPress={() => heroArticle && onSelectArticle(heroArticle)}
+      >
+        <View style={styles.breakingHeaderRow}>
+          <View style={styles.breakingBadge}>
+            <View style={styles.breakingPulseDot} />
+            <Text style={styles.breakingBadgeText}>🚨 DERNIÈRE MINUTE</Text>
+          </View>
+          <Text style={styles.breakingTimeText}>Enquête Prioritaire</Text>
+        </View>
+        <Text style={styles.breakingHeadline} numberOfLines={2}>
+          {heroArticle?.title || 'Révélations sur les arènes et transferts clandestins d’actifs'}
+        </Text>
+        <View style={styles.breakingFooterRow}>
+          <Text style={styles.breakingSourceText}>
+            🏛️ {heroArticle?.mediaName || 'PURGE Rédaction'} • Fiabilité {heroArticle?.trustScore || 98}%
+          </Text>
+          <Text style={styles.breakingActionText}>Consulter l’enquête ›</Text>
+        </View>
       </TouchableOpacity>
 
       {/* 2. Article Vedette / Hero "À LA UNE" */}
@@ -305,6 +389,35 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         selectedCategoryId={selectedCategoryId}
         onSelectCategory={setSelectedCategoryId}
       />
+
+      {/* 4.1 Sélecteur Temporel */}
+      <View style={styles.timeFilterContainer}>
+        {[
+          { key: 'all', label: 'Tout le flux ⏱️' },
+          { key: 'today', label: "Aujourd'hui ⚡" },
+          { key: 'week', label: 'Cette semaine 📅' },
+          { key: 'month', label: 'Ce mois-ci 🗓️' },
+        ].map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            style={[
+              styles.timeFilterPill,
+              timeFilter === item.key && styles.activeTimeFilterPill,
+            ]}
+            onPress={() => setTimeFilter(item.key as any)}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.timeFilterPillText,
+                timeFilter === item.key && styles.activeTimeFilterPillText,
+              ]}
+            >
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {/* 5. Carte Système de Confiance (Parité avec la version Web) */}
       <View style={styles.trustCard}>
@@ -483,6 +596,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </View>
             ) : undefined
           }
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.listFooterLoading}>
+                <ActivityIndicator size="small" color="#00d2ff" />
+                <Text style={styles.listFooterText}>Chargement des dépêches suivantes...</Text>
+              </View>
+            ) : feedArticles.length > 0 && !hasMore ? (
+              <View style={styles.listFooterFinished}>
+                <Text style={styles.listFooterFinishedText}>
+                  🛡️ Toutes les dépêches certifiées ont été consultées
+                </Text>
+              </View>
+            ) : null
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.4}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -559,6 +688,125 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 6,
+  },
+  // Breaking News Urgence
+  breakingBanner: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
+    backgroundColor: '#0a0d1f',
+    borderWidth: 1.5,
+    borderColor: '#ef4444',
+    borderRadius: 12,
+    padding: 12,
+  },
+  breakingHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  breakingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  breakingPulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ffffff',
+    marginRight: 5,
+  },
+  breakingBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  breakingTimeText: {
+    color: '#f87171',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  breakingHeadline: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  breakingFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(239, 68, 68, 0.2)',
+    paddingTop: 8,
+  },
+  breakingSourceText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  breakingActionText: {
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  // Sélecteur Temporel
+  timeFilterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginVertical: 8,
+    gap: 8,
+  },
+  timeFilterPill: {
+    backgroundColor: '#081028',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  activeTimeFilterPill: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderColor: '#06b6d4',
+  },
+  timeFilterPillText: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  activeTimeFilterPillText: {
+    color: '#38bdf8',
+    fontWeight: '800',
+  },
+  // Pagination footer
+  listFooterLoading: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 18,
+    gap: 8,
+  },
+  listFooterText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  listFooterFinished: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  listFooterFinishedText: {
+    color: '#475569',
+    fontSize: 11,
+    fontWeight: '600',
   },
   heroCard: {
     marginHorizontal: 16,
