@@ -348,10 +348,12 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                             {art.categoryName || 'INVESTIGATION'}
                           </Text>
                           <Text style={styles.miniDate}>
-                            {new Date(art.createdAt).toLocaleDateString('fr-FR', {
-                              day: 'numeric',
-                              month: 'short',
-                            })}
+                            {art.createdAt
+                              ? new Date(art.createdAt).toLocaleDateString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                })
+                              : 'Récent'}
                           </Text>
                         </View>
                         <Text style={styles.miniTitle} numberOfLines={2}>

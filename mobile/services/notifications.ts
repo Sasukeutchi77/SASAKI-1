@@ -1,14 +1,18 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-// Configuration du comportement d'affichage des notifications en avant-plan
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Configuration sécurisée du comportement d'affichage des notifications en avant-plan
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+} catch (e) {
+  console.warn('[Notifications] setNotificationHandler non disponible:', e);
+}
 
 export const NOTIFICATION_CHANNEL_ID = 'purge-direct-channel';
 
@@ -101,7 +105,8 @@ export async function triggerLocalNotification(options: {
         sound: true,
         vibrate: [0, 250, 250, 250],
         color: '#06b6d4',
-      },
+        ...(Platform.OS === 'android' ? { channelId: NOTIFICATION_CHANNEL_ID } : {}),
+      } as any,
       trigger: null, // Immédiatement
     });
 
@@ -127,12 +132,22 @@ export async function triggerBreakingNewsNotification(articleTitle: string, cate
  * Écouteur pour les notifications reçues pendant que l'application est ouverte
  */
 export function addNotificationReceivedListener(callback: (notification: any) => void) {
-  return Notifications.addNotificationReceivedListener(callback);
+  try {
+    return Notifications.addNotificationReceivedListener(callback);
+  } catch (err) {
+    console.warn('[Notifications] addNotificationReceivedListener non disponible:', err);
+    return { remove: () => {} };
+  }
 }
 
 /**
  * Écouteur pour le clic / tap sur une notification par l'utilisateur
  */
 export function addNotificationResponseReceivedListener(callback: (response: any) => void) {
-  return Notifications.addNotificationResponseReceivedListener(callback);
+  try {
+    return Notifications.addNotificationResponseReceivedListener(callback);
+  } catch (err) {
+    console.warn('[Notifications] addNotificationResponseReceivedListener non disponible:', err);
+    return { remove: () => {} };
+  }
 }

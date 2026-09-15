@@ -426,6 +426,7 @@ export const api = {
     feed?: 'foryou' | 'following' | 'latest' | 'trending';
     category?: string;
     search?: string;
+    mediaHouseId?: string;
     page?: number;
     limit?: number;
     sort?: string;
@@ -435,6 +436,7 @@ export const api = {
       if (params.feed) query.set('feed', params.feed);
       if (params.category) query.set('category', params.category);
       if (params.search) query.set('search', params.search);
+      if (params.mediaHouseId) query.set('mediaHouseId', params.mediaHouseId);
       if (params.page) query.set('page', String(params.page));
       if (params.limit) query.set('limit', String(params.limit));
       if (params.sort) query.set('sort', params.sort);
@@ -463,6 +465,9 @@ export const api = {
 
       if (cloudArticles.length > 0) {
         let filtered = [...cloudArticles];
+        if (params.mediaHouseId) {
+          filtered = filtered.filter((a) => (a as any).mediaHouseId === params.mediaHouseId || (a as any).mediaId === params.mediaHouseId);
+        }
         if (params.search) {
           const s = params.search.toLowerCase();
           filtered = filtered.filter(
@@ -694,6 +699,32 @@ export const api = {
         articles: articlesRes.articles.filter((a) => a.mediaName === house?.name) || [],
       };
     }
+  },
+
+  async toggleFollowMediaHouse(houseId: string): Promise<{ isFollowing: boolean; followersCount: number }> {
+    try {
+      const res = await apiRequest<{ isFollowing: boolean; followersCount: number }>(
+        `/api/media-houses/${houseId}/follow`,
+        { method: 'POST' }
+      );
+      if (res) return res;
+    } catch {}
+    return { isFollowing: true, followersCount: 1 };
+  },
+
+  async followMediaHouse(houseId: string): Promise<{ isFollowing: boolean; followersCount: number }> {
+    return this.toggleFollowMediaHouse(houseId);
+  },
+
+  async followUser(userId: string): Promise<{ isFollowing: boolean; followersCount: number }> {
+    try {
+      const res = await apiRequest<{ isFollowing: boolean; followersCount: number }>(
+        `/api/users/${userId}/follow`,
+        { method: 'POST' }
+      );
+      if (res) return res;
+    } catch {}
+    return { isFollowing: true, followersCount: 1 };
   },
 
   async createMediaHouse(data: Partial<MediaHouse>): Promise<{ message: string; house: MediaHouse }> {

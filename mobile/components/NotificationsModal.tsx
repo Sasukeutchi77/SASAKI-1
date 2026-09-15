@@ -141,7 +141,9 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
             <View style={styles.headerRightActions}>
               <Text style={styles.timeText}>
-                {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {item.createdAt
+                  ? new Date(item.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                  : 'Récent'}
               </Text>
 
               {/* Bouton de suppression rapide en tête de carte */}

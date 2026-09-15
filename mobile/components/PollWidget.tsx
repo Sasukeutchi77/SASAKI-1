@@ -33,7 +33,7 @@ export const PollWidget: React.FC<PollWidgetProps> = ({ poll, onVote }) => {
       <Text style={styles.question}>{poll.question}</Text>
 
       <View style={styles.optionsList}>
-        {poll.options.map((opt) => {
+        {(poll.options || []).map((opt) => {
           const isSelected = poll.userVotedOptionId === opt.id;
           const percentage = total > 0 ? Math.round((opt.votesCount / total) * 100) : 0;
 

@@ -867,7 +867,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   </View>
                   <View style={styles.requestDateBadge}>
                     <Text style={styles.requestDateText}>
-                      {new Date(req.createdAt).toLocaleDateString('fr-FR')}
+                      {req.createdAt ? new Date(req.createdAt).toLocaleDateString('fr-FR') : 'Récent'}
                     </Text>
                   </View>
                 </View>

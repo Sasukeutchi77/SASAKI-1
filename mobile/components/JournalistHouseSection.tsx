@@ -341,7 +341,7 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
                     </Text>
                     <View style={styles.articleItemMetaRow}>
                       <Text style={styles.articleItemDate}>
-                        {new Date(art.createdAt).toLocaleDateString('fr-FR')}
+                        {art.createdAt ? new Date(art.createdAt).toLocaleDateString('fr-FR') : 'Récent'}
                       </Text>
                       <Text style={styles.articleItemStats}>
                         👁️ {art.viewsCount || 0} • ❤️ {art.likesCount || 0}

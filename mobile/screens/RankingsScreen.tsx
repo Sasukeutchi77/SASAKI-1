@@ -127,8 +127,8 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
     const q = searchQuery.toLowerCase();
     return (
       h.name.toLowerCase().includes(q) ||
-      h.bio?.toLowerCase().includes(q) ||
-      h.specialties?.some((s) => s.toLowerCase().includes(q))
+      ((h as any).bio ? (h as any).bio.toLowerCase().includes(q) : false) ||
+      ((h as any).specialties ? (h as any).specialties.some((s: string) => s.toLowerCase().includes(q)) : false)
     );
   });
 
@@ -137,8 +137,8 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
     const q = searchQuery.toLowerCase();
     return (
       j.name.toLowerCase().includes(q) ||
-      j.mediaName?.toLowerCase().includes(q) ||
-      j.bio?.toLowerCase().includes(q)
+      ((j as any).mediaName ? (j as any).mediaName.toLowerCase().includes(q) : false) ||
+      ((j as any).bio ? (j as any).bio.toLowerCase().includes(q) : false)
     );
   });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -92,7 +92,8 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
 
   const handleToggleLike = async () => {
     const wasLiked = Boolean(article.isLiked);
-    const newLikesCount = wasLiked ? Math.max(0, article.likesCount - 1) : article.likesCount + 1;
+    const currentLikes = article.likesCount || 0;
+    const newLikesCount = wasLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1;
 
     setArticle((prev) => ({
       ...prev,
@@ -106,7 +107,7 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
       setArticle((prev) => ({
         ...prev,
         isLiked: wasLiked,
-        likesCount: article.likesCount,
+        likesCount: currentLikes,
       }));
       if (onOpenAuth) onOpenAuth();
     }
@@ -175,7 +176,8 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
       }
       // Fallback search by name
       const housesRes = await api.getMediaHouses();
-      const match = housesRes.mediaHouses.find(
+      const list = housesRes?.mediaHouses || [];
+      const match = list.find(
         (h) => h.id === article.mediaId || (article.mediaName && h.name.toLowerCase() === article.mediaName.toLowerCase())
       );
       if (match) {
@@ -272,7 +274,7 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        onScroll={(e) => {
+        onScroll={(e: any) => {
           const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
           const maxScroll = contentSize.height - layoutMeasurement.height;
           if (maxScroll > 0) {
@@ -329,11 +331,13 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
               </View>
               <Text style={styles.metaText}>
                 {article.mediaName || 'PURGE Rédaction Centrale'} •{' '}
-                {new Date(article.createdAt).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}{' '}
+                {article.createdAt
+                  ? new Date(article.createdAt).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : 'Date récente'}{' '}
                 • ⏱️ ~{estimatedReadTime} min
               </Text>
             </View>

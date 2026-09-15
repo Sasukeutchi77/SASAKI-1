@@ -744,7 +744,7 @@ export async function fetchVerificationRequestsFromFirestore(statusFilter?: stri
     const snap = await getDocs(q);
     const list: VerificationRequest[] = [];
     snap.forEach((d) => list.push(d.data() as VerificationRequest));
-    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    list.sort((a, b) => (new Date(b.createdAt || 0).getTime() || 0) - (new Date(a.createdAt || 0).getTime() || 0));
     return list;
   } catch (err) {
     console.warn('[Firebase] Erreur chargement demandes accréditation:', err);
@@ -830,7 +830,7 @@ export async function fetchArticlesFromCloud(options: {
     });
 
     // Tri par date décroissante
-    articles.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    articles.sort((a, b) => (new Date(b.createdAt || 0).getTime() || 0) - (new Date(a.createdAt || 0).getTime() || 0));
     return articles;
   } catch (err) {
     console.warn('[Firebase Mobile] Erreur chargement cloud_articles:', err);
@@ -927,7 +927,7 @@ export async function fetchCommentsFromCloud(articleId: string): Promise<Comment
     const snap = await getDocs(q);
     const comments: Comment[] = [];
     snap.forEach((d) => comments.push(d.data() as Comment));
-    comments.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    comments.sort((a, b) => (new Date(a.createdAt || 0).getTime() || 0) - (new Date(b.createdAt || 0).getTime() || 0));
     return comments;
   } catch (err) {
     console.warn('[Firebase Mobile] Erreur chargement cloud_comments:', err);
@@ -980,7 +980,7 @@ export async function fetchNotificationsFromCloud(userId: string): Promise<Notif
     const snap = await getDocs(q);
     const notifs: Notification[] = [];
     snap.forEach((d) => notifs.push(d.data() as Notification));
-    notifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    notifs.sort((a, b) => (new Date(b.createdAt || 0).getTime() || 0) - (new Date(a.createdAt || 0).getTime() || 0));
     return notifs;
   } catch (err) {
     console.warn('[Firebase Mobile] Erreur fetchNotificationsFromCloud:', err);

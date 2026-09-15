@@ -440,10 +440,12 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                               </Text>
                             </View>
                             <Text style={styles.articleDate}>
-                              {new Date(article.createdAt).toLocaleDateString('fr-FR', {
-                                day: 'numeric',
-                                month: 'short',
-                              })}
+                              {article.createdAt
+                                ? new Date(article.createdAt).toLocaleDateString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                  })
+                                : 'Récent'}
                             </Text>
                           </View>
 

@@ -5,10 +5,11 @@
 
 let asyncStorageModule: any = null;
 try {
-  // Tentative de chargement dynamique d'AsyncStorage
-  asyncStorageModule = require('@react-native-async-storage/async-storage').default;
+  // Tentative de chargement sécurisé d'AsyncStorage (compatible ESM et CommonJS)
+  const mod = require('@react-native-async-storage/async-storage');
+  asyncStorageModule = mod?.default || mod;
 } catch {
-  // Fallback silencieux si non encore initialisé
+  // Fallback silencieux si non disponible
   asyncStorageModule = null;
 }
 

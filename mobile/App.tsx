@@ -1,7 +1,60 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, BackHandler } from 'react-native';
+import React, { useState, useEffect, useCallback, Component, ErrorInfo, ReactNode } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, BackHandler } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[PURGE Crash Guard]', error, errorInfo);
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <SafeAreaView style={styles.errorContainer}>
+          <StatusBar style="light" backgroundColor="#020512" />
+          <View style={styles.errorContent}>
+            <Text style={styles.errorLogo}>PURGE</Text>
+            <Text style={styles.errorTitle}>Interruption Temporaire</Text>
+            <Text style={styles.errorDescription}>
+              L'application a rencontré un imprévu mais vos données sont protégées.
+            </Text>
+            <TouchableOpacity
+              style={styles.errorButton}
+              onPress={this.handleReset}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.errorButtonText}>Relancer PURGE</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 import { NavigationTab, Article, User, isJournalistRole, isAdminRole } from './types';
 import { api } from './services/api';
@@ -79,8 +132,10 @@ export default function App() {
     });
 
     return () => {
-      receivedSub.remove();
-      responseSub.remove();
+      try {
+        receivedSub?.remove?.();
+        responseSub?.remove?.();
+      } catch {}
     };
   }, []);
 
@@ -132,7 +187,8 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <StatusBar style="light" backgroundColor="#020512" />
 
@@ -272,6 +328,7 @@ export default function App() {
         )}
       </SafeAreaView>
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 
@@ -286,5 +343,48 @@ const styles = StyleSheet.create({
   },
   screenBody: {
     flex: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#020512',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  errorContent: {
+    alignItems: 'center',
+    maxWidth: 360,
+  },
+  errorLogo: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#06b6d4',
+    letterSpacing: 4,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorDescription: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  errorButton: {
+    backgroundColor: '#06b6d4',
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 8,
+  },
+  errorButtonText: {
+    color: '#020512',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

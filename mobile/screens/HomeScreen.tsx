@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -93,7 +93,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       try {
         const res = await api.getArticles({
-          feed: feedType,
+          feed: feedType === 'houses' ? 'latest' : feedType,
           category: selectedCategoryId || undefined,
           limit: 25,
         });
@@ -211,7 +211,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     const now = Date.now();
     const oneDay = 24 * 60 * 60 * 1000;
     return articles.filter((a) => {
-      const artTime = new Date(a.createdAt).getTime();
+      const artTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      if (!artTime || isNaN(artTime)) return true;
       const diff = now - artTime;
       if (timeFilter === 'today') return diff <= oneDay * 1.5;
       if (timeFilter === 'week') return diff <= oneDay * 7;
@@ -517,9 +518,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       ) : feedType === 'houses' ? (
         <FlatList
           data={mediaHouses}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item: MediaHouse) => item.id}
           ListHeaderComponent={renderHeader}
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: MediaHouse }) => (
             <TouchableOpacity
               style={styles.houseFeedCard}
               onPress={() => {

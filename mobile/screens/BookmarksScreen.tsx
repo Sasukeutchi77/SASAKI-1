@@ -218,7 +218,7 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
     bookmarks.forEach((b) => {
-      const cat = b.category || b.categoryName;
+      const cat = b.categoryName || (b as any).category || b.categoryId;
       if (cat) cats.add(cat);
     });
     return ['all', ...Array.from(cats)];
@@ -234,8 +234,9 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
     return bookmarks.filter((art) => {
       const matchesCategory =
         selectedCategory === 'all' ||
-        art.category === selectedCategory ||
-        art.categoryName === selectedCategory;
+        (art as any).category === selectedCategory ||
+        art.categoryName === selectedCategory ||
+        art.categoryId === selectedCategory;
 
       if (!matchesCategory) return false;
 

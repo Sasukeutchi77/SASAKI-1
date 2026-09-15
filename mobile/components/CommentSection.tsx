@@ -48,8 +48,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   };
 
   // Séparation en commentaires racines et réponses hiérarchiques
-  const rootComments = comments.filter((c) => !c.parentId);
-  const getReplies = (parentId: string) => comments.filter((c) => c.parentId === parentId);
+  const safeComments = comments || [];
+  const rootComments = safeComments.filter((c) => !c.parentId);
+  const getReplies = (parentId: string) => safeComments.filter((c) => c.parentId === parentId);
 
   const renderCommentItem = (comment: Comment, isReply = false) => {
     const isLiked = Boolean(likedCommentIds[comment.id] || comment.isLiked);
