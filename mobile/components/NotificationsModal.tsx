@@ -97,41 +97,15 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     );
   };
 
-  const handleTestNotification = async () => {
+  const handleEnablePermissions = async () => {
     try {
       const granted = await requestNotificationPermission();
       setSystemPermissionGranted(granted);
-      if (!granted) {
-        Alert.alert(
-          'Autorisation requise',
-          'Pour recevoir les alertes sur votre téléphone, veuillez autoriser les notifications dans les paramètres Android de l’application.',
-          [{ text: 'Compris' }]
-        );
-        return;
+      if (granted) {
+        Alert.alert('Notifications activées', 'Votre appareil recevra désormais les alertes urgentes.');
       }
-
-      const id = await triggerLocalNotification({
-        title: '🚨 FLASH INFO EN DIRECT • PURGE',
-        body: 'Le système de notifications système est désormais actif et opérationnel sur votre appareil !',
-        data: { test: true },
-      });
-
-      if (id) {
-        // Ajouter aussi à la liste locale
-        const newNotif: Notification = {
-          id: `notif_test_${Date.now()}`,
-          userId: 'me',
-          type: 'breaking_news',
-          title: '🚨 Test de notification réussi',
-          message: 'Votre smartphone reçoit les alertes prioritaires de la rédaction PURGE.',
-          read: false,
-          createdAt: new Date().toISOString(),
-        };
-        setNotifications((prev) => [newNotif, ...prev]);
-        Alert.alert('Notification envoyée', 'Une notification système a été transmise à votre barre d’état.');
-      }
-    } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Impossible d’émettre la notification.');
+    } catch {
+      // Ignorer
     }
   };
 
@@ -224,15 +198,13 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Action Bar (Test, Tout Marquer Lu & Tout Effacer) */}
+          {/* Action Bar (Tout Marquer Lu & Tout Effacer) */}
           <View style={styles.actionsBar}>
-            <TouchableOpacity
-              style={styles.testBtn}
-              onPress={handleTestNotification}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.testBtnText}>🔔 TESTER UNE NOTIFICATION</Text>
-            </TouchableOpacity>
+            <View style={styles.actionsBarInfo}>
+              <Text style={styles.actionsBarTitle}>
+                {notifications.length > 0 ? `${notifications.length} notification(s)` : 'Boîte de réception'}
+              </Text>
+            </View>
 
             <View style={styles.topRightActions}>
               {notifications.some((n) => !n.read) && (
@@ -346,17 +318,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  testBtn: {
-    backgroundColor: '#0891b2',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+  actionsBarInfo: {
+    justifyContent: 'center',
   },
-  testBtnText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+  actionsBarTitle: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   topRightActions: {
     flexDirection: 'row',

@@ -262,66 +262,167 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
             filteredHouses.length === 0 ? (
               <Text style={styles.emptyText}>Aucune maison trouvée pour cette recherche.</Text>
             ) : (
-              filteredHouses.map((house, idx) => {
-                const rank = house.rank || idx + 1;
-                const badge = getRankBadge(rank);
-                const isFollowing = Boolean(house.isFollowing);
-
-                return (
-                  <TouchableOpacity
-                    key={house.id || idx}
-                    style={styles.rankCard}
-                    onPress={() => handleOpenHouse(house)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
-                      <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
-                    </View>
-
-                    <Image
-                      source={{
-                        uri:
-                          house.logo ||
-                          'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=200&auto=format&fit=crop&q=80',
-                      }}
-                      style={styles.houseLogo}
-                    />
-
-                    <View style={styles.infoWrapper}>
-                      <View style={styles.titleRow}>
-                        <Text style={styles.name} numberOfLines={1}>{house.name}</Text>
-                        {house.isVerified && <Text style={styles.verified}> ✓</Text>}
-                      </View>
-                      {house.bio ? (
-                        <Text style={styles.bio} numberOfLines={2}>
-                          {house.bio}
-                        </Text>
-                      ) : null}
-
-                      <View style={styles.metricsRow}>
-                        <Text style={styles.metric}>📰 {house.articlesCount || 0} dépêches</Text>
-                        <Text style={styles.metric}>👥 {house.followersCount || 0} abonnés</Text>
-                      </View>
-                    </View>
-
-                    {/* Bouton S'abonner */}
+              <>
+                {/* Podium Top 3 si pas de recherche filtrée */}
+                {!searchQuery.trim() && filteredHouses.length >= 3 && (
+                  <View style={styles.podiumContainer}>
+                    {/* 2ème Place (Argent) */}
                     <TouchableOpacity
-                      style={[styles.followBtn, isFollowing && styles.followingBtn]}
-                      onPress={() => handleToggleFollow(house.id, 'house')}
-                      disabled={followingLoading[house.id]}
-                      activeOpacity={0.7}
+                      style={[styles.podiumCol, styles.podiumCol2]}
+                      onPress={() => handleOpenHouse(filteredHouses[1])}
+                      activeOpacity={0.8}
                     >
-                      {followingLoading[house.id] ? (
-                        <ActivityIndicator size="small" color="#00d2ff" />
-                      ) : (
-                        <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                          {isFollowing ? '✓ Suivi' : '+ Suivre'}
-                        </Text>
-                      )}
+                      <View style={[styles.podiumAvatarWrap, { borderColor: '#cbd5e1' }]}>
+                        <Image
+                          source={{
+                            uri:
+                              filteredHouses[1].logo ||
+                              'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=200&auto=format&fit=crop&q=80',
+                          }}
+                          style={styles.podiumAvatar}
+                        />
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#cbd5e1' }]}>
+                          <Text style={styles.podiumBadgeText}>🥈 2e</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.podiumName} numberOfLines={1}>
+                        {filteredHouses[1].name}
+                      </Text>
+                      <Text style={styles.podiumScore}>{filteredHouses[1].followersCount || 0} abonnés</Text>
+                      <View style={[styles.podiumBase, styles.podiumBase2]}>
+                        <Text style={styles.podiumBaseNum}>2</Text>
+                      </View>
                     </TouchableOpacity>
-                  </TouchableOpacity>
-                );
-              })
+
+                    {/* 1ère Place (Or) */}
+                    <TouchableOpacity
+                      style={[styles.podiumCol, styles.podiumCol1]}
+                      onPress={() => handleOpenHouse(filteredHouses[0])}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.crownEmoji}>👑</Text>
+                      <View style={[styles.podiumAvatarWrap, styles.podiumAvatarWrap1, { borderColor: '#eab308' }]}>
+                        <Image
+                          source={{
+                            uri:
+                              filteredHouses[0].logo ||
+                              'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=200&auto=format&fit=crop&q=80',
+                          }}
+                          style={styles.podiumAvatar1}
+                        />
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#eab308' }]}>
+                          <Text style={[styles.podiumBadgeText, { color: '#000' }]}>🥇 1er</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.podiumName1} numberOfLines={1}>
+                        {filteredHouses[0].name}
+                      </Text>
+                      <Text style={styles.podiumScore1}>{filteredHouses[0].followersCount || 0} abonnés</Text>
+                      <View style={[styles.podiumBase, styles.podiumBase1]}>
+                        <Text style={styles.podiumBaseNum1}>1</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* 3ème Place (Bronze) */}
+                    <TouchableOpacity
+                      style={[styles.podiumCol, styles.podiumCol3]}
+                      onPress={() => handleOpenHouse(filteredHouses[2])}
+                      activeOpacity={0.8}
+                    >
+                      <View style={[styles.podiumAvatarWrap, { borderColor: '#d97706' }]}>
+                        <Image
+                          source={{
+                            uri:
+                              filteredHouses[2].logo ||
+                              'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=200&auto=format&fit=crop&q=80',
+                          }}
+                          style={styles.podiumAvatar}
+                        />
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#d97706' }]}>
+                          <Text style={styles.podiumBadgeText}>🥉 3e</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.podiumName} numberOfLines={1}>
+                        {filteredHouses[2].name}
+                      </Text>
+                      <Text style={styles.podiumScore}>{filteredHouses[2].followersCount || 0} abonnés</Text>
+                      <View style={[styles.podiumBase, styles.podiumBase3]}>
+                        <Text style={styles.podiumBaseNum}>3</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {!searchQuery.trim() && filteredHouses.length >= 4 && (
+                  <View style={styles.sectionDividerRow}>
+                    <Text style={styles.sectionDividerText}>AUTRES RÉDACTIONS CLASSÉES</Text>
+                  </View>
+                )}
+
+                {(searchQuery.trim() || filteredHouses.length < 3
+                  ? filteredHouses
+                  : filteredHouses.slice(3)
+                ).map((house, idx) => {
+                  const rank = searchQuery.trim() || filteredHouses.length < 3 ? idx + 1 : idx + 4;
+                  const badge = getRankBadge(rank);
+                  const isFollowing = Boolean(house.isFollowing);
+
+                  return (
+                    <TouchableOpacity
+                      key={house.id || idx}
+                      style={styles.rankCard}
+                      onPress={() => handleOpenHouse(house)}
+                      activeOpacity={0.85}
+                    >
+                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
+                        <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
+                      </View>
+
+                      <Image
+                        source={{
+                          uri:
+                            house.logo ||
+                            'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=200&auto=format&fit=crop&q=80',
+                        }}
+                        style={styles.houseLogo}
+                      />
+
+                      <View style={styles.infoWrapper}>
+                        <View style={styles.titleRow}>
+                          <Text style={styles.name} numberOfLines={1}>{house.name}</Text>
+                          {house.isVerified && <Text style={styles.verified}> ✓</Text>}
+                        </View>
+                        {house.bio ? (
+                          <Text style={styles.bio} numberOfLines={2}>
+                            {house.bio}
+                          </Text>
+                        ) : null}
+
+                        <View style={styles.metricsRow}>
+                          <Text style={styles.metric}>📰 {house.articlesCount || 0} dépêches</Text>
+                          <Text style={styles.metric}>👥 {house.followersCount || 0} abonnés</Text>
+                        </View>
+                      </View>
+
+                      {/* Bouton S'abonner */}
+                      <TouchableOpacity
+                        style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                        onPress={() => handleToggleFollow(house.id, 'house')}
+                        disabled={followingLoading[house.id]}
+                        activeOpacity={0.7}
+                      >
+                        {followingLoading[house.id] ? (
+                          <ActivityIndicator size="small" color="#00d2ff" />
+                        ) : (
+                          <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                            {isFollowing ? '✓ Suivi' : '+ Suivre'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
             )
           )}
 
@@ -330,62 +431,154 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
             filteredJournalists.length === 0 ? (
               <Text style={styles.emptyText}>Aucun journaliste trouvé.</Text>
             ) : (
-              filteredJournalists.map((j, idx) => {
-                const rank = j.rank || idx + 1;
-                const badge = getRankBadge(rank);
-                const isFollowing = Boolean(j.isFollowing);
-
-                return (
-                  <View key={j.id || idx} style={styles.rankCard}>
-                    <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
-                      <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
-                    </View>
-
-                    {j.avatar ? (
-                      <Image source={{ uri: j.avatar }} style={styles.avatar} />
-                    ) : (
-                      <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarInitial}>
-                          {j.name ? j.name.charAt(0).toUpperCase() : 'J'}
-                        </Text>
-                      </View>
-                    )}
-
-                    <View style={styles.infoWrapper}>
-                      <View style={styles.titleRow}>
-                        <Text style={styles.name} numberOfLines={1}>{j.name}</Text>
-                        {j.isVerified && <Text style={styles.verified}> ✓</Text>}
-                      </View>
-                      <Text style={styles.mediaTag}>
-                        {j.mediaName || (j.role === 'admin' ? 'Direction Éditoriale' : 'Journaliste Accrédité')}
-                      </Text>
-
-                      <View style={styles.metricsRow}>
-                        <Text style={styles.metric}>📰 {j.articlesCount || 0} articles</Text>
-                        <Text style={styles.metric}>👥 {j.followersCount || 0} abonnés</Text>
-                      </View>
-                    </View>
-
-                    {/* Bouton Suivre la plume */}
-                    {currentUser?.id !== j.id && (
-                      <TouchableOpacity
-                        style={[styles.followBtn, isFollowing && styles.followingBtn]}
-                        onPress={() => handleToggleFollow(j.id, 'journalist')}
-                        disabled={followingLoading[j.id]}
-                        activeOpacity={0.7}
-                      >
-                        {followingLoading[j.id] ? (
-                          <ActivityIndicator size="small" color="#00d2ff" />
+              <>
+                {/* Podium Top 3 Journalistes si pas de recherche */}
+                {!searchQuery.trim() && filteredJournalists.length >= 3 && (
+                  <View style={styles.podiumContainer}>
+                    {/* 2ème Place (Argent) */}
+                    <View style={[styles.podiumCol, styles.podiumCol2]}>
+                      <View style={[styles.podiumAvatarWrap, { borderColor: '#cbd5e1' }]}>
+                        {filteredJournalists[1].avatar ? (
+                          <Image source={{ uri: filteredJournalists[1].avatar }} style={styles.podiumAvatar} />
                         ) : (
-                          <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                            {isFollowing ? '✓ Suivi' : '+ Suivre'}
-                          </Text>
+                          <View style={[styles.podiumAvatar, styles.avatarPlaceholder]}>
+                            <Text style={styles.avatarInitial}>
+                              {filteredJournalists[1].name?.charAt(0).toUpperCase() || 'J'}
+                            </Text>
+                          </View>
                         )}
-                      </TouchableOpacity>
-                    )}
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#cbd5e1' }]}>
+                          <Text style={styles.podiumBadgeText}>🥈 2e</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.podiumName} numberOfLines={1}>
+                        {filteredJournalists[1].name}
+                      </Text>
+                      <Text style={styles.podiumScore}>{filteredJournalists[1].followersCount || 0} abonnés</Text>
+                      <View style={[styles.podiumBase, styles.podiumBase2]}>
+                        <Text style={styles.podiumBaseNum}>2</Text>
+                      </View>
+                    </View>
+
+                    {/* 1ère Place (Or) */}
+                    <View style={[styles.podiumCol, styles.podiumCol1]}>
+                      <Text style={styles.crownEmoji}>👑</Text>
+                      <View style={[styles.podiumAvatarWrap, styles.podiumAvatarWrap1, { borderColor: '#eab308' }]}>
+                        {filteredJournalists[0].avatar ? (
+                          <Image source={{ uri: filteredJournalists[0].avatar }} style={styles.podiumAvatar1} />
+                        ) : (
+                          <View style={[styles.podiumAvatar1, styles.avatarPlaceholder]}>
+                            <Text style={styles.avatarInitial}>
+                              {filteredJournalists[0].name?.charAt(0).toUpperCase() || 'J'}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#eab308' }]}>
+                          <Text style={[styles.podiumBadgeText, { color: '#000' }]}>🥇 1er</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.podiumName1} numberOfLines={1}>
+                        {filteredJournalists[0].name}
+                      </Text>
+                      <Text style={styles.podiumScore1}>{filteredJournalists[0].followersCount || 0} abonnés</Text>
+                      <View style={[styles.podiumBase, styles.podiumBase1]}>
+                        <Text style={styles.podiumBaseNum1}>1</Text>
+                      </View>
+                    </View>
+
+                    {/* 3ème Place (Bronze) */}
+                    <View style={[styles.podiumCol, styles.podiumCol3]}>
+                      <View style={[styles.podiumAvatarWrap, { borderColor: '#d97706' }]}>
+                        {filteredJournalists[2].avatar ? (
+                          <Image source={{ uri: filteredJournalists[2].avatar }} style={styles.podiumAvatar} />
+                        ) : (
+                          <View style={[styles.podiumAvatar, styles.avatarPlaceholder]}>
+                            <Text style={styles.avatarInitial}>
+                              {filteredJournalists[2].name?.charAt(0).toUpperCase() || 'J'}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#d97706' }]}>
+                          <Text style={styles.podiumBadgeText}>🥉 3e</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.podiumName} numberOfLines={1}>
+                        {filteredJournalists[2].name}
+                      </Text>
+                      <Text style={styles.podiumScore}>{filteredJournalists[2].followersCount || 0} abonnés</Text>
+                      <View style={[styles.podiumBase, styles.podiumBase3]}>
+                        <Text style={styles.podiumBaseNum}>3</Text>
+                      </View>
+                    </View>
                   </View>
-                );
-              })
+                )}
+
+                {!searchQuery.trim() && filteredJournalists.length >= 4 && (
+                  <View style={styles.sectionDividerRow}>
+                    <Text style={styles.sectionDividerText}>AUTRES PLUMES D’ÉLITE</Text>
+                  </View>
+                )}
+
+                {(searchQuery.trim() || filteredJournalists.length < 3
+                  ? filteredJournalists
+                  : filteredJournalists.slice(3)
+                ).map((j, idx) => {
+                  const rank = searchQuery.trim() || filteredJournalists.length < 3 ? idx + 1 : idx + 4;
+                  const badge = getRankBadge(rank);
+                  const isFollowing = Boolean(j.isFollowing);
+
+                  return (
+                    <View key={j.id || idx} style={styles.rankCard}>
+                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
+                        <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
+                      </View>
+
+                      {j.avatar ? (
+                        <Image source={{ uri: j.avatar }} style={styles.avatar} />
+                      ) : (
+                        <View style={styles.avatarPlaceholder}>
+                          <Text style={styles.avatarInitial}>
+                            {j.name ? j.name.charAt(0).toUpperCase() : 'J'}
+                          </Text>
+                        </View>
+                      )}
+
+                      <View style={styles.infoWrapper}>
+                        <View style={styles.titleRow}>
+                          <Text style={styles.name} numberOfLines={1}>{j.name}</Text>
+                          {j.isVerified && <Text style={styles.verified}> ✓</Text>}
+                        </View>
+                        <Text style={styles.mediaTag}>
+                          {j.mediaName || (j.role === 'admin' ? 'Direction Éditoriale' : 'Journaliste Accrédité')}
+                        </Text>
+
+                        <View style={styles.metricsRow}>
+                          <Text style={styles.metric}>📰 {j.articlesCount || 0} articles</Text>
+                          <Text style={styles.metric}>👥 {j.followersCount || 0} abonnés</Text>
+                        </View>
+                      </View>
+
+                      {/* Bouton Suivre la plume */}
+                      {currentUser?.id !== j.id && (
+                        <TouchableOpacity
+                          style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                          onPress={() => handleToggleFollow(j.id, 'journalist')}
+                          disabled={followingLoading[j.id]}
+                          activeOpacity={0.7}
+                        >
+                          {followingLoading[j.id] ? (
+                            <ActivityIndicator size="small" color="#00d2ff" />
+                          ) : (
+                            <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                              {isFollowing ? '✓ Suivi' : '+ Suivre'}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
+              </>
             )
           )}
 
@@ -762,5 +955,134 @@ const styles = StyleSheet.create({
     color: '#eab308',
     fontSize: 10.5,
     fontWeight: '700',
+  },
+  // Nouveaux styles Podium
+  podiumContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginBottom: 20,
+    paddingTop: 10,
+    gap: 8,
+  },
+  podiumCol: {
+    alignItems: 'center',
+    width: '31%',
+  },
+  podiumCol1: {
+    zIndex: 10,
+  },
+  podiumCol2: {},
+  podiumCol3: {},
+  crownEmoji: {
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  podiumAvatarWrap: {
+    borderRadius: 30,
+    borderWidth: 2,
+    padding: 2,
+    position: 'relative',
+    alignItems: 'center',
+  },
+  podiumAvatarWrap1: {
+    borderRadius: 36,
+    borderWidth: 2.5,
+  },
+  podiumAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  podiumAvatar1: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  podiumBadgePill: {
+    position: 'absolute',
+    bottom: -6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  podiumBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#000',
+  },
+  podiumName: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  podiumName1: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '900',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  podiumScore: {
+    color: '#64748b',
+    fontSize: 9.5,
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  podiumScore1: {
+    color: '#00d2ff',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  podiumBase: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  podiumBase1: {
+    height: 75,
+    backgroundColor: 'rgba(234, 179, 8, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.4)',
+  },
+  podiumBase2: {
+    height: 55,
+    backgroundColor: 'rgba(203, 213, 225, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(203, 213, 225, 0.3)',
+  },
+  podiumBase3: {
+    height: 42,
+    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(217, 119, 6, 0.3)',
+  },
+  podiumBaseNum: {
+    color: '#94a3b8',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  podiumBaseNum1: {
+    color: '#eab308',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  sectionDividerRow: {
+    marginVertical: 14,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  sectionDividerText: {
+    color: '#00d2ff',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
 });

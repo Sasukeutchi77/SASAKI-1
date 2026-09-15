@@ -42,6 +42,14 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
   const [showHouseModal, setShowHouseModal] = useState(false);
   const [loadingHouse, setLoadingHouse] = useState(false);
 
+  // Ergonomie de lecture & Progression
+  const [fontSizeDelta, setFontSizeDelta] = useState(0); // -2, 0, 2, 4
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [extraReactions, setExtraReactions] = useState<{ useful: boolean; factchecked: boolean }>({
+    useful: false,
+    factchecked: false,
+  });
+
   useEffect(() => {
     // Enregistrement de la vue
     api.recordView(article.id).catch(() => {});
@@ -185,6 +193,7 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
     'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop&q=80';
   const coverUri = article.coverImage || article.coverMedia?.url || defaultCover;
   const trustScore = article.trustScore || 98;
+  const estimatedReadTime = Math.max(1, Math.ceil((article.content || '').split(/\s+/).length / 180));
 
   return (
     <View style={styles.container}>
@@ -195,6 +204,24 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
         </TouchableOpacity>
 
         <View style={styles.topBarActions}>
+          {/* Contrôle taille de texte */}
+          <View style={styles.fontControlsGroup}>
+            <TouchableOpacity
+              style={styles.fontBtn}
+              onPress={() => setFontSizeDelta((prev) => Math.max(-2, prev - 2))}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.fontBtnText}>A-</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.fontBtn}
+              onPress={() => setFontSizeDelta((prev) => Math.min(6, prev + 2))}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.fontBtnText}>A+</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity style={styles.topActionBtn} onPress={handleShare} activeOpacity={0.7}>
             <Text style={styles.topActionIcon}>📤</Text>
           </TouchableOpacity>
@@ -208,7 +235,24 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {/* Barre de progression de lecture */}
+      <View style={styles.progressBarTrack}>
+        <View style={[styles.progressBarFill, { width: `${scrollProgress}%` }]} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+          const maxScroll = contentSize.height - layoutMeasurement.height;
+          if (maxScroll > 0) {
+            const pct = (contentOffset.y / maxScroll) * 100;
+            setScrollProgress(Math.min(100, Math.max(0, pct)));
+          }
+        }}
+        scrollEventThrottle={16}
+      >
         {/* Grande Image de Couverture */}
         <View style={styles.coverWrapper}>
           <Image source={{ uri: coverUri }} style={styles.coverImage} resizeMode="cover" />
@@ -250,7 +294,8 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
-                })}
+                })}{' '}
+                • ⏱️ ~{estimatedReadTime} min
               </Text>
             </View>
 
@@ -297,7 +342,16 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
           {/* Contenu Développé de l'article */}
           <View style={styles.contentTextWrapper}>
             {article.content.split('\n\n').map((paragraph, idx) => (
-              <Text key={idx} style={styles.paragraph}>
+              <Text
+                key={idx}
+                style={[
+                  styles.paragraph,
+                  {
+                    fontSize: 14 + fontSizeDelta,
+                    lineHeight: 22 + fontSizeDelta * 1.5,
+                  },
+                ]}
+              >
                 {paragraph}
               </Text>
             ))}
@@ -339,6 +393,31 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
             <PollWidget poll={article.poll} onVote={handleVotePoll} />
           )}
 
+          {/* Réactions Citoyennes Complémentaires */}
+          <View style={styles.reactionsRow}>
+            <TouchableOpacity
+              style={[styles.reactChip, extraReactions.useful && styles.activeReactChip]}
+              onPress={() => setExtraReactions((prev) => ({ ...prev, useful: !prev.useful }))}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.reactChipText, extraReactions.useful && styles.activeReactChipText]}>
+                💡 Utile & Éclairant {extraReactions.useful ? '• 1' : ''}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.reactChip, extraReactions.factchecked && styles.activeReactChip]}
+              onPress={() =>
+                setExtraReactions((prev) => ({ ...prev, factchecked: !prev.factchecked }))
+              }
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.reactChipText, extraReactions.factchecked && styles.activeReactChipText]}>
+                🛡️ Rigoureux & Vérifié {extraReactions.factchecked ? '• 1' : ''}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Barre d'engagement au bas de l'article */}
           <View style={styles.engagementBar}>
             <TouchableOpacity
@@ -348,7 +427,7 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
             >
               <Text style={styles.engageIcon}>{article.isLiked ? '❤️' : '🤍'}</Text>
               <Text style={[styles.engageText, article.isLiked && styles.activeEngageText]}>
-                {article.likesCount || 0} J'aime
+                {article.likesCount || 0} Soutiens
               </Text>
             </TouchableOpacity>
 
@@ -741,6 +820,63 @@ const styles = StyleSheet.create({
   activeEngageText: {
     color: '#06b6d4',
     fontWeight: '800',
+  },
+  // Nouveaux styles Ergonomie & Lecture
+  fontControlsGroup: {
+    flexDirection: 'row',
+    backgroundColor: '#081028',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    overflow: 'hidden',
+  },
+  fontBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fontBtnText: {
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  progressBarTrack: {
+    height: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#00d2ff',
+  },
+  reactionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 6,
+    flexWrap: 'wrap',
+  },
+  reactChip: {
+    backgroundColor: '#081028',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  activeReactChip: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderColor: '#06b6d4',
+  },
+  reactChipText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  activeReactChipText: {
+    color: '#38bdf8',
+    fontWeight: '700',
   },
 });
 

@@ -43,7 +43,7 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const rawFeed = (req.query.feed || req.query.filter || 'foryou') as string;
   const feed = ['foryou', 'following', 'trending', 'latest'].includes(rawFeed) ? rawFeed : 'latest';
-  const { category, tag, search, authorId, status, sort, dateRange } = req.query;
+  const { category, tag, search, authorId, status, sort, dateRange, mediaHouseId, mediaId } = req.query;
 
   let list = [...data.articles];
 
@@ -58,6 +58,16 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   // Author filter
   if (authorId) {
     list = list.filter((a) => a.authorId === authorId || (a.mediaId && a.mediaId === authorId));
+  }
+
+  // Media House filter
+  const targetHouse = (mediaHouseId || mediaId) as string | undefined;
+  if (targetHouse) {
+    list = list.filter(
+      (a) =>
+        a.mediaId === targetHouse ||
+        (a.mediaName && a.mediaName.toLowerCase() === targetHouse.toLowerCase())
+    );
   }
 
   // Category filter (by id or slug)

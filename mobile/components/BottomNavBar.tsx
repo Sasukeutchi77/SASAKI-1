@@ -6,19 +6,26 @@ interface BottomNavBarProps {
   activeTab: NavigationTab;
   onTabChange: (tab: NavigationTab) => void;
   unreadBookmarks?: number;
+  isJournalist?: boolean;
+  hasHouse?: boolean;
 }
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   activeTab,
   onTabChange,
   unreadBookmarks = 0,
+  isJournalist = false,
+  hasHouse = false,
 }) => {
+  const houseLabel = isJournalist || hasHouse ? 'Ma Maison' : 'Maisons';
+
   const tabs: { id: NavigationTab; label: string; icon: string }[] = [
-    { id: 'feed', label: 'Dépêches', icon: '📰' },
+    { id: 'feed', label: 'Actualités', icon: '📰' },
     { id: 'search', label: 'Explorer', icon: '🔍' },
     { id: 'rankings', label: 'Top 7', icon: '🏆' },
-    { id: 'bookmarks', label: 'Archives', icon: '🔖' },
-    { id: 'profile', label: 'Compte', icon: '👤' },
+    { id: 'house', label: houseLabel, icon: '🏛️' },
+    { id: 'bookmarks', label: 'Favoris', icon: '🔖' },
+    { id: 'profile', label: 'Profil', icon: '👤' },
   ];
 
   return (
@@ -41,7 +48,12 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                 </View>
               )}
             </View>
-            <Text style={[styles.tabLabel, isActive && styles.activeTabLabel]}>{tab.label}</Text>
+            <Text
+              style={[styles.tabLabel, isActive && styles.activeTabLabel]}
+              numberOfLines={1}
+            >
+              {tab.label}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -51,42 +63,43 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
 const styles = StyleSheet.create({
   navBar: {
-    height: 62,
+    height: 64,
     backgroundColor: '#020512',
     borderTopWidth: 1,
     borderTopColor: 'rgba(6, 182, 212, 0.25)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   tabBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: 4,
     position: 'relative',
     height: '100%',
   },
   activeTabBtn: {
-    transform: [{ scale: 1.05 }],
+    transform: [{ scale: 1.04 }],
   },
   iconWrapper: {
     position: 'relative',
   },
   iconText: {
-    fontSize: 18,
-    opacity: 0.55,
+    fontSize: 17,
+    opacity: 0.6,
   },
   activeIconText: {
     opacity: 1,
   },
   tabLabel: {
     color: '#64748b',
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '700',
     marginTop: 2,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
   activeTabLabel: {
     color: '#06b6d4',
@@ -95,7 +108,7 @@ const styles = StyleSheet.create({
   activeIndicator: {
     position: 'absolute',
     top: 0,
-    width: 28,
+    width: 24,
     height: 3,
     backgroundColor: '#06b6d4',
     borderRadius: 2,

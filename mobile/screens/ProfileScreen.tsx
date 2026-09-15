@@ -759,13 +759,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           Alertes prioritaires émises sur votre appareil lors de la publication de décrets d'urgence.
         </Text>
         <View style={styles.settingsActionRow}>
-          <TouchableOpacity
-            style={styles.testNotifBtn}
-            onPress={handleTestNotification}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.testNotifBtnText}>ÉMETTRE UNE NOTIFICATION TEST</Text>
-          </TouchableOpacity>
+          {!notificationsActive ? (
+            <TouchableOpacity
+              style={styles.enableNotifBtn}
+              onPress={handleToggleNotifications}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.enableNotifBtnText}>🔔 ACTIVER LES NOTIFICATIONS</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.notifActiveInfo}>
+              <Text style={styles.notifActiveInfoText}>✓ Alertes urgentes en direct activées</Text>
+            </View>
+          )}
           {onOpenNotifications && (
             <TouchableOpacity
               style={styles.viewNotifsBtn}
@@ -782,10 +788,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {(isJournalist || isAdmin) && onOpenCreateArticle && (
         <TouchableOpacity
           style={styles.createArticleBtn}
-          onPress={onOpenCreateArticle}
+          onPress={() => onOpenCreateArticle(currentUser?.mediaId, currentUser?.mediaName)}
           activeOpacity={0.8}
         >
-          <Text style={styles.createArticleBtnText}>✍️ RÉDIGER UNE NOUVELLE ENQUÊTE</Text>
+          <Text style={styles.createArticleBtnText}>
+            ✍️ {currentUser?.mediaName ? `RÉDIGER UNE ENQUÊTE DANS « ${currentUser.mediaName.toUpperCase()} »` : 'RÉDIGER UNE NOUVELLE ENQUÊTE'}
+          </Text>
         </TouchableOpacity>
       )}
 
@@ -1178,18 +1186,32 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
   },
-  testNotifBtn: {
+  enableNotifBtn: {
     backgroundColor: '#0284c7',
     paddingVertical: 9,
     paddingHorizontal: 12,
     borderRadius: 6,
     alignItems: 'center',
   },
-  testNotifBtnText: {
+  enableNotifBtnText: {
     color: '#ffffff',
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
+  },
+  notifActiveInfo: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    justifyContent: 'center',
+  },
+  notifActiveInfoText: {
+    color: '#10b981',
+    fontSize: 11,
+    fontWeight: '700',
   },
   scrollProfile: {
     padding: 16,

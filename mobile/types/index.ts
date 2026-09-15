@@ -226,4 +226,4 @@ export interface Notification {
   createdAt: string;
 }
 
-export type NavigationTab = 'feed' | 'search' | 'rankings' | 'bookmarks' | 'profile';
+export type NavigationTab = 'feed' | 'search' | 'rankings' | 'house' | 'bookmarks' | 'profile';

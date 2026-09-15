@@ -35,8 +35,25 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
   const [results, setResults] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [sortMode, setSortMode] = useState<'latest' | 'views' | 'likes'>('latest');
+  const [recentSearches, setRecentSearches] = useState<string[]>([
+    'Décret',
+    'Arènes',
+    'Corruption',
+  ]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Trending topic chips
+  const trendingTopics = [
+    '🔥 Décrets officiels',
+    '🛡️ Sanctuaires',
+    '⚖️ Corruption',
+    '⚔️ Arènes',
+    '👥 Élections',
+    '💼 Économie',
+    '🚨 Sécurité',
+  ];
 
   // Houses state
   const [houses, setHouses] = useState<MediaHouse[]>([]);
@@ -70,7 +87,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
     }
   };
 
-  const handleSearch = async (text: string, cat?: string) => {
+  const handleSearch = async (text: string, cat?: string, sort = sortMode) => {
     const q = text.trim();
     const c = cat !== undefined ? cat : selectedCategory;
 
@@ -80,12 +97,17 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
       return;
     }
 
+    if (q && !recentSearches.includes(q)) {
+      setRecentSearches((prev) => [q, ...prev.filter((item) => item !== q)].slice(0, 6));
+    }
+
     setLoading(true);
     setHasSearched(true);
     try {
       const res = await api.getArticles({
         search: q || undefined,
         category: c || undefined,
+        sort: sort,
         limit: 20,
       });
       if (res.articles) {
@@ -96,6 +118,19 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSortChange = (newSort: 'latest' | 'views' | 'likes') => {
+    setSortMode(newSort);
+    if (query || selectedCategory) {
+      handleSearch(query, selectedCategory, newSort);
+    }
+  };
+
+  const handleSelectTopic = (topic: string) => {
+    const cleanTopic = topic.replace(/^[^\w\sÀ-ÿ]+/, '').trim();
+    setQuery(cleanTopic);
+    handleSearch(cleanTopic, selectedCategory);
   };
 
   const handleCategoryPress = (catId: string) => {
@@ -173,10 +208,53 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             </View>
           </View>
 
-          {/* Grille des catégories si aucune recherche */}
+          {/* Tendances & Historique si aucune recherche */}
           {!hasSearched && query.length === 0 && !selectedCategory && (
-            <ScrollView contentContainerStyle={styles.exploreSection}>
-              <Text style={styles.sectionTitle}>Explorer par Thématiques</Text>
+            <ScrollView contentContainerStyle={styles.exploreSection} showsVerticalScrollIndicator={false}>
+              {/* Sujets Chauds / Trending */}
+              <Text style={styles.sectionTitle}>🔥 Sujets Brûlants du Moment</Text>
+              <View style={styles.trendingWrap}>
+                {trendingTopics.map((topic, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.trendingChip}
+                    onPress={() => handleSelectTopic(topic)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.trendingChipText}>{topic}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Recherches Récentes */}
+              {recentSearches.length > 0 && (
+                <View style={styles.recentSection}>
+                  <View style={styles.recentHeader}>
+                    <Text style={styles.sectionTitle}>🕒 Recherches Récentes</Text>
+                    <TouchableOpacity onPress={() => setRecentSearches([])}>
+                      <Text style={styles.clearRecentText}>Effacer</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.recentChipsRow}>
+                    {recentSearches.map((term, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={styles.recentChip}
+                        onPress={() => {
+                          setQuery(term);
+                          handleSearch(term);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.recentChipText}>{term}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Grille des catégories */}
+              <Text style={[styles.sectionTitle, { marginTop: 18 }]}>Explorer par Thématiques</Text>
               <View style={styles.categoryGrid}>
                 {categories.map((cat) => (
                   <TouchableOpacity
@@ -187,7 +265,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                   >
                     <Text style={styles.catCardName}>{cat.name}</Text>
                     {cat.description ? (
-                      <Text style={styles.catCardDesc} numberOfLines={1}>
+                      <Text style={styles.catCardDesc} numberOfLines={2}>
                         {cat.description}
                       </Text>
                     ) : null}
@@ -195,6 +273,45 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                 ))}
               </View>
             </ScrollView>
+          )}
+
+          {/* Barre de métriques et tri si recherche active */}
+          {(hasSearched || query.length > 0 || selectedCategory.length > 0) && (
+            <View style={styles.resultsControlBar}>
+              <Text style={styles.resultsCountText}>
+                {results.length} dépêche{results.length > 1 ? 's' : ''} trouvée{results.length > 1 ? 's' : ''}
+              </Text>
+
+              <View style={styles.sortButtonsRow}>
+                <TouchableOpacity
+                  style={[styles.sortBtn, sortMode === 'latest' && styles.sortBtnActive]}
+                  onPress={() => handleSortChange('latest')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.sortBtnText, sortMode === 'latest' && styles.sortBtnTextActive]}>
+                    ⏱️ Récents
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sortBtn, sortMode === 'views' && styles.sortBtnActive]}
+                  onPress={() => handleSortChange('views')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.sortBtnText, sortMode === 'views' && styles.sortBtnTextActive]}>
+                    👁️ Vus
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sortBtn, sortMode === 'likes' && styles.sortBtnActive]}
+                  onPress={() => handleSortChange('likes')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.sortBtnText, sortMode === 'likes' && styles.sortBtnTextActive]}>
+                    ❤️ Aimés
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
 
           {/* État de chargement */}
@@ -209,6 +326,17 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               <Text style={styles.noResultsSub}>
                 Essayez d'autres mots-clés ou explorez une catégorie différente.
               </Text>
+              <TouchableOpacity
+                style={styles.resetSearchBtn}
+                onPress={() => {
+                  setQuery('');
+                  setSelectedCategory('');
+                  setResults([]);
+                  setHasSearched(false);
+                }}
+              >
+                <Text style={styles.resetSearchBtnText}>RÉINITIALISER LA RECHERCHE</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <FlatList
@@ -676,5 +804,113 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textTransform: 'uppercase',
     marginTop: 2,
+  },
+  // Nouveaux styles Tendances & Tri
+  trendingWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  trendingChip: {
+    backgroundColor: '#0c1228',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.25)',
+  },
+  trendingChipText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  recentSection: {
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  recentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  clearRecentText: {
+    color: '#00d2ff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  recentChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  recentChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  recentChipText: {
+    color: '#94a3b8',
+    fontSize: 12,
+  },
+  resultsControlBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#070d1e',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  resultsCountText: {
+    color: '#00d2ff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  sortButtonsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  sortBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  sortBtnActive: {
+    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+    borderColor: '#00d2ff',
+  },
+  sortBtnText: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  sortBtnTextActive: {
+    color: '#00d2ff',
+  },
+  resetSearchBtn: {
+    marginTop: 14,
+    backgroundColor: 'rgba(0, 210, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: '#00d2ff',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  resetSearchBtnText: {
+    color: '#00d2ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

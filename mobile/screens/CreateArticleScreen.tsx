@@ -55,6 +55,20 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialMediaHouseId) {
+      setTargetMediaHouseId(initialMediaHouseId);
+    } else if (currentUser?.mediaId) {
+      setTargetMediaHouseId(currentUser.mediaId);
+    }
+
+    if (initialMediaHouseName) {
+      setTargetMediaHouseName(initialMediaHouseName);
+    } else if (currentUser?.mediaName) {
+      setTargetMediaHouseName(currentUser.mediaName);
+    }
+  }, [initialMediaHouseId, initialMediaHouseName, currentUser]);
+
+  useEffect(() => {
     api.getCategories()
       .then((res) => {
         if (res.categories && res.categories.length > 0) {

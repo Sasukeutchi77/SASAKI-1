@@ -40,11 +40,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           </View>
         </View>
 
-        {article.readTime && (
-          <View style={styles.readTimePill}>
-            <Text style={styles.readTimeText}>⏱ {article.readTime} min</Text>
-          </View>
-        )}
+        <View style={styles.pillsRow}>
+          {article.poll && (
+            <View style={styles.featurePill}>
+              <Text style={styles.featurePillText}>📊 Sondage</Text>
+            </View>
+          )}
+          {article.readTime && (
+            <View style={styles.readTimePill}>
+              <Text style={styles.readTimeText}>⏱ {article.readTime} min</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Contenu Texte */}
@@ -199,10 +206,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
-  readTimePill: {
+  pillsRow: {
     position: 'absolute',
     bottom: 10,
     right: 10,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  featurePill: {
+    backgroundColor: 'rgba(29, 104, 255, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.4)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  featurePillText: {
+    color: '#ffffff',
+    fontSize: 9.5,
+    fontWeight: '700',
+  },
+  readTimePill: {
     backgroundColor: 'rgba(2, 5, 18, 0.85)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',

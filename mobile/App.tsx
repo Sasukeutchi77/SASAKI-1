@@ -3,7 +3,7 @@ import { StyleSheet, View, BackHandler } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
-import { NavigationTab, Article, User } from './types';
+import { NavigationTab, Article, User, isJournalistRole, isAdminRole } from './types';
 import { api } from './services/api';
 import { Header } from './components/Header';
 import { BottomNavBar } from './components/BottomNavBar';
@@ -14,6 +14,7 @@ import { SearchScreen } from './screens/SearchScreen';
 import { RankingsScreen } from './screens/RankingsScreen';
 import { BookmarksScreen } from './screens/BookmarksScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { HouseScreen } from './screens/HouseScreen';
 import { CreateArticleScreen } from './screens/CreateArticleScreen';
 import { TrustSystemModal } from './components/TrustSystemModal';
 import {
@@ -27,6 +28,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('feed');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isCreatingArticle, setIsCreatingArticle] = useState<boolean>(false);
+  const [creatingArticleHouse, setCreatingArticleHouse] = useState<{ id?: string; name?: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [unreadBookmarks, setUnreadBookmarks] = useState<number>(0);
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
@@ -112,8 +114,20 @@ export default function App() {
     setSelectedArticle(article);
   }, []);
 
+  const handleOpenCreateArticle = useCallback((houseId?: string, houseName?: string) => {
+    if (houseId || houseName) {
+      setCreatingArticleHouse({ id: houseId, name: houseName });
+    } else if (currentUser?.mediaId || currentUser?.mediaName) {
+      setCreatingArticleHouse({ id: currentUser.mediaId, name: currentUser.mediaName });
+    } else {
+      setCreatingArticleHouse(null);
+    }
+    setIsCreatingArticle(true);
+  }, [currentUser]);
+
   const handleArticleCreated = useCallback((newArticle: Article) => {
     setIsCreatingArticle(false);
+    setCreatingArticleHouse(null);
     setSelectedArticle(newArticle);
   }, []);
 
@@ -134,7 +148,13 @@ export default function App() {
         {/* Écran d'écriture d'article en plein écran */}
         {isCreatingArticle ? (
           <CreateArticleScreen
-            onBack={() => setIsCreatingArticle(false)}
+            initialMediaHouseId={creatingArticleHouse?.id}
+            initialMediaHouseName={creatingArticleHouse?.name}
+            currentUser={currentUser}
+            onBack={() => {
+              setIsCreatingArticle(false);
+              setCreatingArticleHouse(null);
+            }}
             onArticleCreated={handleArticleCreated}
           />
         ) : selectedArticle ? (
@@ -159,6 +179,8 @@ export default function App() {
                   ? 'EXPLORATEUR DE DÉPÊCHES'
                   : activeTab === 'rankings'
                   ? 'INDICE DE NOTORIÉTÉ'
+                  : activeTab === 'house'
+                  ? (currentUser?.mediaName ? currentUser.mediaName.toUpperCase() : 'ESPACE RÉDACTIONS')
                   : activeTab === 'bookmarks'
                   ? 'ARCHIVES PERSONNELLES'
                   : 'ESPACE COMPTE'
@@ -166,7 +188,7 @@ export default function App() {
               user={currentUser}
               unreadNotificationsCount={unreadNotificationsCount}
               onOpenNotifications={() => setShowNotificationsModal(true)}
-              onOpenCreateArticle={() => setIsCreatingArticle(true)}
+              onOpenCreateArticle={() => handleOpenCreateArticle()}
               onOpenSearch={() => setActiveTab('search')}
               onOpenProfile={() => setActiveTab('profile')}
               onOpenTrustSystem={() => setShowTrustModal(true)}
@@ -199,6 +221,16 @@ export default function App() {
                 />
               )}
 
+              {activeTab === 'house' && (
+                <HouseScreen
+                  currentUser={currentUser}
+                  onSelectArticle={handleSelectArticle}
+                  onOpenCreateArticle={handleOpenCreateArticle}
+                  onRequireAuth={() => setActiveTab('profile')}
+                  onUserUpdated={setCurrentUser}
+                />
+              )}
+
               {activeTab === 'bookmarks' && (
                 <BookmarksScreen
                   currentUser={currentUser}
@@ -212,8 +244,9 @@ export default function App() {
                 <ProfileScreen
                   currentUser={currentUser}
                   onUserUpdated={setCurrentUser}
-                  onOpenCreateArticle={() => setIsCreatingArticle(true)}
+                  onOpenCreateArticle={handleOpenCreateArticle}
                   onOpenNotifications={() => setShowNotificationsModal(true)}
+                  onSelectArticle={handleSelectArticle}
                 />
               )}
             </View>
@@ -222,6 +255,8 @@ export default function App() {
               activeTab={activeTab}
               onTabChange={setActiveTab}
               unreadBookmarks={unreadBookmarks}
+              isJournalist={currentUser ? isJournalistRole(currentUser.role) || isAdminRole(currentUser.role) : false}
+              hasHouse={Boolean(currentUser?.mediaId || currentUser?.mediaName)}
             />
 
             {/* Modale Système de Confiance & Charte Déontologique */}
