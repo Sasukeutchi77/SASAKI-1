@@ -481,12 +481,20 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                     />
                   </div>
                   <div className="text-[11px] text-cyan-400/80 flex items-center justify-between">
-                    <span>
-                      {user?.isVerified
-                        ? '✓ Compte certifié'
-                        : (user?.followersCount || 0) >= 50
-                        ? '✓ Seuil de 50 abonnés atteint'
-                        : `Plus que ${Math.max(0, 50 - (user?.followersCount || 0))} abonnés pour la certification automatique`}
+                    <span className="flex items-center gap-1">
+                      {user?.isVerified ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                          <span>Compte certifié</span>
+                        </>
+                      ) : (user?.followersCount || 0) >= 50 ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                          <span>Seuil de 50 abonnés atteint</span>
+                        </>
+                      ) : (
+                        `Plus que ${Math.max(0, 50 - (user?.followersCount || 0))} abonnés pour la certification automatique`
+                      )}
                     </span>
                   </div>
                 </div>

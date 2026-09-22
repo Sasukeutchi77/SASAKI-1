@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { User, MediaHouse, Article, isJournalistRole, isAdminRole } from '../types';
 import { api } from '../services/api';
+import { AppIcon } from './AppIcon';
 
 interface JournalistHouseSectionProps {
   currentUser: User;
@@ -127,7 +128,10 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
     return (
       <View style={styles.card}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>🏛️ MAISON DE PRESSE</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon name="business" size={16} color="#06b6d4" style={{ marginRight: 6 }} />
+            <Text style={styles.title}>MAISON DE PRESSE</Text>
+          </View>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>RÉSERVÉ JOURNALISTES</Text>
           </View>
@@ -154,7 +158,10 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
       <View style={styles.card}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.title}>🏛️ VOTRE MAISON DE PRESSE</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="business" size={16} color="#06b6d4" style={{ marginRight: 6 }} />
+              <Text style={styles.title}>VOTRE MAISON DE PRESSE</Text>
+            </View>
             <Text style={styles.subTitle}>Organe de presse officiel</Text>
           </View>
           <View style={styles.unregisteredBadge}>
@@ -171,7 +178,10 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
           onPress={onCreateHouse}
           activeOpacity={0.8}
         >
-          <Text style={styles.createHouseBtnText}>🏛️ FONDER MA MAISON DE PRESSE</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <AppIcon name="business" size={14} color="#020512" style={{ marginRight: 6 }} />
+            <Text style={styles.createHouseBtnText}>FONDER MA MAISON DE PRESSE</Text>
+          </View>
         </TouchableOpacity>
       </View>
     );
@@ -208,12 +218,23 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
 
           <View style={styles.badgeWrapper}>
             <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedText}>✓ RÉDACTION AGRÉÉE</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="checkmark" size={10} color="#10b981" style={{ marginRight: 3 }} />
+                <Text style={styles.verifiedText}>RÉDACTION AGRÉÉE</Text>
+              </View>
             </View>
             <View style={styles.roleBadge}>
-              <Text style={styles.roleBadgeText}>
-                {isChef ? '👑 Chef de Rédaction' : '🖋️ Journaliste Membre'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon
+                  name={isChef ? 'ribbon' : 'create'}
+                  size={10}
+                  color="#06b6d4"
+                  style={{ marginRight: 4 }}
+                />
+                <Text style={styles.roleBadgeText}>
+                  {isChef ? 'Chef de Rédaction' : 'Journaliste Membre'}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -264,7 +285,7 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
           onPress={() => onOpenCreateArticleForHouse(house.id, house.name)}
           activeOpacity={0.8}
         >
-          <Text style={styles.publishActionIcon}>✍️</Text>
+          <AppIcon name="create" size={20} color="#020512" />
           <View style={{ flex: 1 }}>
             <Text style={styles.publishActionBtnTitle}>
               PUBLIER UN ARTICLE DANS CETTE MAISON
@@ -282,27 +303,51 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
             style={[styles.tabBtn, activeSubTab === 'articles' && styles.activeTabBtn]}
             onPress={() => setActiveSubTab('articles')}
           >
-            <Text style={[styles.tabBtnText, activeSubTab === 'articles' && styles.activeTabBtnText]}>
-              📰 Enquêtes ({houseArticles.length})
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon
+                name="newspaper"
+                size={13}
+                color={activeSubTab === 'articles' ? '#00d2ff' : '#94a3b8'}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[styles.tabBtnText, activeSubTab === 'articles' && styles.activeTabBtnText]}>
+                Enquêtes ({houseArticles.length})
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.tabBtn, activeSubTab === 'team' && styles.activeTabBtn]}
             onPress={() => setActiveSubTab('team')}
           >
-            <Text style={[styles.tabBtnText, activeSubTab === 'team' && styles.activeTabBtnText]}>
-              👥 Équipe ({memberCount}/5)
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon
+                name="people"
+                size={13}
+                color={activeSubTab === 'team' ? '#00d2ff' : '#94a3b8'}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[styles.tabBtnText, activeSubTab === 'team' && styles.activeTabBtnText]}>
+                Équipe ({memberCount}/5)
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.tabBtn, activeSubTab === 'stats' && styles.activeTabBtn]}
             onPress={() => setActiveSubTab('stats')}
           >
-            <Text style={[styles.tabBtnText, activeSubTab === 'stats' && styles.activeTabBtnText]}>
-              📊 Métriques
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon
+                name="bar-chart"
+                size={13}
+                color={activeSubTab === 'stats' ? '#00d2ff' : '#94a3b8'}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[styles.tabBtnText, activeSubTab === 'stats' && styles.activeTabBtnText]}>
+                Métriques
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -313,7 +358,7 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
               <ActivityIndicator size="small" color="#00d2ff" style={{ marginVertical: 14 }} />
             ) : houseArticles.length === 0 ? (
               <View style={styles.emptyArticlesBox}>
-                <Text style={styles.emptyArticlesIcon}>📝</Text>
+                <AppIcon name="document-text" size={26} color="#94a3b8" style={{ marginBottom: 6 }} />
                 <Text style={styles.emptyArticlesText}>
                   Aucun article publié pour le moment sous cette maison.
                 </Text>
@@ -343,9 +388,13 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
                       <Text style={styles.articleItemDate}>
                         {art.createdAt ? new Date(art.createdAt).toLocaleDateString('fr-FR') : 'Récent'}
                       </Text>
-                      <Text style={styles.articleItemStats}>
-                        👁️ {art.viewsCount || 0} • ❤️ {art.likesCount || 0}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <AppIcon name="eye" size={11} color="#06b6d4" />
+                        <Text style={styles.articleItemStats}>{art.viewsCount || 0}</Text>
+                        <Text style={[styles.articleItemStats, { marginHorizontal: 2 }]}>•</Text>
+                        <AppIcon name="heart" size={11} color="#ef4444" />
+                        <Text style={styles.articleItemStats}>{art.likesCount || 0}</Text>
+                      </View>
                     </View>
                   </View>
                   <Text style={styles.articleChevron}>›</Text>
@@ -376,9 +425,17 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.memberName}>{currentUser.name}</Text>
-                <Text style={styles.memberRole}>
-                  {isChef ? '👑 Fondateur & Chef de Rédaction' : '🖋️ Journaliste Accrédité'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon
+                    name={isChef ? 'ribbon' : 'create'}
+                    size={11}
+                    color="#06b6d4"
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={styles.memberRole}>
+                    {isChef ? 'Fondateur & Chef de Rédaction' : 'Journaliste Accrédité'}
+                  </Text>
+                </View>
               </View>
               <View style={styles.activePill}>
                 <Text style={styles.activePillText}>ACTIF</Text>
@@ -415,9 +472,12 @@ export const JournalistHouseSection: React.FC<JournalistHouseSectionProps> = ({
             onPress={() => onOpenHouseModal(house)}
             activeOpacity={0.8}
           >
-            <Text style={styles.openPublicPageBtnText}>
-              🏛️ VOIR LA PAGE PUBLIQUE COMPLÈTE DE LA MAISON ›
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+              <AppIcon name="business" size={13} color="#cbd5e1" style={{ marginRight: 6 }} />
+              <Text style={styles.openPublicPageBtnText}>
+                VOIR LA PAGE PUBLIQUE COMPLÈTE DE LA MAISON ›
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
       </View>

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { AppIcon } from './AppIcon';
 
 interface TrustSystemModalProps {
   visible: boolean;
@@ -34,7 +35,7 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <View style={styles.shieldIconWrapper}>
-                <Text style={styles.shieldIcon}>🛡️</Text>
+                <AppIcon name="shield" size={20} color="#06b6d4" />
               </View>
               <View style={styles.titleWrapper}>
                 <View style={styles.titleBadgeRow}>
@@ -49,7 +50,7 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
               </View>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <AppIcon name="close" size={16} color="#94a3b8" />
             </TouchableOpacity>
           </View>
 
@@ -151,7 +152,10 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
                 </Text>
 
                 <View style={styles.diffCard}>
-                  <Text style={styles.diffTitle}>❌ Sur les réseaux classiques</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                    <AppIcon name="close-circle" size={14} color="#f87171" style={{ marginRight: 6 }} />
+                    <Text style={styles.diffTitle}>Sur les réseaux classiques</Text>
+                  </View>
                   <Text style={styles.diffText}>
                     • Algorithmes d'indignation valorisant le buzz et la haine.{'\n'}
                     • Fermes à trolls et faux profils anonymes non traçables.{'\n'}
@@ -160,7 +164,10 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
                 </View>
 
                 <View style={[styles.diffCard, styles.diffCardOk]}>
-                  <Text style={styles.diffTitleOk}>✨ Sur PURGE-INFO</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                    <AppIcon name="sparkles" size={14} color="#34d399" style={{ marginRight: 6 }} />
+                    <Text style={styles.diffTitleOk}>Sur PURGE-INFO</Text>
+                  </View>
                   <Text style={styles.diffTextOk}>
                     • Pas de manipulation algorithmique : flux chronologique ou par pertinence factuelle.{'\n'}
                     • Auteurs et rédactions pleinement identifiés et responsables.{'\n'}

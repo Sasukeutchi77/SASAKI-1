@@ -526,8 +526,8 @@ export const JournalistHouseTab: React.FC<JournalistHouseTabProps> = ({
             disabled={submittingCreate}
             className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-500 to-amber-400 hover:brightness-110 active:scale-95 text-slate-950 font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(0,210,255,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <Crown className="w-4 h-4" />
-            <span>{submittingCreate ? 'Fondation en cours...' : '🏛️ Fonder ma Maison de Presse'}</span>
+            <Building2 className="w-4 h-4" />
+            <span>{submittingCreate ? 'Fondation en cours...' : 'Fonder ma Maison de Presse'}</span>
           </button>
         </div>
       </form>

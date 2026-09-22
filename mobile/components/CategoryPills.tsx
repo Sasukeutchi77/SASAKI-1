@@ -1,6 +1,7 @@
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Category } from '../types';
+import { AppIcon } from './AppIcon';
 
 interface CategoryPillsProps {
   categories: Category[];
@@ -27,14 +28,22 @@ export const CategoryPills: React.FC<CategoryPillsProps> = ({
         onPress={() => onSelectCategory('')}
         activeOpacity={0.7}
       >
-        <Text
-          style={[
-            styles.pillText,
-            selectedCategoryId === '' && styles.activePillText,
-          ]}
-        >
-          🔥 Tous
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <AppIcon
+            name="flame"
+            size={13}
+            color={selectedCategoryId === '' ? '#00d2ff' : '#94a3b8'}
+            style={{ marginRight: 4 }}
+          />
+          <Text
+            style={[
+              styles.pillText,
+              selectedCategoryId === '' && styles.activePillText,
+            ]}
+          >
+            Tous
+          </Text>
+        </View>
       </TouchableOpacity>
 
       {categories.map((cat) => {

@@ -13,6 +13,7 @@ import {
 import { TopMediaHouse, TopJournalist, Article, User, MediaHouse } from '../types';
 import { api } from '../services/api';
 import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
+import { AppIcon, AppIconName } from '../components/AppIcon';
 
 interface RankingsScreenProps {
   onSelectArticle?: (article: Article) => void;
@@ -116,10 +117,10 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
   };
 
   const getRankBadge = (rank: number) => {
-    if (rank === 1) return { color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)', text: '🥇 1er' };
-    if (rank === 2) return { color: '#cbd5e1', bg: 'rgba(203, 213, 225, 0.15)', text: '🥈 2e' };
-    if (rank === 3) return { color: '#d97706', bg: 'rgba(217, 119, 6, 0.15)', text: '🥉 3e' };
-    return { color: '#00d2ff', bg: 'rgba(0, 210, 255, 0.1)', text: `#${rank}` };
+    if (rank === 1) return { color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)', text: '1er', icon: 'trophy' as AppIconName };
+    if (rank === 2) return { color: '#cbd5e1', bg: 'rgba(203, 213, 225, 0.15)', text: '2e', icon: 'medal' as AppIconName };
+    if (rank === 3) return { color: '#d97706', bg: 'rgba(217, 119, 6, 0.15)', text: '3e', icon: 'medal' as AppIconName };
+    return { color: '#00d2ff', bg: 'rgba(0, 210, 255, 0.1)', text: `#${rank}`, icon: undefined };
   };
 
   const filteredHouses = houses.filter((h) => {
@@ -162,9 +163,17 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
           onPress={() => setTab('houses')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, tab === 'houses' && styles.activeTabText]}>
-            🏛️ Rédactions
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon
+              name="building"
+              size={13}
+              color={tab === 'houses' ? '#00d2ff' : '#64748b'}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={[styles.tabText, tab === 'houses' && styles.activeTabText]}>
+              Rédactions
+            </Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -172,9 +181,17 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
           onPress={() => setTab('journalists')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, tab === 'journalists' && styles.activeTabText]}>
-            🖋️ Journalistes
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon
+              name="pencil"
+              size={13}
+              color={tab === 'journalists' ? '#00d2ff' : '#64748b'}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={[styles.tabText, tab === 'journalists' && styles.activeTabText]}>
+              Journalistes
+            </Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -182,15 +199,23 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
           onPress={() => setTab('articles')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, tab === 'articles' && styles.activeTabText]}>
-            📰 Enquêtes
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon
+              name="newspaper"
+              size={13}
+              color={tab === 'articles' ? '#00d2ff' : '#64748b'}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={[styles.tabText, tab === 'articles' && styles.activeTabText]}>
+              Enquêtes
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
       {/* Barre de Recherche rapide dans le classement */}
       <View style={styles.searchBarWrapper}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <AppIcon name="search" size={16} color="#64748b" style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
           placeholder={
@@ -206,7 +231,7 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
-            <Text style={styles.clearBtnText}>✕</Text>
+            <AppIcon name="close" size={16} color="#64748b" />
           </TouchableOpacity>
         )}
       </View>
@@ -242,17 +267,23 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                   ? 'LE TOP DES PLUMES D’ÉLITE'
                   : 'LES ENQUÊTES LES PLUS LUES & FIABLES'}
               </Text>
-              <Text style={styles.infoPill}>{showFormula ? '▲ Masquer' : 'ℹ️ Formule'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {!showFormula && <AppIcon name="shield" size={11} color="#00d2ff" style={{ marginRight: 4 }} />}
+                <Text style={styles.infoPill}>{showFormula ? '▲ Masquer' : 'Formule'}</Text>
+              </View>
             </View>
             <Text style={styles.bannerSubtitle}>
               Indexé sur la rigueur journalistique, l'impact des révélations et la confiance citoyenne.
             </Text>
             {showFormula && (
               <View style={styles.formulaBox}>
-                <Text style={styles.formulaText}>
-                  📊 <Text style={{ color: '#00d2ff', fontWeight: 'bold' }}>Indice = </Text>
-                  (Audience vérifiée × 0.4) + (Score Déontologique × 0.4) + (Fidélité des Abonnés × 0.2)
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <AppIcon name="chart" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
+                  <Text style={styles.formulaText}>
+                    <Text style={{ color: '#00d2ff', fontWeight: 'bold' }}>Indice = </Text>
+                    (Audience vérifiée × 0.4) + (Score Déontologique × 0.4) + (Fidélité des Abonnés × 0.2)
+                  </Text>
+                </View>
               </View>
             )}
           </TouchableOpacity>
@@ -281,8 +312,9 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                           }}
                           style={styles.podiumAvatar}
                         />
-                        <View style={[styles.podiumBadgePill, { backgroundColor: '#cbd5e1' }]}>
-                          <Text style={styles.podiumBadgeText}>🥈 2e</Text>
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#cbd5e1', flexDirection: 'row', alignItems: 'center' }]}>
+                          <AppIcon name="medal" size={11} color="#1e293b" style={{ marginRight: 2 }} />
+                          <Text style={styles.podiumBadgeText}>2e</Text>
                         </View>
                       </View>
                       <Text style={styles.podiumName} numberOfLines={1}>
@@ -300,7 +332,7 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                       onPress={() => handleOpenHouse(filteredHouses[0])}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.crownEmoji}>👑</Text>
+                      <AppIcon name="crown" size={20} color="#eab308" style={{ marginBottom: 4 }} />
                       <View style={[styles.podiumAvatarWrap, styles.podiumAvatarWrap1, { borderColor: '#eab308' }]}>
                         <Image
                           source={{
@@ -310,8 +342,9 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                           }}
                           style={styles.podiumAvatar1}
                         />
-                        <View style={[styles.podiumBadgePill, { backgroundColor: '#eab308' }]}>
-                          <Text style={[styles.podiumBadgeText, { color: '#000' }]}>🥇 1er</Text>
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#eab308', flexDirection: 'row', alignItems: 'center' }]}>
+                          <AppIcon name="trophy" size={11} color="#000" style={{ marginRight: 2 }} />
+                          <Text style={[styles.podiumBadgeText, { color: '#000' }]}>1er</Text>
                         </View>
                       </View>
                       <Text style={styles.podiumName1} numberOfLines={1}>
@@ -338,8 +371,9 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                           }}
                           style={styles.podiumAvatar}
                         />
-                        <View style={[styles.podiumBadgePill, { backgroundColor: '#d97706' }]}>
-                          <Text style={styles.podiumBadgeText}>🥉 3e</Text>
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#d97706', flexDirection: 'row', alignItems: 'center' }]}>
+                          <AppIcon name="medal" size={11} color="#ffffff" style={{ marginRight: 2 }} />
+                          <Text style={styles.podiumBadgeText}>3e</Text>
                         </View>
                       </View>
                       <Text style={styles.podiumName} numberOfLines={1}>
@@ -374,7 +408,8 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                       onPress={() => handleOpenHouse(house)}
                       activeOpacity={0.85}
                     >
-                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
+                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
+                        {badge.icon && <AppIcon name={badge.icon} size={10} color={badge.color} style={{ marginRight: 2 }} />}
                         <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
                       </View>
 
@@ -390,7 +425,9 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                       <View style={styles.infoWrapper}>
                         <View style={styles.titleRow}>
                           <Text style={styles.name} numberOfLines={1}>{house.name}</Text>
-                          {house.isVerified && <Text style={styles.verified}> ✓</Text>}
+                          {house.isVerified && (
+                            <AppIcon name="checkmark-circle" size={12} color="#00d2ff" style={{ marginLeft: 4 }} />
+                          )}
                         </View>
                         {house.bio ? (
                           <Text style={styles.bio} numberOfLines={2}>
@@ -399,8 +436,14 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                         ) : null}
 
                         <View style={styles.metricsRow}>
-                          <Text style={styles.metric}>📰 {house.articlesCount || 0} dépêches</Text>
-                          <Text style={styles.metric}>👥 {house.followersCount || 0} abonnés</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                            <AppIcon name="newspaper" size={11} color="#64748b" style={{ marginRight: 4 }} />
+                            <Text style={styles.metric}>{house.articlesCount || 0} dépêches</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <AppIcon name="people" size={11} color="#64748b" style={{ marginRight: 4 }} />
+                            <Text style={styles.metric}>{house.followersCount || 0} abonnés</Text>
+                          </View>
                         </View>
                       </View>
 
@@ -413,10 +456,13 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                       >
                         {followingLoading[house.id] ? (
                           <ActivityIndicator size="small" color="#00d2ff" />
+                        ) : isFollowing ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <AppIcon name="checkmark" size={12} color="#00d2ff" style={{ marginRight: 3 }} />
+                            <Text style={[styles.followBtnText, styles.followingBtnText]}>Suivi</Text>
+                          </View>
                         ) : (
-                          <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                            {isFollowing ? '✓ Suivi' : '+ Suivre'}
-                          </Text>
+                          <Text style={styles.followBtnText}>+ Suivre</Text>
                         )}
                       </TouchableOpacity>
                     </TouchableOpacity>
@@ -447,8 +493,9 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                             </Text>
                           </View>
                         )}
-                        <View style={[styles.podiumBadgePill, { backgroundColor: '#cbd5e1' }]}>
-                          <Text style={styles.podiumBadgeText}>🥈 2e</Text>
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#cbd5e1', flexDirection: 'row', alignItems: 'center' }]}>
+                          <AppIcon name="medal" size={11} color="#1e293b" style={{ marginRight: 2 }} />
+                          <Text style={styles.podiumBadgeText}>2e</Text>
                         </View>
                       </View>
                       <Text style={styles.podiumName} numberOfLines={1}>
@@ -462,7 +509,7 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
 
                     {/* 1ère Place (Or) */}
                     <View style={[styles.podiumCol, styles.podiumCol1]}>
-                      <Text style={styles.crownEmoji}>👑</Text>
+                      <AppIcon name="crown" size={20} color="#eab308" style={{ marginBottom: 4 }} />
                       <View style={[styles.podiumAvatarWrap, styles.podiumAvatarWrap1, { borderColor: '#eab308' }]}>
                         {filteredJournalists[0].avatar ? (
                           <Image source={{ uri: filteredJournalists[0].avatar }} style={styles.podiumAvatar1} />
@@ -473,8 +520,9 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                             </Text>
                           </View>
                         )}
-                        <View style={[styles.podiumBadgePill, { backgroundColor: '#eab308' }]}>
-                          <Text style={[styles.podiumBadgeText, { color: '#000' }]}>🥇 1er</Text>
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#eab308', flexDirection: 'row', alignItems: 'center' }]}>
+                          <AppIcon name="trophy" size={11} color="#000" style={{ marginRight: 2 }} />
+                          <Text style={[styles.podiumBadgeText, { color: '#000' }]}>1er</Text>
                         </View>
                       </View>
                       <Text style={styles.podiumName1} numberOfLines={1}>
@@ -498,8 +546,9 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                             </Text>
                           </View>
                         )}
-                        <View style={[styles.podiumBadgePill, { backgroundColor: '#d97706' }]}>
-                          <Text style={styles.podiumBadgeText}>🥉 3e</Text>
+                        <View style={[styles.podiumBadgePill, { backgroundColor: '#d97706', flexDirection: 'row', alignItems: 'center' }]}>
+                          <AppIcon name="medal" size={11} color="#ffffff" style={{ marginRight: 2 }} />
+                          <Text style={styles.podiumBadgeText}>3e</Text>
                         </View>
                       </View>
                       <Text style={styles.podiumName} numberOfLines={1}>
@@ -529,7 +578,8 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
 
                   return (
                     <View key={j.id || idx} style={styles.rankCard}>
-                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
+                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
+                        {badge.icon && <AppIcon name={badge.icon} size={10} color={badge.color} style={{ marginRight: 2 }} />}
                         <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
                       </View>
 
@@ -546,15 +596,23 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                       <View style={styles.infoWrapper}>
                         <View style={styles.titleRow}>
                           <Text style={styles.name} numberOfLines={1}>{j.name}</Text>
-                          {j.isVerified && <Text style={styles.verified}> ✓</Text>}
+                          {j.isVerified && (
+                            <AppIcon name="checkmark-circle" size={12} color="#00d2ff" style={{ marginLeft: 4 }} />
+                          )}
                         </View>
                         <Text style={styles.mediaTag}>
                           {j.mediaName || (j.role === 'admin' ? 'Direction Éditoriale' : 'Journaliste Accrédité')}
                         </Text>
 
                         <View style={styles.metricsRow}>
-                          <Text style={styles.metric}>📰 {j.articlesCount || 0} articles</Text>
-                          <Text style={styles.metric}>👥 {j.followersCount || 0} abonnés</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                            <AppIcon name="newspaper" size={11} color="#64748b" style={{ marginRight: 4 }} />
+                            <Text style={styles.metric}>{j.articlesCount || 0} articles</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <AppIcon name="people" size={11} color="#64748b" style={{ marginRight: 4 }} />
+                            <Text style={styles.metric}>{j.followersCount || 0} abonnés</Text>
+                          </View>
                         </View>
                       </View>
 
@@ -568,10 +626,13 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                         >
                           {followingLoading[j.id] ? (
                             <ActivityIndicator size="small" color="#00d2ff" />
+                          ) : isFollowing ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <AppIcon name="checkmark" size={12} color="#00d2ff" style={{ marginRight: 3 }} />
+                              <Text style={[styles.followBtnText, styles.followingBtnText]}>Suivi</Text>
+                            </View>
                           ) : (
-                            <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                              {isFollowing ? '✓ Suivi' : '+ Suivre'}
-                            </Text>
+                            <Text style={styles.followBtnText}>+ Suivre</Text>
                           )}
                         </TouchableOpacity>
                       )}
@@ -599,13 +660,17 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                     activeOpacity={0.85}
                   >
                     <View style={styles.articleRankTop}>
-                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg }]}>
+                      <View style={[styles.rankIndicator, { borderColor: badge.color, backgroundColor: badge.bg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
+                        {badge.icon && <AppIcon name={badge.icon} size={10} color={badge.color} style={{ marginRight: 2 }} />}
                         <Text style={[styles.rankText, { color: badge.color }]}>{badge.text}</Text>
                       </View>
                       <View style={styles.catBadge}>
                         <Text style={styles.catBadgeText}>{article.categoryName || 'INVESTIGATION'}</Text>
                       </View>
-                      <Text style={styles.articleViews}>👁️ {article.viewsCount || 0} lectures</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' }}>
+                        <AppIcon name="eye" size={11} color="#64748b" style={{ marginRight: 4 }} />
+                        <Text style={styles.articleViews}>{article.viewsCount || 0} lectures</Text>
+                      </View>
                     </View>
 
                     <View style={styles.articleMainRow}>
@@ -625,8 +690,14 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
                           Par {article.authorName} • {article.mediaName || 'PURGE'}
                         </Text>
                         <View style={styles.articleBottomStats}>
-                          <Text style={styles.articleLikes}>❤️ {article.likesCount || 0} soutiens</Text>
-                          <Text style={styles.articleTrust}>⭐ {article.trustScore || 98}% fiabilité</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+                            <AppIcon name="heart" size={11} color="#ef4444" style={{ marginRight: 4 }} />
+                            <Text style={styles.articleLikes}>{article.likesCount || 0} soutiens</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <AppIcon name="star" size={11} color="#eab308" style={{ marginRight: 4 }} />
+                            <Text style={styles.articleTrust}>{article.trustScore || 98}% fiabilité</Text>
+                          </View>
                         </View>
                       </View>
                     </View>

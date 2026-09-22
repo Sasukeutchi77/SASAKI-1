@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Poll } from '../types';
+import { AppIcon } from './AppIcon';
 
 interface PollWidgetProps {
   poll: Poll;
@@ -26,7 +27,10 @@ export const PollWidget: React.FC<PollWidgetProps> = ({ poll, onVote }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.badge}>📊 SONDAGE DU DÉBAT</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <AppIcon name="bar-chart" size={13} color="#00d2ff" style={{ marginRight: 5 }} />
+          <Text style={styles.badge}>SONDAGE DU DÉBAT</Text>
+        </View>
         <Text style={styles.totalVotes}>{total} {total > 1 ? 'votes' : 'vote'}</Text>
       </View>
 

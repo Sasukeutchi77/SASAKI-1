@@ -16,6 +16,7 @@ import {
   User as UserIcon,
   Tag,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { MediaRecord, MediaUsageType } from '../../types';
 import { api } from '../../services/api';
@@ -345,9 +346,9 @@ export const AdminMediaAssetsTab: React.FC<AdminMediaAssetsTabProps> = ({ onFlas
               </h3>
               <button
                 onClick={() => setShowUploadModal(false)}
-                className="text-stone-400 hover:text-stone-700 text-sm font-bold"
+                className="text-stone-400 hover:text-stone-700 p-1 rounded-lg flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 

@@ -20,6 +20,7 @@ import {
   PickImageResult,
 } from '../services/imagePicker';
 import { ImageSelectModal } from '../components/ImageSelectModal';
+import { AppIcon } from '../components/AppIcon';
 
 interface CreateArticleScreenProps {
   onBack: () => void;
@@ -277,7 +278,10 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
         {hasPendingDraft && (
           <View style={styles.draftRecoveryBanner}>
             <View style={styles.draftRecoveryInfo}>
-              <Text style={styles.draftRecoveryTitle}>📝 Brouillon antérieur détecté</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="document-text" size={14} color="#f59e0b" style={{ marginRight: 6 }} />
+                <Text style={styles.draftRecoveryTitle}>Brouillon antérieur détecté</Text>
+              </View>
               <Text style={styles.draftRecoverySub}>
                 Un travail en cours ({pendingDraftData?.title ? `« ${pendingDraftData.title.slice(0, 30)}... »` : 'texte non titré'}) a été sauvegardé.
               </Text>
@@ -310,7 +314,7 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
         <View style={styles.houseCardSection}>
           <View style={styles.houseCardHeader}>
             <View style={styles.houseCardIconBox}>
-              <Text style={styles.houseCardIcon}>🏛️</Text>
+              <AppIcon name="business" size={18} color="#00d2ff" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.houseCardLabel}>MAISON DE PRESSE ÉDITRICE</Text>
@@ -320,7 +324,10 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
             </View>
             {targetMediaHouseName && (
               <View style={styles.houseCardBadge}>
-                <Text style={styles.houseCardBadgeText}>✓ ÉDITION OFFICIELLE</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon name="checkmark" size={10} color="#10b981" style={{ marginRight: 3 }} />
+                  <Text style={styles.houseCardBadgeText}>ÉDITION OFFICIELLE</Text>
+                </View>
               </View>
             )}
           </View>
@@ -336,7 +343,10 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
               onPress={() => setShowHousePicker(true)}
               activeOpacity={0.8}
             >
-              <Text style={styles.changeHouseBtnText}>🔄 Changer ou vérifier la maison d'édition ›</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <AppIcon name="refresh" size={12} color="#00d2ff" style={{ marginRight: 5 }} />
+                <Text style={styles.changeHouseBtnText}>Changer ou vérifier la maison d'édition ›</Text>
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -353,7 +363,10 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
                   onPress={() => setShowImageModal(true)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.changeCoverText}>📷 Modifier l'image</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon name="camera" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
+                    <Text style={styles.changeCoverText}>Modifier l'image</Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.removeCoverBtn}
@@ -363,7 +376,10 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.removeCoverText}>✕ Supprimer</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon name="close" size={12} color="#ef4444" style={{ marginRight: 4 }} />
+                    <Text style={styles.removeCoverText}>Supprimer</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -373,7 +389,7 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
               onPress={() => setShowImageModal(true)}
               activeOpacity={0.8}
             >
-              <Text style={styles.uploadIcon}>📷</Text>
+              <AppIcon name="camera" size={28} color="#00d2ff" style={{ marginBottom: 6 }} />
               <Text style={styles.uploadTitle}>Ajouter une photo de couverture</Text>
               <Text style={styles.uploadSub}>Galerie photo, appareil photo, lien direct ou modèles d'enquête</Text>
             </TouchableOpacity>
@@ -476,12 +492,12 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
                   setShowHousePicker(false);
                 }}
               >
-                <Text style={styles.pickerOptionIcon}>🖋️</Text>
+                <AppIcon name="create" size={18} color="#94a3b8" style={{ marginRight: 10 }} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.pickerOptionTitle}>Journaliste Indépendant</Text>
                   <Text style={styles.pickerOptionDesc}>Publication à titre individuel</Text>
                 </View>
-                {!targetMediaHouseId && <Text style={styles.checkIcon}>✓</Text>}
+                {!targetMediaHouseId && <AppIcon name="checkmark" size={16} color="#00d2ff" />}
               </TouchableOpacity>
 
               {availableHouses.map((h) => {
@@ -499,14 +515,14 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
                       setShowHousePicker(false);
                     }}
                   >
-                    <Text style={styles.pickerOptionIcon}>🏛️</Text>
+                    <AppIcon name="business" size={18} color="#00d2ff" style={{ marginRight: 10 }} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.pickerOptionTitle}>{h.name}</Text>
                       <Text style={styles.pickerOptionDesc} numberOfLines={1}>
                         {h.motto || 'Maison de presse agréée'}
                       </Text>
                     </View>
-                    {isSelected && <Text style={styles.checkIcon}>✓</Text>}
+                    {isSelected && <AppIcon name="checkmark" size={16} color="#00d2ff" />}
                   </TouchableOpacity>
                 );
               })}

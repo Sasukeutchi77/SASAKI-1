@@ -871,7 +871,7 @@ export const api = {
           id: 'notif_flash',
           userId: user?.id || 'guest',
           type: 'breaking_news',
-          title: '🚨 Dépêche urgente disponible',
+          title: '[Dépêche urgente] Flash info disponible',
           message: 'Nouveau décret officiel n°44 publié par la rédaction.',
           read: false,
           createdAt: new Date().toISOString(),

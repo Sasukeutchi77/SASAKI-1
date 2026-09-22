@@ -11,6 +11,7 @@ import {
   RefreshCw,
   ArrowRight,
   Hash,
+  X,
 } from 'lucide-react';
 import { Article, Category } from '../types';
 import { api } from '../services/api';
@@ -322,9 +323,9 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
               <button
                 id="category-live-dismiss-btn"
                 onClick={() => setLiveCategoryAlert(null)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 text-xs cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 text-xs cursor-pointer flex items-center justify-center"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

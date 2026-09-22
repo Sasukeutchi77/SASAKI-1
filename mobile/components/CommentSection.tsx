@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Comment, User } from '../types';
+import { AppIcon } from './AppIcon';
 
 interface CommentSectionProps {
   comments: Comment[];
@@ -81,7 +82,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <View style={styles.commentBody}>
           <View style={styles.authorHeader}>
             <Text style={styles.commentAuthorName}>{comment.authorName}</Text>
-            {comment.authorIsVerified && <Text style={styles.verifiedBadge}>✓</Text>}
+            {comment.authorIsVerified && (
+              <AppIcon name="checkmark-circle" size={12} color="#00d2ff" style={{ marginHorizontal: 2 }} />
+            )}
             {comment.authorRole === 'journalist' && (
               <View style={styles.journalistBadge}>
                 <Text style={styles.journalistBadgeText}>Journaliste</Text>
@@ -101,7 +104,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               onPress={() => toggleLikeComment(comment.id)}
               activeOpacity={0.7}
             >
-              <Text style={styles.actionEmoji}>{isLiked ? '❤️' : '🤍'}</Text>
+              <AppIcon name={isLiked ? 'heart' : 'heart-outline'} size={13} color={isLiked ? '#ef4444' : '#94a3b8'} />
               <Text style={[styles.actionLabel, isLiked && styles.activeActionLabel]}>
                 {likesCount > 0 ? likesCount : 'Soutenir'}
               </Text>
@@ -114,7 +117,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.actionEmoji}>↩️</Text>
+              <AppIcon name="arrow-undo" size={13} color="#94a3b8" />
               <Text style={styles.actionLabel}>Répondre</Text>
             </TouchableOpacity>
           </View>
@@ -137,15 +140,21 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <View style={styles.inputCard}>
           {replyingTo && (
             <View style={styles.replyingToBanner}>
-              <Text style={styles.replyingToText}>
-                ↩ En réponse à <Text style={styles.replyingToAuthor}>@{replyingTo.authorName}</Text>
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="arrow-undo" size={12} color="#94a3b8" style={{ marginRight: 4 }} />
+                <Text style={styles.replyingToText}>
+                  En réponse à <Text style={styles.replyingToAuthor}>@{replyingTo.authorName}</Text>
+                </Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setReplyingTo(null)}
                 style={styles.cancelReplyBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.cancelReplyText}>Annuler ✕</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.cancelReplyText}>Annuler </Text>
+                  <AppIcon name="close" size={12} color="#ef4444" />
+                </View>
               </TouchableOpacity>
             </View>
           )}
@@ -190,9 +199,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           onPress={onOpenAuth}
           activeOpacity={0.8}
         >
-          <Text style={styles.loginPromptText}>
-            🔒 Connectez-vous pour participer au débat citoyen
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <AppIcon name="lock" size={14} color="#00d2ff" style={{ marginRight: 6 }} />
+            <Text style={styles.loginPromptText}>
+              Connectez-vous pour participer au débat citoyen
+            </Text>
+          </View>
         </TouchableOpacity>
       )}
 

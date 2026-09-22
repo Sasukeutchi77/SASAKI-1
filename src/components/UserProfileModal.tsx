@@ -656,12 +656,20 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
                   />
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-stone-400">
-                  <span>
-                    {user.isVerified
-                      ? '✓ Compte certifié'
-                      : (user.followersCount || 0) >= 50
-                      ? '✓ Seuil de 50 abonnés atteint'
-                      : `Encore ${Math.max(0, 50 - (user.followersCount || 0))} abonnés requis`}
+                  <span className="flex items-center gap-1">
+                    {user.isVerified ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                        <span>Compte certifié</span>
+                      </>
+                    ) : (user.followersCount || 0) >= 50 ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                        <span>Seuil de 50 abonnés atteint</span>
+                      </>
+                    ) : (
+                      `Encore ${Math.max(0, 50 - (user.followersCount || 0))} abonnés requis`
+                    )}
                   </span>
                   <span className="text-cyan-400/70 text-[10px]">
                     Validation manuelle admin possible à tout moment

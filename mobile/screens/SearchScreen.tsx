@@ -16,6 +16,7 @@ import { api } from '../services/api';
 import { ArticleCard } from '../components/ArticleCard';
 import { CreateHouseModal } from '../components/CreateHouseModal';
 import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
+import { AppIcon, AppIconName } from '../components/AppIcon';
 
 interface SearchScreenProps {
   onSelectArticle: (article: Article) => void;
@@ -51,14 +52,14 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
   const [minTrustScore, setMinTrustScore] = useState(0);
 
   // Trending topic chips
-  const trendingTopics = [
-    '🔥 Décrets officiels',
-    '🛡️ Sanctuaires',
-    '⚖️ Corruption',
-    '⚔️ Arènes',
-    '👥 Élections',
-    '💼 Économie',
-    '🚨 Sécurité',
+  const trendingTopics: { label: string; icon: AppIconName; query: string }[] = [
+    { label: 'Décrets officiels', icon: 'flame', query: 'Décrets officiels' },
+    { label: 'Sanctuaires', icon: 'shield', query: 'Sanctuaires' },
+    { label: 'Corruption', icon: 'scale', query: 'Corruption' },
+    { label: 'Arènes', icon: 'swords', query: 'Arènes' },
+    { label: 'Élections', icon: 'people', query: 'Élections' },
+    { label: 'Économie', icon: 'briefcase', query: 'Économie' },
+    { label: 'Sécurité', icon: 'alert', query: 'Sécurité' },
   ];
 
   // Houses state
@@ -133,10 +134,9 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
     }
   };
 
-  const handleSelectTopic = (topic: string) => {
-    const cleanTopic = topic.replace(/^[^\w\sÀ-ÿ]+/, '').trim();
-    setQuery(cleanTopic);
-    handleSearch(cleanTopic, selectedCategory);
+  const handleSelectTopic = (topicQuery: string) => {
+    setQuery(topicQuery);
+    handleSearch(topicQuery, selectedCategory);
   };
 
   const handleCategoryPress = (catId: string) => {
@@ -186,22 +186,38 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           onPress={() => setActiveSegment('articles')}
           activeOpacity={0.7}
         >
-          <Text
-            style={[styles.segmentBtnText, activeSegment === 'articles' && styles.segmentBtnTextActive]}
-          >
-            📰 ARTICLES & SUJETS
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon
+              name="newspaper"
+              size={15}
+              color={activeSegment === 'articles' ? '#00d2ff' : '#64748b'}
+              style={{ marginRight: 6 }}
+            />
+            <Text
+              style={[styles.segmentBtnText, activeSegment === 'articles' && styles.segmentBtnTextActive]}
+            >
+              ARTICLES & SUJETS
+            </Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.segmentBtn, activeSegment === 'houses' && styles.segmentBtnActive]}
           onPress={() => setActiveSegment('houses')}
           activeOpacity={0.7}
         >
-          <Text
-            style={[styles.segmentBtnText, activeSegment === 'houses' && styles.segmentBtnTextActive]}
-          >
-            🏛️ MAISONS DE PRESSE
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon
+              name="building"
+              size={15}
+              color={activeSegment === 'houses' ? '#00d2ff' : '#64748b'}
+              style={{ marginRight: 6 }}
+            />
+            <Text
+              style={[styles.segmentBtnText, activeSegment === 'houses' && styles.segmentBtnTextActive]}
+            >
+              MAISONS DE PRESSE
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -210,7 +226,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           {/* Barre de recherche Articles */}
           <View style={styles.searchBarWrapper}>
             <View style={styles.inputContainer}>
-              <Text style={styles.searchIcon}>🔍</Text>
+              <AppIcon name="search" size={16} color="#64748b" style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Rechercher par titre, mot-clé, sujet..."
@@ -229,7 +245,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                     handleSearch('', selectedCategory);
                   }}
                 >
-                  <Text style={styles.clearIcon}>✕</Text>
+                  <AppIcon name="close" size={16} color="#64748b" />
                 </TouchableOpacity>
               )}
             </View>
@@ -239,16 +255,20 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           {!hasSearched && query.length === 0 && !selectedCategory && (
             <ScrollView contentContainerStyle={styles.exploreSection} showsVerticalScrollIndicator={false}>
               {/* Sujets Chauds / Trending */}
-              <Text style={styles.sectionTitle}>🔥 Sujets Brûlants du Moment</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <AppIcon name="flame" size={16} color="#f97316" style={{ marginRight: 6 }} />
+                <Text style={styles.sectionTitle}>Sujets Brûlants du Moment</Text>
+              </View>
               <View style={styles.trendingWrap}>
                 {trendingTopics.map((topic, idx) => (
                   <TouchableOpacity
                     key={idx}
-                    style={styles.trendingChip}
-                    onPress={() => handleSelectTopic(topic)}
+                    style={[styles.trendingChip, { flexDirection: 'row', alignItems: 'center' }]}
+                    onPress={() => handleSelectTopic(topic.query)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.trendingChipText}>{topic}</Text>
+                    <AppIcon name={topic.icon} size={13} color="#00d2ff" style={{ marginRight: 6 }} />
+                    <Text style={styles.trendingChipText}>{topic.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -257,7 +277,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               {recentSearches.length > 0 && (
                 <View style={styles.recentSection}>
                   <View style={styles.recentHeader}>
-                    <Text style={styles.sectionTitle}>🕒 Recherches Récentes</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <AppIcon name="calendar" size={15} color="#94a3b8" style={{ marginRight: 6 }} />
+                      <Text style={styles.sectionTitle}>Recherches Récentes</Text>
+                    </View>
                     <TouchableOpacity onPress={() => setRecentSearches([])}>
                       <Text style={styles.clearRecentText}>Effacer</Text>
                     </TouchableOpacity>
@@ -317,14 +340,22 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                   onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.advancedFilterToggleText,
-                      (showAdvancedFilters || activeFiltersCount > 0) && styles.advancedFilterToggleTextActive,
-                    ]}
-                  >
-                    ⚙️ Filtres {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon
+                      name="filter"
+                      size={12}
+                      color={(showAdvancedFilters || activeFiltersCount > 0) ? '#38bdf8' : '#64748b'}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={[
+                        styles.advancedFilterToggleText,
+                        (showAdvancedFilters || activeFiltersCount > 0) && styles.advancedFilterToggleTextActive,
+                      ]}
+                    >
+                      Filtres {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
 
@@ -334,27 +365,36 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                   onPress={() => handleSortChange('latest')}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.sortBtnText, sortMode === 'latest' && styles.sortBtnTextActive]}>
-                    ⏱️ Récents
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon name="calendar" size={12} color={sortMode === 'latest' ? '#00d2ff' : '#64748b'} style={{ marginRight: 4 }} />
+                    <Text style={[styles.sortBtnText, sortMode === 'latest' && styles.sortBtnTextActive]}>
+                      Récents
+                    </Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.sortBtn, sortMode === 'views' && styles.sortBtnActive]}
                   onPress={() => handleSortChange('views')}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.sortBtnText, sortMode === 'views' && styles.sortBtnTextActive]}>
-                    👁️ Vus
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon name="eye" size={12} color={sortMode === 'views' ? '#00d2ff' : '#64748b'} style={{ marginRight: 4 }} />
+                    <Text style={[styles.sortBtnText, sortMode === 'views' && styles.sortBtnTextActive]}>
+                      Vus
+                    </Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.sortBtn, sortMode === 'likes' && styles.sortBtnActive]}
                   onPress={() => handleSortChange('likes')}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.sortBtnText, sortMode === 'likes' && styles.sortBtnTextActive]}>
-                    ❤️ Aimés
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon name="heart" size={12} color={sortMode === 'likes' ? '#00d2ff' : '#64748b'} style={{ marginRight: 4 }} />
+                    <Text style={[styles.sortBtnText, sortMode === 'likes' && styles.sortBtnTextActive]}>
+                      Aimés
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -364,7 +404,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           {showAdvancedFilters && (
             <View style={styles.advancedFiltersPanel}>
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>✍️ Auteur / Journaliste</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <AppIcon name="pencil" size={13} color="#00d2ff" style={{ marginRight: 6 }} />
+                  <Text style={styles.filterSectionTitle}>Auteur / Journaliste</Text>
+                </View>
                 <TextInput
                   style={styles.filterTextInput}
                   placeholder="Ex: Itachi, Minato, Citoyen..."
@@ -375,7 +418,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               </View>
 
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>🏛️ Maison de Presse</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <AppIcon name="building" size={13} color="#00d2ff" style={{ marginRight: 6 }} />
+                  <Text style={styles.filterSectionTitle}>Maison de Presse</Text>
+                </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterPillsScroll}>
                   <TouchableOpacity
                     style={[styles.filterPill, !selectedHouseFilter && styles.filterPillActive]}
@@ -400,7 +446,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               </View>
 
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>⭐ Fiabilité Minimale</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <AppIcon name="star" size={13} color="#eab308" style={{ marginRight: 6 }} />
+                  <Text style={styles.filterSectionTitle}>Fiabilité Minimale</Text>
+                </View>
                 <View style={styles.trustFilterRow}>
                   {[
                     { label: 'Tous', val: 0 },
@@ -423,14 +472,15 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
 
               {activeFiltersCount > 0 && (
                 <TouchableOpacity
-                  style={styles.clearFiltersBtn}
+                  style={[styles.clearFiltersBtn, { flexDirection: 'row', alignItems: 'center' }]}
                   onPress={() => {
                     setAuthorFilter('');
                     setSelectedHouseFilter('');
                     setMinTrustScore(0);
                   }}
                 >
-                  <Text style={styles.clearFiltersText}>✕ Réinitialiser les filtres avancés</Text>
+                  <AppIcon name="close" size={12} color="#ef4444" style={{ marginRight: 4 }} />
+                  <Text style={styles.clearFiltersText}>Réinitialiser les filtres avancés</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -500,7 +550,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             <View style={styles.createHouseBadge}>
               <Text style={styles.createHouseBadgeText}>RÉSEAU ÉDITORIAL</Text>
             </View>
-            <Text style={styles.createHouseBannerTitle}>🏛️ Fonder une Maison de Presse</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <AppIcon name="building" size={18} color="#00d2ff" style={{ marginRight: 8 }} />
+              <Text style={styles.createHouseBannerTitle}>Fonder une Maison de Presse</Text>
+            </View>
             <Text style={styles.createHouseBannerDesc}>
               Créez votre propre rédaction indépendante, publiez vos investigations officielles, recrutez des journalistes et développez votre audience.
             </Text>
@@ -522,7 +575,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           {/* Barre de recherche pour les maisons */}
           <View style={styles.searchBarWrapper}>
             <View style={styles.inputContainer}>
-              <Text style={styles.searchIcon}>🏛️</Text>
+              <AppIcon name="building" size={16} color="#64748b" style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Chercher une maison de presse, devise, domaine..."
@@ -532,7 +585,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               />
               {houseQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setHouseQuery('')}>
-                  <Text style={styles.clearIcon}>✕</Text>
+                  <AppIcon name="close" size={16} color="#64748b" />
                 </TouchableOpacity>
               )}
             </View>
@@ -579,7 +632,9 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                       <View style={styles.houseTitleCol}>
                         <View style={styles.houseNameRow}>
                           <Text style={styles.houseName}>{house.name}</Text>
-                          {house.isVerified && <Text style={styles.verifiedBadge}> ✓</Text>}
+                          {house.isVerified && (
+                            <AppIcon name="checkmark-circle" size={13} color="#00d2ff" style={{ marginLeft: 4 }} />
+                          )}
                         </View>
                         <Text style={styles.houseMotto}>« {house.motto || 'Information Indépendante'} »</Text>
                       </View>

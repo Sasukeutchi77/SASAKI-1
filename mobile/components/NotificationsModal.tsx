@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Notification } from '../types';
 import { api } from '../services/api';
+import { AppIcon } from './AppIcon';
 import {
   triggerLocalNotification,
   requestNotificationPermission,
@@ -134,9 +135,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         >
           <View style={styles.notifHeaderRow}>
             <View style={styles.typeBadge}>
-              <Text style={styles.typeBadgeText}>
-                {isBreaking ? '🚨 ALERTE DIRECT' : 'INFO SYSTÈME'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {isBreaking && (
+                  <AppIcon name="alert-circle" size={11} color="#ef4444" style={{ marginRight: 4 }} />
+                )}
+                <Text style={styles.typeBadgeText}>
+                  {isBreaking ? 'ALERTE DIRECT' : 'INFO SYSTÈME'}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.headerRightActions}>
@@ -153,7 +159,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 activeOpacity={0.6}
               >
-                <Text style={styles.quickDeleteText}>🗑️</Text>
+                <AppIcon name="trash" size={12} color="#ef4444" />
               </TouchableOpacity>
             </View>
           </View>
@@ -168,7 +174,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         {isReading && (
           <View style={styles.readingActionsRow}>
             <View style={styles.readingStatus}>
-              <Text style={styles.readingStatusText}>✓ Notification lue</Text>
+              <AppIcon name="checkmark" size={12} color="#10b981" style={{ marginRight: 4 }} />
+              <Text style={styles.readingStatusText}>Notification lue</Text>
             </View>
             <View style={styles.readingButtonsGroup}>
               <TouchableOpacity
@@ -176,7 +183,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 onPress={() => handleDeleteNotification(item.id, item.title)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.deleteActionBtnText}>🗑️ Supprimer</Text>
+                <AppIcon name="trash" size={12} color="#fca5a5" style={{ marginRight: 4 }} />
+                <Text style={styles.deleteActionBtnText}>Supprimer</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -196,7 +204,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
               <Text style={styles.headerSub}>Dépêches urgentes & alertes de la rédaction</Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <AppIcon name="close" size={18} color="#ffffff" />
             </TouchableOpacity>
           </View>
 
@@ -245,7 +253,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             </View>
           ) : notifications.length === 0 ? (
             <View style={styles.centered}>
-              <Text style={styles.emptyIcon}>🔔</Text>
+              <AppIcon name="bell" size={40} color="#64748b" style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>Aucune notification</Text>
               <Text style={styles.emptySub}>
                 Toutes vos alertes ont été traitées ou supprimées.

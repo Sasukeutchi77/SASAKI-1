@@ -14,6 +14,7 @@ import {
 import { api } from '../services/api';
 import { MediaHouse, User } from '../types';
 import { ImageSelectModal } from './ImageSelectModal';
+import { AppIcon } from './AppIcon';
 import { uploadPickedImageToCloudinary } from '../services/imagePicker';
 
 const SPECIALTY_OPTIONS = [
@@ -166,7 +167,10 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.backBtn} activeOpacity={0.7}>
-            <Text style={styles.backBtnText}>✕ ANNULER</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="close" size={13} color="#94a3b8" style={{ marginRight: 4 }} />
+              <Text style={styles.backBtnText}>ANNULER</Text>
+            </View>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>FONDER UNE MAISON</Text>
           <TouchableOpacity
@@ -197,7 +201,7 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
           {/* Règle Déontologique 1 Maison par Journaliste */}
           {(currentUser?.mediaName || currentUser?.mediaId) && currentUser?.role !== 'admin' ? (
             <View style={styles.limitCard}>
-              <Text style={styles.limitIcon}>🛡️</Text>
+              <AppIcon name="shield" size={32} color="#f59e0b" style={{ marginBottom: 8 }} />
               <Text style={styles.limitTitle}>LIMITE DÉONTOLOGIQUE ATTEINTE</Text>
               <Text style={styles.limitDesc}>
                 Chaque compte de journaliste est strictement limité à une seule maison de presse. Vous êtes actuellement affilié à la maison :
@@ -213,7 +217,10 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
 
           {errorMessage && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>⚠️ {errorMessage}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="alert-circle" size={14} color="#fca5a5" style={{ marginRight: 6 }} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
             </View>
           )}
 
@@ -275,10 +282,14 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
                     onPress={() => toggleSpecialty(spec)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.chipText, active && styles.activeChipText]}>
-                      {active ? '✓ ' : '+ '}
-                      {spec}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {active && (
+                        <AppIcon name="checkmark" size={11} color="#06b6d4" style={{ marginRight: 4 }} />
+                      )}
+                      <Text style={[styles.chipText, active && styles.activeChipText]}>
+                        {spec}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -302,7 +313,10 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
                   onPress={() => setImagePickerType('logo')}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.changeImgBtnText}>📷 Choisir ou modifier le logo</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon name="camera" size={13} color="#06b6d4" style={{ marginRight: 6 }} />
+                    <Text style={styles.changeImgBtnText}>Choisir ou modifier le logo</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -316,7 +330,10 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
                 onPress={() => setImagePickerType('cover')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.changeImgBtnText}>🖼️ Modifier l'image de couverture (16:9)</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon name="image" size={13} color="#06b6d4" style={{ marginRight: 6 }} />
+                  <Text style={styles.changeImgBtnText}>Modifier l'image de couverture (16:9)</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -385,7 +402,10 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
             {loading ? (
               <ActivityIndicator color="#020512" size="small" />
             ) : (
-              <Text style={styles.bigSubmitBtnText}>🏛️ FONDER LA MAISON DE PRESSE</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <AppIcon name="building" size={16} color="#020512" style={{ marginRight: 8 }} />
+                <Text style={styles.bigSubmitBtnText}>FONDER LA MAISON DE PRESSE</Text>
+              </View>
             )}
           </TouchableOpacity>
           </>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Article } from '../types';
+import { AppIcon } from './AppIcon';
 
 interface ArticleCardProps {
   article: Article;
@@ -72,19 +73,28 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             )}
           </View>
           <View style={styles.trustBadge}>
-            <Text style={styles.trustBadgeText}>⭐ {trustScore}% FIABILITÉ</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="star" size={11} color="#eab308" style={{ marginRight: 3 }} />
+              <Text style={styles.trustBadgeText}>{trustScore}% FIABILITÉ</Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.pillsRow}>
           {article.poll && (
             <View style={styles.featurePill}>
-              <Text style={styles.featurePillText}>📊 Sondage</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="chart" size={11} color="#00d2ff" style={{ marginRight: 3 }} />
+                <Text style={styles.featurePillText}>Sondage</Text>
+              </View>
             </View>
           )}
           {article.readTime && (
             <View style={styles.readTimePill}>
-              <Text style={styles.readTimeText}>⏱ {article.readTime} min</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="calendar" size={11} color="#94a3b8" style={{ marginRight: 3 }} />
+                <Text style={styles.readTimeText}>{article.readTime} min</Text>
+              </View>
             </View>
           )}
         </View>
@@ -125,16 +135,21 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               <Text style={styles.authorName} numberOfLines={1}>
                 {article.authorName}
               </Text>
-              {article.authorIsVerified && <Text style={styles.verifiedIcon}> ✓</Text>}
+              {article.authorIsVerified && (
+                <AppIcon name="checkmark-circle" size={13} color="#00d2ff" style={{ marginLeft: 4 }} />
+              )}
             </View>
             <TouchableOpacity
               onPress={() => onPressHouse && onPressHouse(article.mediaName || '', article.mediaId)}
               disabled={!onPressHouse}
               activeOpacity={0.7}
             >
-              <Text style={styles.mediaHouseName} numberOfLines={1}>
-                🏛️ {article.mediaName || 'PURGE Rédaction Centrale'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="building" size={11} color="#00d2ff" style={{ marginRight: 4 }} />
+                <Text style={styles.mediaHouseName} numberOfLines={1}>
+                  {article.mediaName || 'PURGE Rédaction Centrale'}
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -147,19 +162,24 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               onPress={onToggleLike}
               activeOpacity={0.7}
             >
-              <Text style={styles.metricIcon}>{article.isLiked ? '❤️' : '🤍'}</Text>
+              <AppIcon
+                name="heart"
+                size={14}
+                color={article.isLiked ? '#ef4444' : '#64748b'}
+                style={{ marginRight: 4 }}
+              />
               <Text style={[styles.metricCount, article.isLiked && styles.activeMetric]}>
                 {article.likesCount || 0}
               </Text>
             </TouchableOpacity>
 
             <View style={styles.metricBtn}>
-              <Text style={styles.metricIcon}>💬</Text>
+              <AppIcon name="comment" size={14} color="#64748b" style={{ marginRight: 4 }} />
               <Text style={styles.metricCount}>{article.commentsCount || 0}</Text>
             </View>
 
             <View style={styles.metricBtn}>
-              <Text style={styles.metricIcon}>👁️</Text>
+              <AppIcon name="eye" size={14} color="#64748b" style={{ marginRight: 4 }} />
               <Text style={styles.metricCount}>{article.viewsCount || 0}</Text>
             </View>
           </View>
@@ -169,7 +189,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             onPress={onToggleBookmark}
             activeOpacity={0.7}
           >
-            <Text style={styles.bookmarkIcon}>{article.isBookmarked ? '🔖' : '📑'}</Text>
+            <AppIcon
+              name="bookmark"
+              size={16}
+              color={article.isBookmarked ? '#00d2ff' : '#64748b'}
+            />
           </TouchableOpacity>
         </View>
       </View>

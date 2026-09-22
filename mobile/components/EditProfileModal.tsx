@@ -14,6 +14,7 @@ import {
 import { User } from '../types';
 import { api } from '../services/api';
 import { ImageSelectModal } from './ImageSelectModal';
+import { AppIcon } from './AppIcon';
 import { uploadPickedImageToCloudinary } from '../services/imagePicker';
 
 interface EditProfileModalProps {
@@ -132,7 +133,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         <ScrollView contentContainerStyle={styles.scrollBody} keyboardShouldPersistTaps="handled">
           {errorMessage && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>⚠️ {errorMessage}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="alert-circle" size={14} color="#fca5a5" style={{ marginRight: 6 }} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
             </View>
           )}
 
@@ -151,7 +155,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 onPress={() => setShowImagePicker(true)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.avatarBadgeText}>📷</Text>
+                <AppIcon name="camera" size={14} color="#020512" />
               </TouchableOpacity>
             </View>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { NavigationTab } from '../types';
+import { AppIcon, AppIconName } from './AppIcon';
 
 interface BottomNavBarProps {
   activeTab: NavigationTab;
@@ -19,19 +20,20 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 }) => {
   const houseLabel = isJournalist || hasHouse ? 'Ma Maison' : 'Maisons';
 
-  const tabs: { id: NavigationTab; label: string; icon: string }[] = [
-    { id: 'feed', label: 'Actualités', icon: '📰' },
-    { id: 'search', label: 'Explorer', icon: '🔍' },
-    { id: 'rankings', label: 'Top 7', icon: '🏆' },
-    { id: 'house', label: houseLabel, icon: '🏛️' },
-    { id: 'bookmarks', label: 'Favoris', icon: '🔖' },
-    { id: 'profile', label: 'Profil', icon: '👤' },
+  const tabs: { id: NavigationTab; label: string; iconName: AppIconName }[] = [
+    { id: 'feed', label: 'Actualités', iconName: 'newspaper' },
+    { id: 'search', label: 'Explorer', iconName: 'explore' },
+    { id: 'rankings', label: 'Top 7', iconName: 'trophy' },
+    { id: 'house', label: houseLabel, iconName: 'building' },
+    { id: 'bookmarks', label: 'Favoris', iconName: 'bookmark' },
+    { id: 'profile', label: 'Profil', iconName: 'profile' },
   ];
 
   return (
     <View style={styles.navBar}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
+        const iconColor = isActive ? '#06b6d4' : '#64748b';
         return (
           <TouchableOpacity
             key={tab.id}
@@ -41,7 +43,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           >
             {isActive && <View style={styles.activeIndicator} />}
             <View style={styles.iconWrapper}>
-              <Text style={[styles.iconText, isActive && styles.activeIconText]}>{tab.icon}</Text>
+              <AppIcon name={tab.iconName} size={20} color={iconColor} />
               {tab.id === 'bookmarks' && unreadBookmarks > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{unreadBookmarks}</Text>

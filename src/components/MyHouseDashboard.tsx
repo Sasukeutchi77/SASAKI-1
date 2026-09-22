@@ -29,6 +29,10 @@ import {
   Edit3,
   Check,
   Shield,
+  X,
+  Circle,
+  Search,
+  Zap,
 } from 'lucide-react';
 import { MediaHouse, User, Article, Category } from '../types';
 import { api } from '../services/api';
@@ -971,9 +975,9 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                                 setEditingRoleMemberId(null);
                                 setMemberRoleInput('');
                               }}
-                              className="px-2 py-1 text-xs text-stone-400 hover:text-white"
+                              className="px-2 py-1 text-xs text-stone-400 hover:text-white flex items-center justify-center"
                             >
-                              ✕
+                              <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
                           {/* Role presets */}
@@ -1182,35 +1186,38 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setNewNotePriority('standard')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
                     newNotePriority === 'standard'
                       ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400'
                       : 'bg-stone-950 text-stone-400 border-stone-800'
                   }`}
                 >
-                  🔵 Note standard
+                  <Circle className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" />
+                  <span>Note standard</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewNotePriority('investigation')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
                     newNotePriority === 'investigation'
                       ? 'bg-blue-600/30 text-cyan-200 border-cyan-400'
                       : 'bg-stone-950 text-stone-400 border-stone-800'
                   }`}
                 >
-                  🔷 Enquête en cours
+                  <Search className="w-3 h-3 text-cyan-300" />
+                  <span>Enquête en cours</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewNotePriority('urgent')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
                     newNotePriority === 'urgent'
                       ? 'bg-blue-900/50 text-cyan-100 border-blue-400'
                       : 'bg-stone-950 text-stone-400 border-stone-800'
                   }`}
                 >
-                  ⚡ Urgent
+                  <Zap className="w-3 h-3 text-amber-400" />
+                  <span>Urgent</span>
                 </button>
               </div>
 
@@ -1258,14 +1265,29 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 ${
                             note.priority === 'urgent'
                               ? 'bg-blue-900/50 text-cyan-100 border border-blue-400/50'
                               : note.priority === 'investigation'
                               ? 'bg-blue-600/30 text-cyan-200 border border-cyan-400/40'
                               : 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
                           }`}>
-                            {note.priority === 'urgent' ? '⚡ Urgent' : note.priority === 'investigation' ? '🔷 Enquête' : '🔵 Note interne'}
+                            {note.priority === 'urgent' ? (
+                              <>
+                                <Zap className="w-2.5 h-2.5 text-amber-400" />
+                                <span>Urgent</span>
+                              </>
+                            ) : note.priority === 'investigation' ? (
+                              <>
+                                <Search className="w-2.5 h-2.5 text-cyan-300" />
+                                <span>Enquête</span>
+                              </>
+                            ) : (
+                              <>
+                                <Circle className="w-2 h-2 fill-cyan-400 text-cyan-400" />
+                                <span>Note interne</span>
+                              </>
+                            )}
                           </span>
                           <span className="text-xs font-bold text-white">
                             {note.authorName}

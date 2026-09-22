@@ -15,6 +15,7 @@ import { api, CURATED_FALLBACK_ARTICLES } from '../services/api';
 import { ArticleCard } from '../components/ArticleCard';
 import { CategoryPills } from '../components/CategoryPills';
 import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
+import { AppIcon, AppIconName } from '../components/AppIcon';
 
 interface HomeScreenProps {
   onSelectArticle: (article: Article) => void;
@@ -252,7 +253,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <View style={styles.breakingHeaderRow}>
           <View style={styles.breakingBadge}>
             <View style={styles.breakingPulseDot} />
-            <Text style={styles.breakingBadgeText}>🚨 DERNIÈRE MINUTE</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="alert" size={13} color="#ffffff" style={{ marginRight: 4 }} />
+              <Text style={styles.breakingBadgeText}>DERNIÈRE MINUTE</Text>
+            </View>
           </View>
           <Text style={styles.breakingTimeText}>Enquête Prioritaire</Text>
         </View>
@@ -260,9 +264,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {heroArticle?.title || 'Révélations sur les arènes et transferts clandestins d’actifs'}
         </Text>
         <View style={styles.breakingFooterRow}>
-          <Text style={styles.breakingSourceText}>
-            🏛️ {heroArticle?.mediaName || 'PURGE Rédaction'} • Fiabilité {heroArticle?.trustScore || 98}%
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon name="building" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
+            <Text style={styles.breakingSourceText}>
+              {heroArticle?.mediaName || 'PURGE Rédaction'} • Fiabilité {heroArticle?.trustScore || 98}%
+            </Text>
+          </View>
           <Text style={styles.breakingActionText}>Consulter l’enquête ›</Text>
         </View>
       </TouchableOpacity>
@@ -291,7 +298,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </Text>
               </View>
               <View style={styles.trustScoreBadge}>
-                <Text style={styles.trustScoreText}>⭐ 98% FIABILITÉ</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon name="star" size={11} color="#eab308" style={{ marginRight: 3 }} />
+                  <Text style={styles.trustScoreText}>98% FIABILITÉ</Text>
+                </View>
               </View>
             </View>
 
@@ -312,14 +322,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 style={styles.heroAuthorAvatar}
               />
               <View style={styles.heroAuthorInfo}>
-                <Text style={styles.heroAuthorName}>
-                  {heroArticle.authorName} <Text style={styles.verifiedCheck}>✓</Text>
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.heroAuthorName}>{heroArticle.authorName}</Text>
+                  <AppIcon name="checkmark-circle" size={12} color="#00d2ff" style={{ marginLeft: 4 }} />
+                </View>
                 <Text style={styles.heroMediaName}>
                   {heroArticle.mediaName || 'PURGE RÉDACTION CENTRALE'}
                 </Text>
               </View>
-              <Text style={styles.heroReadTime}>⏱ {heroArticle.readTime || 4} min</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="calendar" size={11} color="#94a3b8" style={{ marginRight: 3 }} />
+                <Text style={styles.heroReadTime}>{heroArticle.readTime || 4} min</Text>
+              </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -342,9 +356,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           onPress={() => setFeedType('trending')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.feedTabText, feedType === 'trending' && styles.activeFeedTabText]}>
-            À la Une 🔥
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.feedTabText, feedType === 'trending' && styles.activeFeedTabText, { marginRight: 4 }]}>
+              À la Une
+            </Text>
+            <AppIcon name="flame" size={12} color={feedType === 'trending' ? '#00d2ff' : '#64748b'} />
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -352,9 +369,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           onPress={() => setFeedType('latest')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.feedTabText, feedType === 'latest' && styles.activeFeedTabText]}>
-            Dépêches ⏱
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.feedTabText, feedType === 'latest' && styles.activeFeedTabText, { marginRight: 4 }]}>
+              Dépêches
+            </Text>
+            <AppIcon name="calendar" size={12} color={feedType === 'latest' ? '#00d2ff' : '#64748b'} />
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -368,9 +388,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.feedTabText, feedType === 'following' && styles.activeFeedTabText]}>
-            Abonnements 👥
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.feedTabText, feedType === 'following' && styles.activeFeedTabText, { marginRight: 4 }]}>
+              Abonnements
+            </Text>
+            <AppIcon name="people" size={12} color={feedType === 'following' ? '#00d2ff' : '#64748b'} />
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -378,9 +401,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           onPress={() => setFeedType('houses')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.feedTabText, feedType === 'houses' && styles.activeFeedTabText]}>
-            Maisons 🏛️
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.feedTabText, feedType === 'houses' && styles.activeFeedTabText, { marginRight: 4 }]}>
+              Maisons
+            </Text>
+            <AppIcon name="building" size={12} color={feedType === 'houses' ? '#00d2ff' : '#64748b'} />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -394,10 +420,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* 4.1 Sélecteur Temporel */}
       <View style={styles.timeFilterContainer}>
         {[
-          { key: 'all', label: 'Tout le flux ⏱️' },
-          { key: 'today', label: "Aujourd'hui ⚡" },
-          { key: 'week', label: 'Cette semaine 📅' },
-          { key: 'month', label: 'Ce mois-ci 🗓️' },
+          { key: 'all', label: 'Tout le flux', icon: 'calendar' as AppIconName },
+          { key: 'today', label: "Aujourd'hui", icon: 'zap' as AppIconName },
+          { key: 'week', label: 'Cette semaine', icon: 'calendar' as AppIconName },
+          { key: 'month', label: 'Ce mois-ci', icon: 'calendar' as AppIconName },
         ].map((item) => (
           <TouchableOpacity
             key={item.key}
@@ -408,14 +434,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             onPress={() => setTimeFilter(item.key as any)}
             activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.timeFilterPillText,
-                timeFilter === item.key && styles.activeTimeFilterPillText,
-              ]}
-            >
-              {item.label}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon
+                name={item.icon}
+                size={11}
+                color={timeFilter === item.key ? '#00d2ff' : '#94a3b8'}
+                style={{ marginRight: 4 }}
+              />
+              <Text
+                style={[
+                  styles.timeFilterPillText,
+                  timeFilter === item.key && styles.activeTimeFilterPillText,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -424,7 +458,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       <View style={styles.trustCard}>
         <View style={styles.trustCardHeader}>
           <View style={styles.trustShieldIconBox}>
-            <Text style={styles.trustShieldEmoji}>🛡️</Text>
+            <AppIcon name="shield" size={18} color="#00d2ff" />
           </View>
           <View style={styles.trustTitleCol}>
             <Text style={styles.trustTitle}>SYSTÈME DE CONFIANCE & DÉONTOLOGIE</Text>
@@ -496,7 +530,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           })}
         </View>
         {userVoted && (
-          <Text style={styles.votedNotice}>✓ Votre suffrage citoyen a bien été pris en compte.</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+            <AppIcon name="checkmark-circle" size={14} color="#10b981" style={{ marginRight: 6 }} />
+            <Text style={styles.votedNotice}>Votre suffrage citoyen a bien été pris en compte.</Text>
+          </View>
         )}
       </View>
 
@@ -551,9 +588,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   {item.description || 'Rédaction engagée sur la vérité et l’investigation critique.'}
                 </Text>
                 <View style={styles.houseFeedStatsRow}>
-                  <Text style={styles.houseFeedStatItem}>📰 {item.articlesCount || 0} enquêtes</Text>
-                  <Text style={styles.houseFeedStatItem}>👥 {item.followersCount || 0} abonnés</Text>
-                  <Text style={styles.houseFeedStatScore}>⭐ {item.trustScore || 95}% confiance</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                    <AppIcon name="newspaper" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
+                    <Text style={styles.houseFeedStatItem}>{item.articlesCount || 0} enquêtes</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                    <AppIcon name="people" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
+                    <Text style={styles.houseFeedStatItem}>{item.followersCount || 0} abonnés</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon name="star" size={12} color="#eab308" style={{ marginRight: 4 }} />
+                    <Text style={styles.houseFeedStatScore}>{item.trustScore || 95}% confiance</Text>
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
@@ -605,9 +651,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </View>
             ) : feedArticles.length > 0 && !hasMore ? (
               <View style={styles.listFooterFinished}>
-                <Text style={styles.listFooterFinishedText}>
-                  🛡️ Toutes les dépêches certifiées ont été consultées
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <AppIcon name="shield" size={14} color="#00d2ff" style={{ marginRight: 6 }} />
+                  <Text style={styles.listFooterFinishedText}>
+                    Toutes les dépêches certifiées ont été consultées
+                  </Text>
+                </View>
               </View>
             ) : null
           }

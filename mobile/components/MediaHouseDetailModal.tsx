@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { MediaHouse, Article, User } from '../types';
 import { api } from '../services/api';
+import { AppIcon } from './AppIcon';
 
 interface MediaHouseDetailModalProps {
   visible: boolean;
@@ -187,7 +188,10 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
       <View style={styles.container}>
         {/* Top Floating Close Button */}
         <TouchableOpacity style={styles.floatingCloseBtn} onPress={onClose} activeOpacity={0.8}>
-          <Text style={styles.floatingCloseText}>✕ FERMER</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon name="close" size={13} color="#06b6d4" style={{ marginRight: 4 }} />
+            <Text style={styles.floatingCloseText}>FERMER</Text>
+          </View>
         </TouchableOpacity>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -209,9 +213,14 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                   onPress={handleToggleFollow}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                    {isFollowing ? '✓ ABONNÉ' : '+ S’ABONNER'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {isFollowing && (
+                      <AppIcon name="checkmark" size={12} color="#06b6d4" style={{ marginRight: 4 }} />
+                    )}
+                    <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                      {isFollowing ? 'ABONNÉ' : '+ S’ABONNER'}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -221,7 +230,10 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                 <Text style={styles.houseName}>{house.name}</Text>
                 {house.isVerified && (
                   <View style={styles.verifiedBadge}>
-                    <Text style={styles.verifiedText}>✓ AGRÉÉE</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <AppIcon name="checkmark" size={10} color="#10b981" style={{ marginRight: 3 }} />
+                      <Text style={styles.verifiedText}>AGRÉÉE</Text>
+                    </View>
                   </View>
                 )}
               </View>
@@ -285,31 +297,55 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                 style={[styles.modalTab, activeTab === 'articles' && styles.modalTabActive]}
                 onPress={() => setActiveTab('articles')}
               >
-                <Text
-                  style={[styles.modalTabText, activeTab === 'articles' && styles.modalTabTextActive]}
-                >
-                  📰 Dépêches ({houseArticles.length})
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon
+                    name="newspaper"
+                    size={13}
+                    color={activeTab === 'articles' ? '#06b6d4' : '#64748b'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[styles.modalTabText, activeTab === 'articles' && styles.modalTabTextActive]}
+                  >
+                    Dépêches ({houseArticles.length})
+                  </Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalTab, activeTab === 'charter' && styles.modalTabActive]}
                 onPress={() => setActiveTab('charter')}
               >
-                <Text
-                  style={[styles.modalTabText, activeTab === 'charter' && styles.modalTabTextActive]}
-                >
-                  📜 Charte & Bureau
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon
+                    name="document-text"
+                    size={13}
+                    color={activeTab === 'charter' ? '#06b6d4' : '#64748b'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[styles.modalTabText, activeTab === 'charter' && styles.modalTabTextActive]}
+                  >
+                    Charte & Bureau
+                  </Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalTab, activeTab === 'team' && styles.modalTabActive]}
                 onPress={() => setActiveTab('team')}
               >
-                <Text
-                  style={[styles.modalTabText, activeTab === 'team' && styles.modalTabTextActive]}
-                >
-                  👥 Rédaction ({teamMembers.length})
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon
+                    name="people"
+                    size={13}
+                    color={activeTab === 'team' ? '#06b6d4' : '#64748b'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[styles.modalTabText, activeTab === 'team' && styles.modalTabTextActive]}
+                  >
+                    Rédaction ({teamMembers.length})
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
 
@@ -410,7 +446,10 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                       style={styles.websiteBtn}
                       onPress={() => Linking.openURL(house.website || '')}
                     >
-                      <Text style={styles.websiteBtnText}>🌐 Accéder au portail officiel ›</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                        <AppIcon name="globe" size={13} color="#06b6d4" style={{ marginRight: 6 }} />
+                        <Text style={styles.websiteBtnText}>Accéder au portail officiel ›</Text>
+                      </View>
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -441,15 +480,24 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                 <View style={styles.rolesLegendCard}>
                   <Text style={styles.rolesLegendTitle}>HIÉRARCHIE & POUVOIRS ÉDITORIAUX</Text>
                   <View style={styles.legendRow}>
-                    <Text style={styles.legendBadgeAdmin}>👑 Administrateur</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', width: 115 }}>
+                      <AppIcon name="ribbon" size={12} color="#f59e0b" style={{ marginRight: 4 }} />
+                      <Text style={styles.legendBadgeAdmin}>Administrateur</Text>
+                    </View>
                     <Text style={styles.legendDesc}>Direction, recrutement & publication sans visa</Text>
                   </View>
                   <View style={styles.legendRow}>
-                    <Text style={styles.legendBadgeEditor}>✍️ Rédacteur</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', width: 115 }}>
+                      <AppIcon name="create" size={12} color="#38bdf8" style={{ marginRight: 4 }} />
+                      <Text style={styles.legendBadgeEditor}>Rédacteur</Text>
+                    </View>
                     <Text style={styles.legendDesc}>Enquêtes d'investigation officielles avec visa direct</Text>
                   </View>
                   <View style={styles.legendRow}>
-                    <Text style={styles.legendBadgeFreelancer}>📋 Pigiste</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', width: 115 }}>
+                      <AppIcon name="document-text" size={12} color="#10b981" style={{ marginRight: 4 }} />
+                      <Text style={styles.legendBadgeFreelancer}>Pigiste</Text>
+                    </View>
                     <Text style={styles.legendDesc}>Dépêches indépendantes soumises à validation préalable</Text>
                   </View>
                 </View>
@@ -477,20 +525,40 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                                   member.role === 'freelancer' && styles.roleBadgeFreelancer,
                                 ]}
                               >
-                                <Text
-                                  style={[
-                                    styles.roleBadgeText,
-                                    member.role === 'admin' && styles.roleBadgeTextAdmin,
-                                    member.role === 'editor' && styles.roleBadgeTextEditor,
-                                    member.role === 'freelancer' && styles.roleBadgeTextFreelancer,
-                                  ]}
-                                >
-                                  {member.role === 'admin'
-                                    ? '👑 Administrateur'
-                                    : member.role === 'editor'
-                                    ? '✍️ Rédacteur'
-                                    : '📋 Pigiste'}
-                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                  <AppIcon
+                                    name={
+                                      member.role === 'admin'
+                                        ? 'ribbon'
+                                        : member.role === 'editor'
+                                        ? 'create'
+                                        : 'document-text'
+                                    }
+                                    size={10}
+                                    color={
+                                      member.role === 'admin'
+                                        ? '#f59e0b'
+                                        : member.role === 'editor'
+                                        ? '#38bdf8'
+                                        : '#10b981'
+                                    }
+                                    style={{ marginRight: 3 }}
+                                  />
+                                  <Text
+                                    style={[
+                                      styles.roleBadgeText,
+                                      member.role === 'admin' && styles.roleBadgeTextAdmin,
+                                      member.role === 'editor' && styles.roleBadgeTextEditor,
+                                      member.role === 'freelancer' && styles.roleBadgeTextFreelancer,
+                                    ]}
+                                  >
+                                    {member.role === 'admin'
+                                      ? 'Administrateur'
+                                      : member.role === 'editor'
+                                      ? 'Rédacteur'
+                                      : 'Pigiste'}
+                                  </Text>
+                                </View>
                               </View>
                             </View>
                             <Text style={styles.memberTitle}>{member.title || 'Journaliste'}</Text>
@@ -553,7 +621,10 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
         >
           <View style={styles.modalOverlay}>
             <View style={styles.addMemberModalContent}>
-              <Text style={styles.addMemberModalTitle}>🏛️ Recruter un Journaliste</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="person-add" size={16} color="#06b6d4" style={{ marginRight: 6 }} />
+                <Text style={styles.addMemberModalTitle}>Recruter un Journaliste</Text>
+              </View>
               <Text style={styles.addMemberModalSub}>
                 Attribuez une accréditation de presse et définissez le niveau de permissions au sein de la rédaction.
               </Text>
@@ -579,9 +650,9 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
               <Text style={styles.inputFieldLabel}>Rôle & Permissions</Text>
               <View style={styles.roleSelectionRow}>
                 {[
-                  { key: 'admin', label: '👑 Admin' },
-                  { key: 'editor', label: '✍️ Rédacteur' },
-                  { key: 'freelancer', label: '📋 Pigiste' },
+                  { key: 'admin', label: 'Admin', icon: 'ribbon' },
+                  { key: 'editor', label: 'Rédacteur', icon: 'create' },
+                  { key: 'freelancer', label: 'Pigiste', icon: 'document-text' },
                 ].map((item) => (
                   <TouchableOpacity
                     key={item.key}
@@ -591,14 +662,22 @@ export const MediaHouseDetailModal: React.FC<MediaHouseDetailModalProps> = ({
                     ]}
                     onPress={() => setNewMemberRole(item.key as any)}
                   >
-                    <Text
-                      style={[
-                        styles.roleSelectChipText,
-                        newMemberRole === item.key && styles.roleSelectChipTextActive,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <AppIcon
+                        name={item.icon}
+                        size={11}
+                        color={newMemberRole === item.key ? '#38bdf8' : '#94a3b8'}
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text
+                        style={[
+                          styles.roleSelectChipText,
+                          newMemberRole === item.key && styles.roleSelectChipTextActive,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>

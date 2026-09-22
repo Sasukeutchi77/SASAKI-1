@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { User, isJournalistRole, isAdminRole } from '../types';
+import { AppIcon } from './AppIcon';
 
 interface HeaderProps {
   title?: string;
@@ -61,17 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
             activeOpacity={0.7}
             accessibilityLabel="Système de Confiance & Charte"
           >
-            <Text style={styles.trustShieldIcon}>🛡️</Text>
-          </TouchableOpacity>
-        )}
-
-        {canPublish && onOpenCreateArticle && (
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={onOpenCreateArticle}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.actionBtnText}>+ ÉCRIRE</Text>
+            <AppIcon name="shield" size={16} color="#00d2ff" />
           </TouchableOpacity>
         )}
 
@@ -81,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
             onPress={onOpenNotifications}
             activeOpacity={0.7}
           >
-            <Text style={styles.bellIcon}>🔔</Text>
+            <AppIcon name="bell" size={16} color="#cbd5e1" />
             {unreadNotificationsCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
@@ -98,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({
             onPress={onOpenSearch}
             activeOpacity={0.7}
           >
-            <Text style={styles.searchIcon}>🔍</Text>
+            <AppIcon name="search" size={16} color="#cbd5e1" />
           </TouchableOpacity>
         )}
 
@@ -112,9 +103,13 @@ export const Header: React.FC<HeaderProps> = ({
               <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>
-                  {user?.name ? user.name.charAt(0).toUpperCase() : '👤'}
-                </Text>
+                {user?.name ? (
+                  <Text style={styles.avatarInitial}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </Text>
+                ) : (
+                  <AppIcon name="profile" size={16} color="#00d2ff" />
+                )}
               </View>
             )}
           </TouchableOpacity>

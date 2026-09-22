@@ -122,7 +122,7 @@ export async function triggerLocalNotification(options: {
  */
 export async function triggerBreakingNewsNotification(articleTitle: string, categoryName?: string) {
   return triggerLocalNotification({
-    title: `🚨 FLASH INFO DIRECT • ${categoryName ? categoryName.toUpperCase() : 'PURGE'}`,
+    title: `[FLASH INFO DIRECT] • ${categoryName ? categoryName.toUpperCase() : 'PURGE'}`,
     body: articleTitle,
     data: { type: 'breaking_news', title: articleTitle },
   });

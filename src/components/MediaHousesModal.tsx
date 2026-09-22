@@ -18,6 +18,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Trash2,
+  Lock,
 } from 'lucide-react';
 import { MediaHouse, User, Article } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -851,8 +852,9 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
                             </div>
                           </div>
                         </div>
-                        <div className="text-[11px] text-stone-500 italic bg-stone-950/60 px-3 py-1.5 rounded-lg border border-stone-800">
-                          🔒 Effectif et journalistes de l'équipe réservés aux membres
+                        <div className="text-[11px] text-stone-400 italic bg-stone-950/60 px-3 py-1.5 rounded-lg border border-stone-800 flex items-center gap-1.5">
+                          <Lock className="w-3 h-3 text-stone-400 shrink-0" />
+                          <span>Effectif et journalistes de l'équipe réservés aux membres</span>
                         </div>
                       </div>
                     </div>

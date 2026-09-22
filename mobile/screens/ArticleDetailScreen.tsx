@@ -15,6 +15,7 @@ import { api } from '../services/api';
 import { PollWidget } from '../components/PollWidget';
 import { CommentSection } from '../components/CommentSection';
 import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
+import { AppIcon } from '../components/AppIcon';
 
 interface ArticleDetailScreenProps {
   article: Article;
@@ -208,14 +209,20 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
             <Text style={styles.floatingBackText}>‹</Text>
           </TouchableOpacity>
           <View style={styles.floatingProgressBadge}>
-            <Text style={styles.floatingProgressText}>📖 {Math.round(scrollProgress)}% lu</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="book" size={13} color="#00d2ff" style={{ marginRight: 5 }} />
+              <Text style={styles.floatingProgressText}>{Math.round(scrollProgress)}% lu</Text>
+            </View>
           </View>
           <TouchableOpacity
             style={styles.floatingExitBtn}
             onPress={() => setIsImmersive(false)}
             activeOpacity={0.7}
           >
-            <Text style={styles.floatingExitText}>✕ Quitter immersion</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="close" size={12} color="#94a3b8" style={{ marginRight: 4 }} />
+              <Text style={styles.floatingExitText}>Quitter immersion</Text>
+            </View>
           </TouchableOpacity>
         </View>
       ) : (
@@ -249,18 +256,22 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
               onPress={() => setIsImmersive(true)}
               activeOpacity={0.7}
             >
-              <Text style={styles.topActionIcon}>📖</Text>
+              <AppIcon name="book" size={17} color="#cbd5e1" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.topActionBtn} onPress={handleShare} activeOpacity={0.7}>
-              <Text style={styles.topActionIcon}>📤</Text>
+              <AppIcon name="share-social" size={17} color="#cbd5e1" />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.topActionBtn}
               onPress={handleToggleBookmark}
               activeOpacity={0.7}
             >
-              <Text style={styles.topActionIcon}>{article.isBookmarked ? '🔖' : '📑'}</Text>
+              <AppIcon
+                name={article.isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                size={17}
+                color={article.isBookmarked ? '#00d2ff' : '#cbd5e1'}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -304,7 +315,10 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
               </View>
             )}
             <View style={styles.trustScoreBadge}>
-              <Text style={styles.trustScoreText}>⭐ {trustScore}% FIABILITÉ</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="star" size={11} color="#00d2ff" style={{ marginRight: 4 }} />
+                <Text style={styles.trustScoreText}>{trustScore}% FIABILITÉ</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -327,24 +341,33 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
             <View style={styles.authorInfo}>
               <View style={styles.nameRow}>
                 <Text style={styles.authorName}>{article.authorName}</Text>
-                {article.authorIsVerified && <Text style={styles.verifiedIcon}> ✓</Text>}
+                {article.authorIsVerified && (
+                  <AppIcon name="checkmark" size={12} color="#00d2ff" style={{ marginLeft: 4 }} />
+                )}
               </View>
-              <Text style={styles.metaText}>
-                {article.mediaName || 'PURGE Rédaction Centrale'} •{' '}
-                {article.createdAt
-                  ? new Date(article.createdAt).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                  : 'Date récente'}{' '}
-                • ⏱️ ~{estimatedReadTime} min
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Text style={styles.metaText}>
+                  {article.mediaName || 'PURGE Rédaction Centrale'} •{' '}
+                  {article.createdAt
+                    ? new Date(article.createdAt).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : 'Date récente'}{' '}
+                  •{' '}
+                </Text>
+                <AppIcon name="time" size={11} color="#64748b" style={{ marginRight: 3 }} />
+                <Text style={styles.metaText}>~{estimatedReadTime} min</Text>
+              </View>
             </View>
 
             {/* Bouton pour explorer la maison de presse */}
             <TouchableOpacity style={styles.housePillBtn} onPress={handleOpenHouse} activeOpacity={0.8}>
-              <Text style={styles.housePillText}>🏛️ RÉDACTION</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="business" size={11} color="#00d2ff" style={{ marginRight: 4 }} />
+                <Text style={styles.housePillText}>RÉDACTION</Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -356,7 +379,7 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
                 onPress={() => setIsPlayingAudio(!isPlayingAudio)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.playAudioIcon}>{isPlayingAudio ? '⏸' : '▶'}</Text>
+                <AppIcon name={isPlayingAudio ? 'pause' : 'play'} size={16} color="#020512" />
               </TouchableOpacity>
               <View style={styles.audioInfoCol}>
                 <Text style={styles.audioTitle}>
@@ -403,17 +426,20 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
           {/* Audit Factuel & Déontologique */}
           <View style={styles.auditCard}>
             <View style={styles.auditHeader}>
-              <Text style={styles.auditTitle}>🛡️ AUDIT FACTUEL & CONTRÔLE DÉONTOLOGIQUE</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="shield-checkmark" size={14} color="#10b981" style={{ marginRight: 6 }} />
+                <Text style={styles.auditTitle}>AUDIT FACTUEL & CONTRÔLE DÉONTOLOGIQUE</Text>
+              </View>
               <Text style={styles.auditScoreVal}>{trustScore}%</Text>
             </View>
             <View style={styles.auditItem}>
-              <Text style={styles.auditItemIcon}>✓</Text>
+              <AppIcon name="checkmark" size={12} color="#10b981" style={{ marginRight: 6, marginTop: 2 }} />
               <Text style={styles.auditItemText}>
                 Sources officielles et déclarations recoupées auprès de témoins directs.
               </Text>
             </View>
             <View style={styles.auditItem}>
-              <Text style={styles.auditItemIcon}>✓</Text>
+              <AppIcon name="checkmark" size={12} color="#10b981" style={{ marginRight: 6, marginTop: 2 }} />
               <Text style={styles.auditItemText}>
                 Indépendance éditoriale certifiée selon la charte des Maisons de Presse PURGE.
               </Text>
@@ -443,9 +469,17 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
               onPress={() => setExtraReactions((prev) => ({ ...prev, useful: !prev.useful }))}
               activeOpacity={0.7}
             >
-              <Text style={[styles.reactChipText, extraReactions.useful && styles.activeReactChipText]}>
-                💡 Utile & Éclairant {extraReactions.useful ? '• 1' : ''}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon
+                  name="bulb"
+                  size={12}
+                  color={extraReactions.useful ? '#00d2ff' : '#94a3b8'}
+                  style={{ marginRight: 5 }}
+                />
+                <Text style={[styles.reactChipText, extraReactions.useful && styles.activeReactChipText]}>
+                  Utile & Éclairant {extraReactions.useful ? '• 1' : ''}
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -455,9 +489,17 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
               }
               activeOpacity={0.7}
             >
-              <Text style={[styles.reactChipText, extraReactions.factchecked && styles.activeReactChipText]}>
-                🛡️ Rigoureux & Vérifié {extraReactions.factchecked ? '• 1' : ''}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon
+                  name="shield-checkmark"
+                  size={12}
+                  color={extraReactions.factchecked ? '#00d2ff' : '#94a3b8'}
+                  style={{ marginRight: 5 }}
+                />
+                <Text style={[styles.reactChipText, extraReactions.factchecked && styles.activeReactChipText]}>
+                  Rigoureux & Vérifié {extraReactions.factchecked ? '• 1' : ''}
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -468,7 +510,12 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
               onPress={handleToggleLike}
               activeOpacity={0.7}
             >
-              <Text style={styles.engageIcon}>{article.isLiked ? '❤️' : '🤍'}</Text>
+              <AppIcon
+                name={article.isLiked ? 'heart' : 'heart-outline'}
+                size={18}
+                color={article.isLiked ? '#ef4444' : '#94a3b8'}
+                style={{ marginRight: 6 }}
+              />
               <Text style={[styles.engageText, article.isLiked && styles.activeEngageText]}>
                 {article.likesCount || 0} Soutiens
               </Text>
@@ -479,14 +526,19 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
               onPress={handleToggleBookmark}
               activeOpacity={0.7}
             >
-              <Text style={styles.engageIcon}>{article.isBookmarked ? '🔖' : '📑'}</Text>
+              <AppIcon
+                name={article.isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                size={18}
+                color={article.isBookmarked ? '#00d2ff' : '#94a3b8'}
+                style={{ marginRight: 6 }}
+              />
               <Text style={[styles.engageText, article.isBookmarked && styles.activeEngageText]}>
                 {article.isBookmarked ? 'Enregistré' : 'Sauvegarder'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.engageBtn} onPress={handleShare} activeOpacity={0.7}>
-              <Text style={styles.engageIcon}>📤</Text>
+              <AppIcon name="share-social" size={18} color="#94a3b8" style={{ marginRight: 6 }} />
               <Text style={styles.engageText}>Partager</Text>
             </TouchableOpacity>
           </View>

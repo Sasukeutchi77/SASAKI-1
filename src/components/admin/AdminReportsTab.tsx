@@ -13,6 +13,7 @@ import {
   Ban,
   Trash2,
   Eye,
+  X,
 } from 'lucide-react';
 import { Report } from '../../types';
 import { api } from '../../services/api';
@@ -251,9 +252,9 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
               </div>
               <button
                 onClick={() => setActiveReport(null)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 

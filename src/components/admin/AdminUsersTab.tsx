@@ -12,6 +12,7 @@ import {
   Filter,
   Crown,
   UserCheck,
+  Star,
 } from 'lucide-react';
 import { User, UserRole } from '../../types';
 import { api } from '../../services/api';
@@ -152,8 +153,8 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                     className="w-10 h-10 rounded-full object-cover border border-amber-400/50"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[9px] font-black">
-                    ★
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center">
+                    <Star className="w-2.5 h-2.5 fill-slate-950 text-slate-950" />
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">

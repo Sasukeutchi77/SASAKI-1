@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Article, User } from '../types';
 import { api } from '../services/api';
 import { ArticleCard } from '../components/ArticleCard';
+import { AppIcon } from '../components/AppIcon';
 
 const OFFLINE_CACHE_KEY = '@purge_offline_bookmarks_cache';
 const BOOKMARK_FOLDERS_KEY = '@purge_bookmarks_folders';
@@ -259,7 +260,7 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
   if (!currentUser) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.iconBig}>🔖</Text>
+        <AppIcon name="bookmark" size={48} color="#00d2ff" style={{ marginBottom: 16 }} />
         <Text style={styles.title}>Articles Enregistrés</Text>
         <Text style={styles.sub}>
           Connectez-vous pour retrouver vos enquêtes et dépêches sauvegardées sur tous vos appareils.
@@ -276,9 +277,12 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
       {/* Bannière Hors-Ligne si applicable */}
       {isOfflineMode && (
         <View style={styles.offlineBanner}>
-          <Text style={styles.offlineBannerText}>
-            💾 Mode Hors-Ligne actif • {cachedCount} enquête{cachedCount > 1 ? 's' : ''} disponible{cachedCount > 1 ? 's' : ''} en local
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppIcon name="cloud-offline" size={14} color="#00d2ff" style={{ marginRight: 6 }} />
+            <Text style={styles.offlineBannerText}>
+              Mode Hors-Ligne actif • {cachedCount} enquête{cachedCount > 1 ? 's' : ''} disponible{cachedCount > 1 ? 's' : ''} en local
+            </Text>
+          </View>
         </View>
       )}
 
@@ -287,9 +291,12 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
         <View style={styles.headerTopRow}>
           <View>
             <Text style={styles.headerTitle}>Mes Favoris ({bookmarks.length})</Text>
-            <Text style={styles.headerSubtitle}>
-              ⏱️ ~{totalReadMinutes} min de lecture archivée
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+              <AppIcon name="time" size={12} color="#64748b" style={{ marginRight: 4 }} />
+              <Text style={styles.headerSubtitle}>
+                ~{totalReadMinutes} min de lecture archivée
+              </Text>
+            </View>
           </View>
           {bookmarks.length > 0 && (
             <TouchableOpacity onPress={handleClearAll} style={styles.clearAllBtn} activeOpacity={0.7}>
@@ -301,7 +308,7 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
         {/* Barre de recherche locale */}
         {bookmarks.length > 0 && (
           <View style={styles.searchBox}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <AppIcon name="search" size={16} color="#64748b" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Filtrer dans vos favoris..."
@@ -311,7 +318,7 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Text style={styles.clearIcon}>✕</Text>
+                <AppIcon name="close" size={14} color="#94a3b8" />
               </TouchableOpacity>
             )}
           </View>
@@ -321,7 +328,10 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
         {bookmarks.length > 0 && (
           <View style={styles.folderSection}>
             <View style={styles.folderHeaderRow}>
-              <Text style={styles.folderSectionTitle}>📁 DOSSIERS THÉMATIQUES</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="folder" size={13} color="#00d2ff" style={{ marginRight: 5 }} />
+                <Text style={styles.folderSectionTitle}>DOSSIERS THÉMATIQUES</Text>
+              </View>
               <TouchableOpacity
                 style={styles.newFolderBtn}
                 onPress={() => setShowNewFolderModal(true)}
@@ -349,14 +359,22 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
                     onPress={() => setSelectedFolder(folder)}
                     activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.folderChipText,
-                        selectedFolder === folder && styles.folderChipTextActive,
-                      ]}
-                    >
-                      {folder === 'all' ? '🗂️ Tous les favoris' : `📁 ${folder}`} ({count})
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <AppIcon
+                        name={folder === 'all' ? 'folder-open' : 'folder'}
+                        size={12}
+                        color={selectedFolder === folder ? '#00d2ff' : '#94a3b8'}
+                        style={{ marginRight: 5 }}
+                      />
+                      <Text
+                        style={[
+                          styles.folderChipText,
+                          selectedFolder === folder && styles.folderChipTextActive,
+                        ]}
+                      >
+                        {folder === 'all' ? 'Tous les favoris' : folder} ({count})
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -409,9 +427,12 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
                   onToggleBookmark={() => handleRemoveBookmark(item)}
                 />
                 <View style={styles.articleFolderBar}>
-                  <Text style={styles.articleFolderLabel}>
-                    {currentFolder ? `📁 Classé dans : ${currentFolder}` : '📁 Non classé dans un dossier'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+                    <AppIcon name="folder" size={11} color="#64748b" style={{ marginRight: 4 }} />
+                    <Text style={styles.articleFolderLabel} numberOfLines={1}>
+                      {currentFolder ? `Classé dans : ${currentFolder}` : 'Non classé dans un dossier'}
+                    </Text>
+                  </View>
                   <TouchableOpacity
                     style={styles.changeFolderBtn}
                     onPress={() => setAssignFolderArticle(item)}
@@ -424,7 +445,7 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
           }}
           ListEmptyComponent={
             <View style={styles.centerContainer}>
-              <Text style={styles.emptyIcon}>📑</Text>
+              <AppIcon name="bookmark-outline" size={40} color="#64748b" style={{ marginBottom: 12 }} />
               <Text style={styles.title}>
                 {searchQuery || selectedCategory !== 'all' || selectedFolder !== 'all'
                   ? 'Aucun résultat correspondant'
@@ -461,7 +482,10 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>📁 Nouveau Dossier Thématique</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <AppIcon name="folder" size={18} color="#00d2ff" style={{ marginRight: 8 }} />
+              <Text style={styles.modalTitle}>Nouveau Dossier Thématique</Text>
+            </View>
             <Text style={styles.modalSub}>
               Organisez vos enquêtes citoyennes par sujet ou niveau de priorité.
             </Text>
@@ -503,7 +527,10 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>📁 Classer l'enquête</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <AppIcon name="folder" size={18} color="#00d2ff" style={{ marginRight: 8 }} />
+              <Text style={styles.modalTitle}>Classer l'enquête</Text>
+            </View>
             <Text style={styles.modalSub} numberOfLines={2}>
               {assignFolderArticle?.title}
             </Text>
@@ -526,15 +553,23 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
                         }
                       }}
                     >
-                      <Text
-                        style={[
-                          styles.folderSelectText,
-                          isAssigned && styles.folderSelectTextActive,
-                        ]}
-                      >
-                        📁 {folder}
-                      </Text>
-                      {isAssigned && <Text style={{ color: '#00d2ff', fontWeight: 'bold' }}>✓</Text>}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <AppIcon
+                          name="folder"
+                          size={14}
+                          color={isAssigned ? '#00d2ff' : '#94a3b8'}
+                          style={{ marginRight: 8 }}
+                        />
+                        <Text
+                          style={[
+                            styles.folderSelectText,
+                            isAssigned && styles.folderSelectTextActive,
+                          ]}
+                        >
+                          {folder}
+                        </Text>
+                      </View>
+                      {isAssigned && <AppIcon name="checkmark" size={14} color="#00d2ff" />}
                     </TouchableOpacity>
                   );
                 })}

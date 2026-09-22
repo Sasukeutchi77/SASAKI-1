@@ -18,6 +18,7 @@ import {
   ARTICLE_COVER_PRESETS,
   PickImageResult,
 } from '../services/imagePicker';
+import { AppIcon } from './AppIcon';
 
 interface ImageSelectModalProps {
   visible: boolean;
@@ -134,14 +135,17 @@ export const ImageSelectModal: React.FC<ImageSelectModalProps> = ({
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <AppIcon name="close" size={16} color="#cbd5e1" />
             </TouchableOpacity>
           </View>
 
           {/* Error Message */}
           {errorMessage ? (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>⚠️ {errorMessage}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="alert-circle" size={14} color="#fca5a5" style={{ marginRight: 6 }} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
             </View>
           ) : null}
 
@@ -151,27 +155,51 @@ export const ImageSelectModal: React.FC<ImageSelectModalProps> = ({
               style={[styles.tab, activeTab === 'gallery' && styles.activeTab]}
               onPress={() => setActiveTab('gallery')}
             >
-              <Text style={[styles.tabText, activeTab === 'gallery' && styles.activeTabText]}>
-                📱 Appareil
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <AppIcon
+                  name="phone-portrait"
+                  size={13}
+                  color={activeTab === 'gallery' ? '#06b6d4' : '#94a3b8'}
+                  style={{ marginRight: 5 }}
+                />
+                <Text style={[styles.tabText, activeTab === 'gallery' && styles.activeTabText]}>
+                  Appareil
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.tab, activeTab === 'url' && styles.activeTab]}
               onPress={() => setActiveTab('url')}
             >
-              <Text style={[styles.tabText, activeTab === 'url' && styles.activeTabText]}>
-                🔗 Lien Web
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <AppIcon
+                  name="link"
+                  size={13}
+                  color={activeTab === 'url' ? '#06b6d4' : '#94a3b8'}
+                  style={{ marginRight: 5 }}
+                />
+                <Text style={[styles.tabText, activeTab === 'url' && styles.activeTabText]}>
+                  Lien Web
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.tab, activeTab === 'presets' && styles.activeTab]}
               onPress={() => setActiveTab('presets')}
             >
-              <Text style={[styles.tabText, activeTab === 'presets' && styles.activeTabText]}>
-                ✨ Modèles
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <AppIcon
+                  name="sparkles"
+                  size={13}
+                  color={activeTab === 'presets' ? '#06b6d4' : '#94a3b8'}
+                  style={{ marginRight: 5 }}
+                />
+                <Text style={[styles.tabText, activeTab === 'presets' && styles.activeTabText]}>
+                  Modèles
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -186,7 +214,7 @@ export const ImageSelectModal: React.FC<ImageSelectModalProps> = ({
                   activeOpacity={0.8}
                 >
                   <View style={styles.actionIconCircle}>
-                    <Text style={styles.actionIcon}>🖼️</Text>
+                    <AppIcon name="images" size={22} color="#06b6d4" />
                   </View>
                   <View style={styles.actionInfo}>
                     <Text style={styles.actionTitle}>Choisir depuis la galerie</Text>
@@ -201,7 +229,7 @@ export const ImageSelectModal: React.FC<ImageSelectModalProps> = ({
                   activeOpacity={0.8}
                 >
                   <View style={styles.actionIconCircle}>
-                    <Text style={styles.actionIcon}>📸</Text>
+                    <AppIcon name="camera" size={22} color="#06b6d4" />
                   </View>
                   <View style={styles.actionInfo}>
                     <Text style={styles.actionTitle}>Prendre une photo</Text>

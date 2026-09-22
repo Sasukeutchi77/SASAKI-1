@@ -8,6 +8,7 @@ import {
   Ban,
   Search,
   RotateCcw,
+  X,
 } from 'lucide-react';
 import { Category } from '../../types';
 import { api } from '../../services/api';
@@ -249,9 +250,9 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 

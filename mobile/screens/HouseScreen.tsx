@@ -15,6 +15,7 @@ import { MediaHouse, Article, User, isJournalistRole, isAdminRole } from '../typ
 import { api } from '../services/api';
 import { CreateHouseModal } from '../components/CreateHouseModal';
 import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
+import { AppIcon } from '../components/AppIcon';
 
 interface HouseScreenProps {
   currentUser: User | null;
@@ -188,14 +189,22 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
           onPress={() => setActiveSegment('my_house')}
           activeOpacity={0.8}
         >
-          <Text
-            style={[
-              styles.segmentText,
-              activeSegment === 'my_house' && styles.segmentTextActive,
-            ]}
-          >
-            🏛️ {myHouse ? myHouse.name : 'Ma Maison de Presse'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <AppIcon
+              name="business"
+              size={14}
+              color={activeSegment === 'my_house' ? '#00d2ff' : '#94a3b8'}
+              style={{ marginRight: 6 }}
+            />
+            <Text
+              style={[
+                styles.segmentText,
+                activeSegment === 'my_house' && styles.segmentTextActive,
+              ]}
+            >
+              {myHouse ? myHouse.name : 'Ma Maison de Presse'}
+            </Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -203,14 +212,22 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
           onPress={() => setActiveSegment('directory')}
           activeOpacity={0.8}
         >
-          <Text
-            style={[
-              styles.segmentText,
-              activeSegment === 'directory' && styles.segmentTextActive,
-            ]}
-          >
-            🌐 Annuaire Rédactions ({allHouses.length})
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <AppIcon
+              name="globe"
+              size={14}
+              color={activeSegment === 'directory' ? '#00d2ff' : '#94a3b8'}
+              style={{ marginRight: 6 }}
+            />
+            <Text
+              style={[
+                styles.segmentText,
+                activeSegment === 'directory' && styles.segmentTextActive,
+              ]}
+            >
+              Annuaire Rédactions ({allHouses.length})
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -234,7 +251,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
             /* Cas 1 : Utilisateur non connecté */
             <View style={styles.card}>
               <View style={styles.emptyIconBox}>
-                <Text style={styles.emptyIcon}>🏛️</Text>
+                <AppIcon name="business" size={32} color="#00d2ff" />
               </View>
               <Text style={styles.cardTitle}>ESPACE MAISONS DE PRESSE</Text>
               <Text style={styles.cardDesc}>
@@ -278,12 +295,23 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
 
                   <View style={styles.heroBadgesCol}>
                     <View style={styles.verifiedBadge}>
-                      <Text style={styles.verifiedBadgeText}>✓ RÉDACTION ACCRÉDITÉE</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <AppIcon name="checkmark" size={10} color="#10b981" style={{ marginRight: 3 }} />
+                        <Text style={styles.verifiedBadgeText}>RÉDACTION ACCRÉDITÉE</Text>
+                      </View>
                     </View>
                     <View style={styles.roleBadge}>
-                      <Text style={styles.roleBadgeText}>
-                        {isChef ? '👑 Chef de Rédaction (Fondateur)' : '🖋️ Journaliste Membre'}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <AppIcon
+                          name={isChef ? 'ribbon' : 'create'}
+                          size={10}
+                          color="#00d2ff"
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={styles.roleBadgeText}>
+                          {isChef ? 'Chef de Rédaction (Fondateur)' : 'Journaliste Membre'}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -330,7 +358,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                 activeOpacity={0.85}
               >
                 <View style={styles.publishBtnIconCircle}>
-                  <Text style={styles.publishBtnIcon}>✍️</Text>
+                  <AppIcon name="create" size={18} color="#020512" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.publishBtnTitle}>
@@ -340,7 +368,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                     Diffuser une enquête officielle signée « {myHouse.name} »
                   </Text>
                 </View>
-                <Text style={styles.publishBtnChevron}>➔</Text>
+                <AppIcon name="arrow-forward" size={16} color="#020512" />
               </TouchableOpacity>
 
               {/* Barre d'onglets de la maison (Articles / Équipe / Infos) */}
@@ -350,14 +378,22 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                   onPress={() => setActiveHouseTab('articles')}
                   activeOpacity={0.8}
                 >
-                  <Text
-                    style={[
-                      styles.houseTabText,
-                      activeHouseTab === 'articles' && styles.houseTabTextActive,
-                    ]}
-                  >
-                    📰 Enquêtes ({houseArticles.length})
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon
+                      name="newspaper"
+                      size={13}
+                      color={activeHouseTab === 'articles' ? '#00d2ff' : '#94a3b8'}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text
+                      style={[
+                        styles.houseTabText,
+                        activeHouseTab === 'articles' && styles.houseTabTextActive,
+                      ]}
+                    >
+                      Enquêtes ({houseArticles.length})
+                    </Text>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -365,14 +401,22 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                   onPress={() => setActiveHouseTab('team')}
                   activeOpacity={0.8}
                 >
-                  <Text
-                    style={[
-                      styles.houseTabText,
-                      activeHouseTab === 'team' && styles.houseTabTextActive,
-                    ]}
-                  >
-                    👥 Équipe ({memberCount}/5)
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon
+                      name="people"
+                      size={13}
+                      color={activeHouseTab === 'team' ? '#00d2ff' : '#94a3b8'}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text
+                      style={[
+                        styles.houseTabText,
+                        activeHouseTab === 'team' && styles.houseTabTextActive,
+                      ]}
+                    >
+                      Équipe ({memberCount}/5)
+                    </Text>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -380,14 +424,22 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                   onPress={() => setActiveHouseTab('info')}
                   activeOpacity={0.8}
                 >
-                  <Text
-                    style={[
-                      styles.houseTabText,
-                      activeHouseTab === 'info' && styles.houseTabTextActive,
-                    ]}
-                  >
-                    ℹ️ Coordonnées & Ligne
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AppIcon
+                      name="information-circle"
+                      size={13}
+                      color={activeHouseTab === 'info' ? '#00d2ff' : '#94a3b8'}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text
+                      style={[
+                        styles.houseTabText,
+                        activeHouseTab === 'info' && styles.houseTabTextActive,
+                      ]}
+                    >
+                      Coordonnées & Ligne
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
 
@@ -402,7 +454,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                     </View>
                   ) : houseArticles.length === 0 ? (
                     <View style={styles.emptyArticlesBox}>
-                      <Text style={styles.emptyArticlesEmoji}>📝</Text>
+                      <AppIcon name="document-text" size={32} color="#94a3b8" style={{ marginBottom: 8 }} />
                       <Text style={styles.emptyArticlesTitle}>Aucune enquête publiée pour l'instant</Text>
                       <Text style={styles.emptyArticlesSub}>
                         Faites rayonner votre maison « {myHouse.name} » en publiant votre première dépêche factuelle.
@@ -412,9 +464,12 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                         onPress={() => onOpenCreateArticle(myHouse.id, myHouse.name)}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.createFirstArticleBtnText}>
-                          ✍️ RÉDIGER LA PREMIÈRE ENQUÊTE
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                          <AppIcon name="create" size={14} color="#00d2ff" style={{ marginRight: 6 }} />
+                          <Text style={styles.createFirstArticleBtnText}>
+                            RÉDIGER LA PREMIÈRE ENQUÊTE
+                          </Text>
+                        </View>
                       </TouchableOpacity>
                     </View>
                   ) : (
@@ -461,9 +516,18 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                           <View style={styles.articleFooter}>
                             <Text style={styles.articleAuthor}>Par {article.authorName}</Text>
                             <View style={styles.articleStatsRow}>
-                              <Text style={styles.articleStat}>👁️ {article.viewsCount || 0}</Text>
-                              <Text style={styles.articleStat}>❤️ {article.likesCount || 0}</Text>
-                              <Text style={styles.articleStat}>💬 {article.commentsCount || 0}</Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                <AppIcon name="eye" size={11} color="#64748b" />
+                                <Text style={styles.articleStat}>{article.viewsCount || 0}</Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                <AppIcon name="heart" size={11} color="#ef4444" />
+                                <Text style={styles.articleStat}>{article.likesCount || 0}</Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                <AppIcon name="chatbubble" size={11} color="#00d2ff" />
+                                <Text style={styles.articleStat}>{article.commentsCount || 0}</Text>
+                              </View>
                             </View>
                           </View>
                         </View>
@@ -494,7 +558,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
 
                   <View style={styles.memberCard}>
                     <View style={styles.memberAvatarCircle}>
-                      <Text style={styles.memberAvatarEmoji}>👑</Text>
+                      <AppIcon name="ribbon" size={18} color="#00d2ff" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.memberName}>{myHouse.ownerName || currentUser.name}</Text>
@@ -509,7 +573,10 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                 /* Onglet Coordonnées & Ligne éditoriale */
                 <View style={styles.tabContentBlock}>
                   <View style={styles.infoCard}>
-                    <Text style={styles.infoSectionTitle}>🏛️ IDENTITÉ ÉDITORIALE</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                      <AppIcon name="business" size={14} color="#00d2ff" style={{ marginRight: 6 }} />
+                      <Text style={styles.infoSectionTitle}>IDENTITÉ ÉDITORIALE</Text>
+                    </View>
                     <View style={styles.infoRow}>
                       <Text style={styles.infoLabel}>Nom :</Text>
                       <Text style={styles.infoValue}>{myHouse.name}</Text>
@@ -540,7 +607,10 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
 
                   {myHouse.specialties && myHouse.specialties.length > 0 && (
                     <View style={styles.infoCard}>
-                      <Text style={styles.infoSectionTitle}>🔍 DOMAINES D'INVESTIGATION</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                        <AppIcon name="search" size={14} color="#00d2ff" style={{ marginRight: 6 }} />
+                        <Text style={styles.infoSectionTitle}>DOMAINES D'INVESTIGATION</Text>
+                      </View>
                       <View style={styles.chipsRow}>
                         {myHouse.specialties.map((spec, i) => (
                           <View key={i} style={styles.specChip}>
@@ -557,7 +627,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
             /* Cas 3 : L'utilisateur est journaliste/admin mais n'a pas encore fondé de maison */
             <View style={styles.card}>
               <View style={styles.emptyIconBox}>
-                <Text style={styles.emptyIcon}>🏛️</Text>
+                <AppIcon name="business" size={32} color="#00d2ff" />
               </View>
               <Text style={styles.cardTitle}>FONDEZ VOTRE PROPRE MAISON DE PRESSE</Text>
               <Text style={styles.cardDesc}>
@@ -571,14 +641,17 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                 onPress={() => setShowCreateHouseModal(true)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.primaryActionBtnText}>🏛️ FONDER MA MAISON DE PRESSE</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <AppIcon name="business" size={14} color="#020512" style={{ marginRight: 6 }} />
+                  <Text style={styles.primaryActionBtnText}>FONDER MA MAISON DE PRESSE</Text>
+                </View>
               </TouchableOpacity>
             </View>
           ) : (
             /* Cas 4 : Simple citoyen débattant */
             <View style={styles.card}>
               <View style={styles.emptyIconBox}>
-                <Text style={styles.emptyIcon}>✍️</Text>
+                <AppIcon name="create" size={32} color="#00d2ff" />
               </View>
               <Text style={styles.cardTitle}>RÉSERVÉ AUX JOURNALISTES ACCRÉDITÉS</Text>
               <Text style={styles.cardDesc}>
@@ -590,9 +663,12 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                 onPress={onRequireAuth}
                 activeOpacity={0.8}
               >
-                <Text style={styles.primaryActionBtnText}>
-                  ✍️ DEMANDER UNE ACCRÉDITATION JOURNALISTE
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <AppIcon name="create" size={14} color="#020512" style={{ marginRight: 6 }} />
+                  <Text style={styles.primaryActionBtnText}>
+                    DEMANDER UNE ACCRÉDITATION JOURNALISTE
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           )
@@ -602,7 +678,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
           /* ========================================================================= */
           <View>
             <View style={styles.searchBarBox}>
-              <Text style={styles.searchIcon}>🔍</Text>
+              <AppIcon name="search" size={16} color="#64748b" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Rechercher une rédaction accréditée..."
@@ -612,7 +688,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
-                  <Text style={styles.clearSearch}>✕</Text>
+                  <AppIcon name="close" size={14} color="#94a3b8" />
                 </TouchableOpacity>
               )}
             </View>
@@ -666,7 +742,7 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                       <Text style={styles.directoryName}>{house.name}</Text>
                       {house.isVerified && (
                         <View style={styles.dirVerifiedBadge}>
-                          <Text style={styles.dirVerifiedBadgeText}>✓</Text>
+                          <AppIcon name="checkmark" size={10} color="#10b981" />
                         </View>
                       )}
                     </View>
@@ -674,11 +750,20 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                       « {house.motto || 'L’information sans compromis'} »
                     </Text>
                     <View style={styles.directoryStatsRow}>
-                      <Text style={styles.directoryStat}>📰 {house.articlesCount || 0} enquêtes</Text>
-                      <Text style={styles.directoryStat}>👥 {house.followersCount || 1} abonnés</Text>
-                      <Text style={[styles.directoryStat, { color: '#10b981' }]}>
-                        🛡️ {house.trustScore || 98}%
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <AppIcon name="newspaper" size={11} color="#64748b" />
+                        <Text style={styles.directoryStat}>{house.articlesCount || 0} enquêtes</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <AppIcon name="people" size={11} color="#64748b" />
+                        <Text style={styles.directoryStat}>{house.followersCount || 1} abonnés</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <AppIcon name="shield-checkmark" size={11} color="#10b981" />
+                        <Text style={[styles.directoryStat, { color: '#10b981' }]}>
+                          {house.trustScore || 98}%
+                        </Text>
+                      </View>
                     </View>
                   </View>
                   <Text style={styles.directoryChevron}>›</Text>

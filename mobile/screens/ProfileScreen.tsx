@@ -24,6 +24,7 @@ import { CreateHouseModal } from '../components/CreateHouseModal';
 import { ImageSelectModal } from '../components/ImageSelectModal';
 import { JournalistHouseSection } from '../components/JournalistHouseSection';
 import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
+import { AppIcon } from '../components/AppIcon';
 
 interface ProfileScreenProps {
   currentUser: User | null;
@@ -209,7 +210,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       [
         { text: 'Annuler', style: 'cancel' },
         {
-          text: decision === 'approved' ? 'Valider ✓' : 'Refuser ✕',
+          text: decision === 'approved' ? 'Valider' : 'Refuser',
           style: decision === 'approved' ? 'default' : 'destructive',
           onPress: async () => {
             setProcessingRequestId(reqId);
@@ -241,7 +242,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       if (res && res.user) {
         onUserUpdated(res.user);
         if (isJournalistRole(res.user.role)) {
-          Alert.alert('🎉 Accréditation validée !', 'Félicitations ! Les administrateurs ont approuvé votre statut Journaliste. Vous pouvez désormais publier des enquêtes.');
+          Alert.alert('Accréditation validée !', 'Félicitations ! Les administrateurs ont approuvé votre statut Journaliste. Vous pouvez désormais publier des enquêtes.');
         } else if (res.user.verificationStatus === 'rejected') {
           Alert.alert('Statut', 'Votre précédente demande n’a pas été retenue par l’administration.');
         } else if (res.user.verificationStatus === 'pending') {
@@ -286,7 +287,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       setResetNewPassword('');
       setResetConfirmPassword('');
       Alert.alert(
-        'Accès réinitialisé ✓',
+        'Accès réinitialisé',
         res.message || 'Votre mot de passe a été mis à jour avec succès. Vous pouvez désormais vous connecter avec vos nouveaux identifiants.'
       );
     } catch (err: any) {
@@ -306,7 +307,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.resetModalContainer}>
           <View style={styles.resetModalHeader}>
-            <Text style={styles.resetModalTitle}>🔑 Réinitialisation Sécurisée</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <AppIcon name="key" size={16} color="#00d2ff" style={{ marginRight: 6 }} />
+              <Text style={styles.resetModalTitle}>Réinitialisation Sécurisée</Text>
+            </View>
             <Text style={styles.resetModalSub}>
               Définissez un nouveau mot de passe pour accéder à votre espace citoyen ou rédactionnel.
             </Text>
@@ -347,9 +351,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             />
 
             <View style={styles.resetNoticeBox}>
-              <Text style={styles.resetNoticeText}>
-                🛡️ Un hachage cryptographique sécurisé est appliqué pour protéger l'intégrité de vos accès.
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <AppIcon name="shield" size={13} color="#00d2ff" style={{ marginRight: 6, marginTop: 2 }} />
+                <Text style={styles.resetNoticeText}>
+                  Un hachage cryptographique sécurisé est appliqué pour protéger l'intégrité de vos accès.
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -488,7 +495,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* Message d'erreur visible */}
           {errorMessage && (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorIcon}>⚠️</Text>
+              <AppIcon name="alert-circle" size={16} color="#ef4444" style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           )}
@@ -550,7 +557,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {authMode === 'register' && (
             <View style={styles.citizenNoticeCard}>
               <View style={styles.citizenNoticeHeader}>
-                <Text style={styles.citizenNoticeIcon}>🛡️</Text>
+                <AppIcon name="shield" size={16} color="#00d2ff" style={{ marginRight: 6 }} />
                 <Text style={styles.citizenNoticeTitle}>Statut Citoyen Garanti</Text>
               </View>
               <Text style={styles.citizenNoticeText}>
@@ -605,14 +612,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </View>
             )}
             <View style={styles.cameraIconBadge}>
-              <Text style={styles.cameraIconText}>📷</Text>
+              <AppIcon name="camera" size={12} color="#ffffff" />
             </View>
           </TouchableOpacity>
 
           <View style={styles.nameSection}>
             <View style={styles.titleRow}>
               <Text style={styles.userName}>{currentUser.name}</Text>
-              {currentUser.isVerified && <Text style={styles.verified}> ✓</Text>}
+              {currentUser.isVerified && (
+                <AppIcon name="checkmark-circle" size={14} color="#00d2ff" style={{ marginLeft: 4 }} />
+              )}
             </View>
             <Text style={styles.userEmail}>{currentUser.email}</Text>
 
@@ -659,7 +668,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           onPress={() => setShowEditProfileModal(true)}
           activeOpacity={0.8}
         >
-          <Text style={styles.editProfileBtnText}>✏️ MODIFIER MES INFORMATIONS & PROFIL</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <AppIcon name="pencil" size={14} color="#00d2ff" style={{ marginRight: 8 }} />
+            <Text style={styles.editProfileBtnText}>MODIFIER MES INFORMATIONS & PROFIL</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -667,17 +679,28 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       <View style={styles.activityDashboardCard}>
         <View style={styles.activityDashboardHeader}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.activityDashboardTitle}>📊 TABLEAU DE BORD CITOYEN</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <AppIcon name="chart" size={15} color="#00d2ff" style={{ marginRight: 6 }} />
+              <Text style={styles.activityDashboardTitle}>TABLEAU DE BORD CITOYEN</Text>
+            </View>
             <Text style={styles.activityDashboardSub}>
               Indice d'implication démocratique et civique
             </Text>
           </View>
           <View style={styles.civicRankBadge}>
-            <Text style={styles.civicRankBadgeText}>
-              {(currentUser.articlesCount || 0) > 2 || (currentUser.followersCount || 0) > 10
-                ? '🏛️ Sentinelle Civique'
-                : '🔍 Citoyen Vigilant'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon
+                name={(currentUser.articlesCount || 0) > 2 || (currentUser.followersCount || 0) > 10 ? 'building' : 'search'}
+                size={11}
+                color="#00d2ff"
+                style={{ marginRight: 4 }}
+              />
+              <Text style={styles.civicRankBadgeText}>
+                {(currentUser.articlesCount || 0) > 2 || (currentUser.followersCount || 0) > 10
+                  ? 'Sentinelle Civique'
+                  : 'Citoyen Vigilant'}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -695,26 +718,26 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {/* Grille 4 Métriques d'activité */}
         <View style={styles.activityGrid}>
           <View style={styles.activityTile}>
-            <Text style={styles.activityTileIcon}>📰</Text>
+            <AppIcon name="newspaper" size={18} color="#00d2ff" style={{ marginBottom: 4 }} />
             <Text style={styles.activityTileValue}>
               {currentUser.articlesCount ? currentUser.articlesCount * 4 + 18 : 28}
             </Text>
             <Text style={styles.activityTileLabel}>Dépêches Lues</Text>
           </View>
           <View style={styles.activityTile}>
-            <Text style={styles.activityTileIcon}>🗳️</Text>
+            <AppIcon name="shield" size={18} color="#00d2ff" style={{ marginBottom: 4 }} />
             <Text style={styles.activityTileValue}>14</Text>
             <Text style={styles.activityTileLabel}>Votes Exprimés</Text>
           </View>
           <View style={styles.activityTile}>
-            <Text style={styles.activityTileIcon}>💬</Text>
+            <AppIcon name="chatbubbles" size={18} color="#00d2ff" style={{ marginBottom: 4 }} />
             <Text style={styles.activityTileValue}>
               {currentUser.articlesCount ? currentUser.articlesCount * 3 + 6 : 12}
             </Text>
             <Text style={styles.activityTileLabel}>Débats & Avis</Text>
           </View>
           <View style={styles.activityTile}>
-            <Text style={styles.activityTileIcon}>⭐</Text>
+            <AppIcon name="star" size={18} color="#eab308" style={{ marginBottom: 4 }} />
             <Text style={styles.activityTileValue}>98.6%</Text>
             <Text style={styles.activityTileLabel}>Score Fiabilité</Text>
           </View>
@@ -765,7 +788,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {!isJournalist && !isAdmin && (
         <View style={styles.accreditationCard}>
           <View style={styles.accreditationHeaderRow}>
-            <Text style={styles.accreditationTitle}>✍️ Accréditation Journaliste</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="pencil" size={15} color="#00d2ff" style={{ marginRight: 6 }} />
+              <Text style={styles.accreditationTitle}>Accréditation Journaliste</Text>
+            </View>
             {currentUser.verificationStatus === 'pending' ? (
               <View style={[styles.statusBadgePill, { backgroundColor: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b' }]}>
                 <Text style={[styles.statusBadgeText, { color: '#f59e0b' }]}>En examen</Text>
@@ -784,14 +810,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {currentUser.verificationStatus === 'pending' ? (
             <View>
               <Text style={styles.accreditationDesc}>
-                ⏳ Votre dossier d'accréditation Journaliste a bien été transmis aux administrateurs de PURGE. La Rédaction en Chef examine actuellement vos références déontologiques.
+                Votre dossier d'accréditation Journaliste a bien été transmis aux administrateurs de PURGE. La Rédaction en Chef examine actuellement vos références déontologiques.
               </Text>
               <TouchableOpacity
                 style={styles.refreshStatusBtn}
                 onPress={handleRefreshStatus}
                 activeOpacity={0.8}
               >
-                <Text style={styles.refreshStatusBtnText}>🔄 VÉRIFIER SI VALIDÉ PAR L'ADMIN</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <AppIcon name="refresh" size={13} color="#00d2ff" style={{ marginRight: 6 }} />
+                  <Text style={styles.refreshStatusBtnText}>VÉRIFIER SI VALIDÉ PAR L'ADMIN</Text>
+                </View>
               </TouchableOpacity>
             </View>
           ) : currentUser.verificationStatus === 'rejected' ? (
@@ -804,7 +833,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 onPress={() => setShowApplyModal(true)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.applyBtnText}>📝 DÉPOSER UNE NOUVELLE CANDIDATURE</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <AppIcon name="document-text" size={13} color="#000" style={{ marginRight: 6 }} />
+                  <Text style={styles.applyBtnText}>DÉPOSER UNE NOUVELLE CANDIDATURE</Text>
+                </View>
               </TouchableOpacity>
             </View>
           ) : (
@@ -829,7 +861,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <View style={styles.adminReviewCard}>
           <View style={styles.adminReviewHeaderRow}>
             <View style={styles.adminTitleCol}>
-              <Text style={styles.adminReviewTitle}>🛡️ Gestion des Accréditations</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                <AppIcon name="shield" size={15} color="#00d2ff" style={{ marginRight: 6 }} />
+                <Text style={styles.adminReviewTitle}>Gestion des Accréditations</Text>
+              </View>
               <Text style={styles.adminReviewSub}>
                 Validation des candidatures journalistes ({adminRequests.length} en attente)
               </Text>
@@ -843,16 +878,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               {loadingAdminRequests ? (
                 <ActivityIndicator size="small" color="#06b6d4" />
               ) : (
-                <Text style={styles.adminRefreshBtnText}>🔄 Actualiser</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon name="refresh" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
+                  <Text style={styles.adminRefreshBtnText}>Actualiser</Text>
+                </View>
               )}
             </TouchableOpacity>
           </View>
 
           {adminRequests.length === 0 ? (
             <View style={styles.adminEmptyState}>
-              <Text style={styles.adminEmptyStateText}>
-                ✓ Aucune demande d'accréditation en attente.
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+                <AppIcon name="checkmark-circle" size={14} color="#10b981" style={{ marginRight: 6 }} />
+                <Text style={styles.adminEmptyStateText}>
+                  Aucune demande d'accréditation en attente.
+                </Text>
+              </View>
               <Text style={styles.adminEmptyStateSub}>
                 Les nouvelles demandes soumises par les citoyens apparaîtront ici pour décision.
               </Text>
@@ -903,7 +944,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     disabled={processingRequestId === req.id}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.rejectActionBtnText}>✕ Refuser</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <AppIcon name="close" size={13} color="#ef4444" style={{ marginRight: 4 }} />
+                      <Text style={styles.rejectActionBtnText}>Refuser</Text>
+                    </View>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -915,7 +959,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     disabled={processingRequestId === req.id}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.approveActionBtnText}>✓ Valider Journaliste</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <AppIcon name="checkmark" size={13} color="#10b981" style={{ marginRight: 4 }} />
+                      <Text style={styles.approveActionBtnText}>Valider Journaliste</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -924,70 +971,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
       )}
 
-      {/* Carte Configuration Notifications Système */}
-      <View style={styles.settingsCard}>
-        <View style={styles.settingsHeaderRow}>
-          <Text style={styles.settingsTitle}>🔔 Alertes & Notifications</Text>
-          <View
-            style={[
-              styles.notifStatusPill,
-              { backgroundColor: notificationsActive ? '#10b981' : '#f59e0b' },
-            ]}
-          >
-            <Text style={styles.notifStatusPillText}>
-              {notificationsActive ? 'Autorisé' : 'Désactivé'}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.settingsSub}>
-          Alertes prioritaires émises sur votre appareil lors de la publication de décrets d'urgence.
-        </Text>
-        <View style={styles.settingsActionRow}>
-          {!notificationsActive ? (
-            <TouchableOpacity
-              style={styles.enableNotifBtn}
-              onPress={handleToggleNotifications}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.enableNotifBtnText}>🔔 ACTIVER LES NOTIFICATIONS</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.notifActiveInfo}>
-              <Text style={styles.notifActiveInfoText}>✓ Alertes urgentes en direct activées</Text>
-            </View>
-          )}
-          {onOpenNotifications && (
-            <TouchableOpacity
-              style={styles.viewNotifsBtn}
-              onPress={onOpenNotifications}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.viewNotifsBtnText}>Historique</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Carte Sécurité & Authentification */}
-      <View style={styles.settingsCard}>
-        <View style={styles.settingsHeaderRow}>
-          <Text style={styles.settingsTitle}>🔒 Sécurité & Accès</Text>
-          <View style={[styles.notifStatusPill, { backgroundColor: '#3b82f6' }]}>
-            <Text style={styles.notifStatusPillText}>Actif</Text>
-          </View>
-        </View>
-        <Text style={styles.settingsSub}>
-          Gérez votre mot de passe et protégez l'accès à vos contributions et enquêtes citoyennes.
-        </Text>
-        <TouchableOpacity
-          style={styles.resetPassBtn}
-          onPress={handleForgotPassword}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.resetPassBtnText}>🔑 CHANGER MON MOT DE PASSE</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Actions de rédaction si journaliste ou admin */}
       {(isJournalist || isAdmin) && onOpenCreateArticle && (
         <TouchableOpacity
@@ -995,9 +978,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           onPress={() => onOpenCreateArticle(currentUser?.mediaId, currentUser?.mediaName)}
           activeOpacity={0.8}
         >
-          <Text style={styles.createArticleBtnText}>
-            ✍️ {currentUser?.mediaName ? `RÉDIGER UNE ENQUÊTE DANS « ${currentUser.mediaName.toUpperCase()} »` : 'RÉDIGER UNE NOUVELLE ENQUÊTE'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <AppIcon name="pencil" size={14} color="#000" style={{ marginRight: 6 }} />
+            <Text style={styles.createArticleBtnText}>
+              {currentUser?.mediaName ? `RÉDIGER UNE ENQUÊTE DANS « ${currentUser.mediaName.toUpperCase()} »` : 'RÉDIGER UNE NOUVELLE ENQUÊTE'}
+            </Text>
+          </View>
         </TouchableOpacity>
       )}
 
@@ -1024,7 +1010,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 onPress={() => setShowApplyModal(false)}
                 style={styles.modalCloseBtn}
               >
-                <Text style={styles.modalCloseBtnText}>✕</Text>
+                <AppIcon name="close" size={18} color="#64748b" />
               </TouchableOpacity>
             </View>
 
@@ -1079,9 +1065,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </View>
 
               <View style={styles.modalNoticeBox}>
-                <Text style={styles.modalNoticeText}>
-                  🛡️ Votre demande sera soumise pour validation manuelle aux administrateurs de PURGE. La validation vous attribuera le badge officiel et les droits de rédaction d'enquêtes.
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                  <AppIcon name="shield" size={13} color="#00d2ff" style={{ marginRight: 6, marginTop: 2 }} />
+                  <Text style={styles.modalNoticeText}>
+                    Votre demande sera soumise pour validation manuelle aux administrateurs de PURGE. La validation vous attribuera le badge officiel et les droits de rédaction d'enquêtes.
+                  </Text>
+                </View>
               </View>
             </ScrollView>
 
