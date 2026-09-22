@@ -43,6 +43,7 @@ export interface User {
   bio?: string;
   isVerified?: boolean;
   verificationStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  pressCardNumber?: string;
   trustScore?: number;
   status: 'active' | 'suspended';
   mediaName?: string;

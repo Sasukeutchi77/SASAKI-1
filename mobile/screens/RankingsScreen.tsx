@@ -291,7 +291,24 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
           {/* Onglet 1 : Maisons de Presse */}
           {tab === 'houses' && (
             filteredHouses.length === 0 ? (
-              <Text style={styles.emptyText}>Aucune maison trouvée pour cette recherche.</Text>
+              <View style={styles.rankEmptyCard}>
+                <AppIcon name="building" size={32} color="#64748b" style={{ marginBottom: 10 }} />
+                <Text style={styles.rankEmptyTitle}>Aucune maison de presse trouvée</Text>
+                <Text style={styles.rankEmptySub}>
+                  {searchQuery.trim()
+                    ? `Aucune rédaction ne correspond à « ${searchQuery} »`
+                    : 'Aucune rédaction classée disponible.'}
+                </Text>
+                {searchQuery.trim() ? (
+                  <TouchableOpacity
+                    style={styles.rankResetBtn}
+                    onPress={() => setSearchQuery('')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.rankResetBtnText}>EFFACER LE FILTRE</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             ) : (
               <>
                 {/* Podium Top 3 si pas de recherche filtrée */}
@@ -475,7 +492,24 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
           {/* Onglet 2 : Journalistes */}
           {tab === 'journalists' && (
             filteredJournalists.length === 0 ? (
-              <Text style={styles.emptyText}>Aucun journaliste trouvé.</Text>
+              <View style={styles.rankEmptyCard}>
+                <AppIcon name="people" size={32} color="#64748b" style={{ marginBottom: 10 }} />
+                <Text style={styles.rankEmptyTitle}>Aucune plume trouvée</Text>
+                <Text style={styles.rankEmptySub}>
+                  {searchQuery.trim()
+                    ? `Aucun journaliste ne correspond à « ${searchQuery} »`
+                    : 'Aucun journaliste accrédité classé.'}
+                </Text>
+                {searchQuery.trim() ? (
+                  <TouchableOpacity
+                    style={styles.rankResetBtn}
+                    onPress={() => setSearchQuery('')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.rankResetBtnText}>EFFACER LE FILTRE</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             ) : (
               <>
                 {/* Podium Top 3 Journalistes si pas de recherche */}
@@ -646,7 +680,24 @@ export const RankingsScreen: React.FC<RankingsScreenProps> = ({
           {/* Onglet 3 : Enquêtes Vedettes */}
           {tab === 'articles' && (
             filteredArticles.length === 0 ? (
-              <Text style={styles.emptyText}>Aucun article classé trouvé.</Text>
+              <View style={styles.rankEmptyCard}>
+                <AppIcon name="newspaper" size={32} color="#64748b" style={{ marginBottom: 10 }} />
+                <Text style={styles.rankEmptyTitle}>Aucune enquête trouvée</Text>
+                <Text style={styles.rankEmptySub}>
+                  {searchQuery.trim()
+                    ? `Aucun article ne correspond à « ${searchQuery} »`
+                    : 'Aucun article classé disponible.'}
+                </Text>
+                {searchQuery.trim() ? (
+                  <TouchableOpacity
+                    style={styles.rankResetBtn}
+                    onPress={() => setSearchQuery('')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.rankResetBtnText}>EFFACER LE FILTRE</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             ) : (
               filteredArticles.map((article, idx) => {
                 const rank = idx + 1;
@@ -956,6 +1007,46 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     marginVertical: 24,
+  },
+  rankEmptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    backgroundColor: '#0c1228',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  rankEmptyTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  rankEmptySub: {
+    color: '#94a3b8',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  rankResetBtn: {
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#00d2ff',
+  },
+  rankResetBtnText: {
+    color: '#00d2ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   articleRankCard: {
     backgroundColor: '#0c1228',

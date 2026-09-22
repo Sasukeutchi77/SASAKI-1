@@ -244,10 +244,64 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                     setQuery('');
                     handleSearch('', selectedCategory);
                   }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <AppIcon name="close" size={16} color="#64748b" />
                 </TouchableOpacity>
               )}
+            </View>
+
+            {/* Barre de Catégories Horizontale Toujours Accessible */}
+            <View style={styles.categoriesBarWrapper}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryPillsScroll}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.exploreCatPill,
+                    !selectedCategory && styles.exploreCatPillActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedCategory('');
+                    if (query) handleSearch(query, '');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.exploreCatPillText,
+                      !selectedCategory && styles.exploreCatPillTextActive,
+                    ]}
+                  >
+                    Toutes
+                  </Text>
+                </TouchableOpacity>
+                {categories.map((cat) => {
+                  const isSelected = selectedCategory === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.exploreCatPill,
+                        isSelected && styles.exploreCatPillActive,
+                      ]}
+                      onPress={() => handleCategoryPress(cat.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.exploreCatPillText,
+                          isSelected && styles.exploreCatPillTextActive,
+                        ]}
+                      >
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </View>
           </View>
 
@@ -1185,5 +1239,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  categoriesBarWrapper: {
+    marginTop: 12,
+  },
+  categoryPillsScroll: {
+    gap: 8,
+    paddingRight: 12,
+  },
+  exploreCatPill: {
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#0c142c',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.09)',
+  },
+  exploreCatPillActive: {
+    backgroundColor: 'rgba(0, 210, 255, 0.16)',
+    borderColor: '#00d2ff',
+  },
+  exploreCatPillText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  exploreCatPillTextActive: {
+    color: '#00d2ff',
+    fontWeight: '800',
   },
 });

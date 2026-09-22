@@ -9,13 +9,11 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  Modal,
 } from 'react-native';
 import { User, isJournalistRole, isAdminRole, VerificationRequest, MediaHouse, Article } from '../types';
 import { api } from '../services/api';
-import { pickImageFromGallery, uploadPickedImageToCloudinary } from '../services/imagePicker';
+import { uploadPickedImageToCloudinary } from '../services/imagePicker';
 import {
-  triggerLocalNotification,
   requestNotificationPermission,
   areNotificationsEnabled,
 } from '../services/notifications';
@@ -25,6 +23,15 @@ import { ImageSelectModal } from '../components/ImageSelectModal';
 import { JournalistHouseSection } from '../components/JournalistHouseSection';
 import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
 import { AppIcon } from '../components/AppIcon';
+
+// Sous-composants modulaires du profil
+import { ProfileHeaderCard } from '../components/profile/ProfileHeaderCard';
+import { ProfileSegmentedTabs, ProfileTabKey } from '../components/profile/ProfileSegmentedTabs';
+import { CitizenDashboardSection } from '../components/profile/CitizenDashboardSection';
+import { PressAccreditationSection } from '../components/profile/PressAccreditationSection';
+import { ProfileSecuritySection } from '../components/profile/ProfileSecuritySection';
+import { ApplyJournalistModal } from '../components/profile/ApplyJournalistModal';
+import { PasswordResetModal } from '../components/profile/PasswordResetModal';
 
 interface ProfileScreenProps {
   currentUser: User | null;
@@ -41,6 +48,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onOpenNotifications,
   onSelectArticle,
 }) => {
+  // Navigation par onglets dans le profil
+  const [profileTab, setProfileTab] = useState<ProfileTabKey>('activity');
+
+  // Authentification (non connecté)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,34 +59,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [notificationsActive, setNotificationsActive] = useState<boolean>(false);
 
-  // Modals pour modifications profil, création maison de presse et photo
+  // Modals profil & médias
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showCreateHouseModal, setShowCreateHouseModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [selectedHouseForDetail, setSelectedHouseForDetail] = useState<MediaHouse | null>(null);
 
-  // État du formulaire de candidature journaliste (Citoyen -> Journaliste)
+  // Modal candidature journaliste
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [applyMediaName, setApplyMediaName] = useState('');
-  const [applyPressCard, setApplyPressCard] = useState('');
-  const [applyMotivation, setApplyMotivation] = useState('');
-  const [applyPortfolioUrl, setApplyPortfolioUrl] = useState('');
-  const [submittingApply, setSubmittingApply] = useState(false);
 
-  // État Modal Réinitialisation / Changement de mot de passe sécurisé
+  // Modal réinitialisation mot de passe
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetNewPassword, setResetNewPassword] = useState('');
-  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
-  const [submittingReset, setSubmittingReset] = useState(false);
 
-  // État de gestion administrative des demandes (Réservé aux Administrateurs)
+  // Administration des demandes
   const [adminRequests, setAdminRequests] = useState<VerificationRequest[]>([]);
   const [loadingAdminRequests, setLoadingAdminRequests] = useState(false);
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
 
   useEffect(() => {
     checkNotifStatus();
@@ -107,7 +109,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const handleAuthSubmit = async () => {
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     const cleanEmail = email.trim();
     const cleanPassword = password.trim();
@@ -133,7 +134,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           throw new Error('Identifiants incorrects ou compte introuvable.');
         }
       } else {
-        // Enregistrement strictement Citoyen par défaut
         const res = await api.register({
           name: name.trim(),
           email: cleanEmail,
@@ -142,8 +142,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         if (res && res.user) {
           onUserUpdated(res.user);
           Alert.alert(
-            'Compte citoyen créé avec succès',
-            `Bienvenue sur PURGE, ${res.user.name} !\n\nVotre compte Citoyen est actif. Pour devenir Journaliste accrédité et publier des enquêtes, vous pourrez soumettre votre demande depuis votre profil pour validation par l'administration.`
+            'Compte citoyen créé',
+            `Bienvenue sur PURGE, ${res.user.name} ! Votre compte Citoyen est actif.`
           );
         } else {
           throw new Error('Échec de la création du compte.');
@@ -158,55 +158,41 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   };
 
-  // Soumission de la demande d'accréditation Journaliste par un Citoyen
-  const handleApplySubmit = async () => {
-    if (!currentUser) return;
-    if (!applyMotivation.trim() || applyMotivation.trim().length < 15) {
-      Alert.alert(
-        'Motivation requise',
-        'Veuillez détailler vos thématiques d’investigation et votre motivation (minimum 15 caractères).'
-      );
-      return;
-    }
-
-    setSubmittingApply(true);
-    try {
-      await api.requestVerification({
-        mediaName: applyMediaName.trim() || 'Média Indépendant',
-        pressCardNumber: applyPressCard.trim() || 'Candidat Citoyen / Enquêteur',
-        motivation: applyMotivation.trim(),
-        documentUrl: applyPortfolioUrl.trim() || '',
-      });
-
-      const updatedUser: User = {
-        ...currentUser,
-        verificationStatus: 'pending',
-      };
-      onUserUpdated(updatedUser);
-      setShowApplyModal(false);
-      setApplyMediaName('');
-      setApplyPressCard('');
-      setApplyMotivation('');
-      setApplyPortfolioUrl('');
-
-      Alert.alert(
-        'Demande transmise',
-        'Votre candidature au statut Journaliste a été enregistrée avec succès. Les administrateurs de PURGE examineront votre dossier sous peu.'
-      );
-    } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Impossible d’envoyer la demande.');
-    } finally {
-      setSubmittingApply(false);
-    }
+  // Raccourcis de connexion rapide pour démonstration
+  const handleSelectPreset = (presetEmail: string, presetPass: string) => {
+    setEmail(presetEmail);
+    setPassword(presetPass);
+    setAuthMode('login');
   };
 
-  // Décision administrative sur une demande (Réservé aux Admins)
-  const handleReviewRequest = (reqId: string, applicantName: string, decision: 'approved' | 'rejected') => {
+  // Soumission de la demande d'accréditation Journaliste par un Citoyen
+  const handleApplySubmit = async (data: {
+    mediaName: string;
+    pressCardNumber: string;
+    motivation: string;
+    documentUrl: string;
+  }) => {
+    if (!currentUser) return;
+    await api.requestVerification(data);
+    const updatedUser: User = {
+      ...currentUser,
+      verificationStatus: 'pending',
+    };
+    onUserUpdated(updatedUser);
+    Alert.alert(
+      'Demande transmise',
+      'Votre candidature au statut Journaliste a été enregistrée avec succès. Les administrateurs examineront votre dossier sous peu.'
+    );
+  };
+
+  // Décision administrative sur une demande (Approuver / Rejeter)
+  const handleReviewRequest = (reqId: string, applicantName: string | undefined, decision: 'approved' | 'rejected') => {
+    const nameStr = applicantName || 'ce candidat';
     Alert.alert(
       decision === 'approved' ? 'Valider l’accréditation' : 'Refuser la demande',
       decision === 'approved'
-        ? `Confirmez-vous l'attribution du statut Journaliste Officiel à "${applicantName}" ?`
-        : `Voulez-vous refuser la demande d'accréditation de "${applicantName}" ?`,
+        ? `Confirmez-vous l'attribution du statut Journaliste Officiel à "${nameStr}" ?`
+        : `Voulez-vous refuser la demande d'accréditation de "${nameStr}" ?`,
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -219,8 +205,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               Alert.alert(
                 'Opération confirmée',
                 decision === 'approved'
-                  ? `"${applicantName}" est désormais Journaliste agréé avec badge de vérification.`
-                  : `La demande de "${applicantName}" a été refusée.`
+                  ? `"${nameStr}" est désormais Journaliste agréé avec badge officiel.`
+                  : `La demande de "${nameStr}" a été refusée.`
               );
               await loadAdminRequests();
             } catch (err: any) {
@@ -234,9 +220,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     );
   };
 
-  // Synchronisation du profil pour un citoyen vérifiant son statut
+  // Synchronisation du profil pour vérifier le statut de candidature
   const handleRefreshStatus = async () => {
-    setLoading(true);
+    setRefreshingStatus(true);
     try {
       const res = await api.getMe();
       if (res && res.user) {
@@ -246,7 +232,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         } else if (res.user.verificationStatus === 'rejected') {
           Alert.alert('Statut', 'Votre précédente demande n’a pas été retenue par l’administration.');
         } else if (res.user.verificationStatus === 'pending') {
-          Alert.alert('Examen en cours', 'Votre dossier est toujours entre les mains de la Rédaction en Chef.');
+          Alert.alert('Examen en cours', 'Votre dossier est toujours en cours d’évaluation par la Rédaction en Chef.');
         } else {
           Alert.alert('Statut Citoyen', 'Vous êtes enregistré en tant que Citoyen Débattant.');
         }
@@ -254,139 +240,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     } catch {
       Alert.alert('Information', 'Impossible de rafraîchir le statut. Vérifiez votre connexion.');
     } finally {
-      setLoading(false);
+      setRefreshingStatus(false);
     }
   };
-
-  const handleForgotPassword = () => {
-    setResetEmail(email.trim().toLowerCase() || (currentUser ? currentUser.email : ''));
-    setResetNewPassword('');
-    setResetConfirmPassword('');
-    setShowPasswordResetModal(true);
-  };
-
-  const handlePerformPasswordReset = async () => {
-    const cleanEmail = resetEmail.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      Alert.alert('Email invalide', 'Veuillez renseigner une adresse email valide.');
-      return;
-    }
-    if (!resetNewPassword || resetNewPassword.length < 6) {
-      Alert.alert('Mot de passe trop court', 'Le mot de passe doit comporter au moins 6 caractères.');
-      return;
-    }
-    if (resetNewPassword !== resetConfirmPassword) {
-      Alert.alert('Mots de passe non identiques', 'La confirmation ne correspond pas au nouveau mot de passe.');
-      return;
-    }
-
-    setSubmittingReset(true);
-    try {
-      const res = await api.resetPassword(cleanEmail, resetNewPassword);
-      setShowPasswordResetModal(false);
-      setResetNewPassword('');
-      setResetConfirmPassword('');
-      Alert.alert(
-        'Accès réinitialisé',
-        res.message || 'Votre mot de passe a été mis à jour avec succès. Vous pouvez désormais vous connecter avec vos nouveaux identifiants.'
-      );
-    } catch (err: any) {
-      Alert.alert('Erreur réinitialisation', err.message || 'Impossible de réinitialiser le mot de passe.');
-    } finally {
-      setSubmittingReset(false);
-    }
-  };
-
-  const renderPasswordResetModal = () => (
-    <Modal
-      visible={showPasswordResetModal}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={() => setShowPasswordResetModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.resetModalContainer}>
-          <View style={styles.resetModalHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <AppIcon name="key" size={16} color="#00d2ff" style={{ marginRight: 6 }} />
-              <Text style={styles.resetModalTitle}>Réinitialisation Sécurisée</Text>
-            </View>
-            <Text style={styles.resetModalSub}>
-              Définissez un nouveau mot de passe pour accéder à votre espace citoyen ou rédactionnel.
-            </Text>
-          </View>
-
-          <View style={styles.resetForm}>
-            <Text style={styles.resetFieldLabel}>Adresse Email du Compte</Text>
-            <TextInput
-              style={styles.resetInput}
-              placeholder="citoyen@purge.info"
-              placeholderTextColor="#64748b"
-              value={resetEmail}
-              onChangeText={setResetEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-
-            <Text style={styles.resetFieldLabel}>Nouveau Mot de Passe (min. 6 car.)</Text>
-            <TextInput
-              style={styles.resetInput}
-              placeholder="••••••••••••"
-              placeholderTextColor="#64748b"
-              value={resetNewPassword}
-              onChangeText={setResetNewPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <Text style={styles.resetFieldLabel}>Confirmer le Nouveau Mot de Passe</Text>
-            <TextInput
-              style={styles.resetInput}
-              placeholder="••••••••••••"
-              placeholderTextColor="#64748b"
-              value={resetConfirmPassword}
-              onChangeText={setResetConfirmPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <View style={styles.resetNoticeBox}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <AppIcon name="shield" size={13} color="#00d2ff" style={{ marginRight: 6, marginTop: 2 }} />
-                <Text style={styles.resetNoticeText}>
-                  Un hachage cryptographique sécurisé est appliqué pour protéger l'intégrité de vos accès.
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.resetActionsRow}>
-            <TouchableOpacity
-              style={styles.cancelResetBtn}
-              onPress={() => setShowPasswordResetModal(false)}
-              disabled={submittingReset}
-            >
-              <Text style={styles.cancelResetBtnText}>Annuler</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.confirmResetBtn, submittingReset && styles.disabledBtn]}
-              onPress={handlePerformPasswordReset}
-              disabled={submittingReset}
-            >
-              {submittingReset ? (
-                <ActivityIndicator color="#020512" size="small" />
-              ) : (
-                <Text style={styles.confirmResetBtnText}>Mettre à Jour</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
 
   const handleLogout = async () => {
-    Alert.alert('Déconnexion', 'Voulez-vous vraiment vous déconnecter de PURGE ?', [
+    Alert.alert('Déconnexion', 'Voulez-vous vraiment vous déconnecter de votre compte PURGE ?', [
       { text: 'Annuler', style: 'cancel' },
       {
         text: 'Déconnexion',
@@ -397,10 +256,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         },
       },
     ]);
-  };
-
-  const handleChangeAvatar = () => {
-    setShowAvatarModal(true);
   };
 
   const handleSelectAvatar = async (result: { url?: string; pickedResult?: any }) => {
@@ -432,12 +287,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       if (granted) {
         Alert.alert(
           'Notifications activées',
-          'Vous recevrez en temps réel les alertes prioritaires, décrets et nouvelles enquêtes certifiées.'
+          'Vous recevrez en direct les dépêches urgentes, les décrets officiels et les révélations certifiées.'
         );
       } else {
         Alert.alert(
           'Autorisation requise',
-          'Veuillez activer les notifications dans les paramètres Android de l’application pour recevoir les alertes.'
+          'Veuillez activer les notifications dans les paramètres de votre appareil.'
         );
       }
     } catch (err: any) {
@@ -445,23 +300,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   };
 
-  // VUE NON CONNECTÉ : Formulaire d'authentification robuste
+  // ==========================================
+  // VUE 1 : UTILISATEUR NON CONNECTÉ
+  // ==========================================
   if (!currentUser) {
     return (
       <ScrollView contentContainerStyle={styles.scrollAuth} keyboardShouldPersistTaps="handled">
         <View style={styles.authCard}>
           <Image source={require('../assets/icon.png')} style={styles.authLogo} resizeMode="contain" />
-          <Text style={styles.authBrand}>PURGE • RÉSEAU OFFICIEL</Text>
+          <Text style={styles.authBrand}>PURGE • ARÈNE CIVIQUE</Text>
           <Text style={styles.authTitle}>ESPACE CITOYEN & JOURNALISTE</Text>
           <Text style={styles.authSub}>
-            Accédez aux dépêches exclusives, participez aux débats certifiés et suivez vos rédacteurs favoris.
+            Accédez aux enquêtes vérifiées, participez aux scrutins et suivez vos rédacteurs favoris.
           </Text>
-
-          {/* Badge Cloud Direct */}
-          <View style={styles.cloudBadge}>
-            <View style={styles.cloudDot} />
-            <Text style={styles.cloudBadgeText}>Connexion Sécurisée Firebase Directe</Text>
-          </View>
 
           {/* Onglets Connexion / Inscription */}
           <View style={styles.authTabs}>
@@ -471,7 +322,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 setAuthMode('login');
                 setErrorMessage(null);
               }}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
               <Text style={[styles.authTabText, authMode === 'login' && styles.activeAuthTabText]}>
                 CONNEXION
@@ -484,7 +335,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 setAuthMode('register');
                 setErrorMessage(null);
               }}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
               <Text style={[styles.authTabText, authMode === 'register' && styles.activeAuthTabText]}>
                 INSCRIPTION
@@ -492,652 +343,263 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Message d'erreur visible */}
+          {/* Message d'erreur */}
           {errorMessage && (
             <View style={styles.errorContainer}>
-              <AppIcon name="alert-circle" size={16} color="#ef4444" style={{ marginRight: 6 }} />
+              <AppIcon name="alert-circle" size={14} color="#ef4444" style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           )}
 
-          {/* Formulaire Inscription : Nom */}
-          {authMode === 'register' && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nom complet ou Pseudonyme</Text>
+          {/* Formulaire */}
+          <View style={styles.formGroup}>
+            {authMode === 'register' && (
+              <View style={styles.inputWrap}>
+                <Text style={styles.inputLabel}>Nom complet ou Pseudonyme</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Alexis de Tocqueville"
+                  placeholderTextColor="#64748b"
+                  value={name}
+                  onChangeText={setName}
+                />
+              </View>
+            )}
+
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputLabel}>Adresse Email</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Ex: Marcus Vance"
+                placeholder="citoyen@purge.info"
                 placeholderTextColor="#64748b"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
             </View>
-          )}
 
-          {/* Email */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Adresse Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="citoyen@purge.info"
-              placeholderTextColor="#64748b"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          {/* Mot de passe */}
-          <View style={styles.inputGroup}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.inputLabel}>Mot de passe (6 caractères min.)</Text>
-              {authMode === 'login' && (
-                <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
-                  <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
-                    Mot de passe oublié ?
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••••••"
-              placeholderTextColor="#64748b"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-          </View>
-
-          {/* Règle PURGE : Inscription citoyenne sécurisée */}
-          {authMode === 'register' && (
-            <View style={styles.citizenNoticeCard}>
-              <View style={styles.citizenNoticeHeader}>
-                <AppIcon name="shield" size={16} color="#00d2ff" style={{ marginRight: 6 }} />
-                <Text style={styles.citizenNoticeTitle}>Statut Citoyen Garanti</Text>
+            <View style={styles.inputWrap}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.inputLabel}>Mot de Passe</Text>
+                {authMode === 'login' && (
+                  <TouchableOpacity onPress={() => setShowPasswordResetModal(true)}>
+                    <Text style={styles.forgotPassText}>Oublié ?</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-              <Text style={styles.citizenNoticeText}>
-                Toute inscription s'effectue sous le statut Citoyen. L'accès Journaliste s'obtient sur candidature motivée et après validation par les Administrateurs.
-              </Text>
-            </View>
-          )}
-
-          {/* Bouton de validation */}
-          <TouchableOpacity
-            style={[styles.submitBtn, loading && styles.disabledBtn]}
-            onPress={handleAuthSubmit}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color="#ffffff" size="small" />
-            ) : (
-              <Text style={styles.submitBtnText}>
-                {authMode === 'login' ? 'SE CONNECTER' : 'CRÉER MON COMPTE'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-        {renderPasswordResetModal()}
-      </ScrollView>
-    );
-  }
-
-  // VUE CONNECTÉ
-  const isJournalist = isJournalistRole(currentUser.role);
-  const isAdmin = isAdminRole(currentUser.role);
-
-  return (
-    <ScrollView contentContainerStyle={styles.scrollProfile}>
-      {/* Carte Profil */}
-      <View style={styles.profileCard}>
-        <View style={styles.profileHeaderRow}>
-          <TouchableOpacity
-            style={styles.avatarWrapper}
-            onPress={handleChangeAvatar}
-            disabled={updatingAvatar}
-            activeOpacity={0.8}
-          >
-            {currentUser.avatar ? (
-              <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>
-                  {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                </Text>
-              </View>
-            )}
-            <View style={styles.cameraIconBadge}>
-              <AppIcon name="camera" size={12} color="#ffffff" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.nameSection}>
-            <View style={styles.titleRow}>
-              <Text style={styles.userName}>{currentUser.name}</Text>
-              {currentUser.isVerified && (
-                <AppIcon name="checkmark-circle" size={14} color="#00d2ff" style={{ marginLeft: 4 }} />
-              )}
-            </View>
-            <Text style={styles.userEmail}>{currentUser.email}</Text>
-
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleBadgeText}>
-                {isAdmin
-                  ? 'ADMINISTRATEUR PURGE'
-                  : isJournalist
-                  ? 'JOURNALISTE AGRÉÉ'
-                  : 'CITOYEN DÉBATTANT'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {updatingAvatar && (
-          <View style={styles.avatarLoadingRow}>
-            <ActivityIndicator size="small" color="#06b6d4" />
-            <Text style={styles.avatarLoadingText}>Téléversement de la photo...</Text>
-          </View>
-        )}
-
-        {currentUser.bio ? <Text style={styles.bioText}>{currentUser.bio}</Text> : null}
-
-        {/* Métriques / Statistiques */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{currentUser.articlesCount || 0}</Text>
-            <Text style={styles.statLabel}>Enquêtes</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{currentUser.followersCount || 0}</Text>
-            <Text style={styles.statLabel}>Abonnés</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{currentUser.followingCount || 0}</Text>
-            <Text style={styles.statLabel}>Abonnements</Text>
-          </View>
-        </View>
-
-        {/* Action : Modifier mon profil */}
-        <TouchableOpacity
-          style={styles.editProfileBtn}
-          onPress={() => setShowEditProfileModal(true)}
-          activeOpacity={0.8}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            <AppIcon name="pencil" size={14} color="#00d2ff" style={{ marginRight: 8 }} />
-            <Text style={styles.editProfileBtnText}>MODIFIER MES INFORMATIONS & PROFIL</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* TABLEAU DE BORD D'ACTIVITÉ CITOYENNE */}
-      <View style={styles.activityDashboardCard}>
-        <View style={styles.activityDashboardHeader}>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-              <AppIcon name="chart" size={15} color="#00d2ff" style={{ marginRight: 6 }} />
-              <Text style={styles.activityDashboardTitle}>TABLEAU DE BORD CITOYEN</Text>
-            </View>
-            <Text style={styles.activityDashboardSub}>
-              Indice d'implication démocratique et civique
-            </Text>
-          </View>
-          <View style={styles.civicRankBadge}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <AppIcon
-                name={(currentUser.articlesCount || 0) > 2 || (currentUser.followersCount || 0) > 10 ? 'building' : 'search'}
-                size={11}
-                color="#00d2ff"
-                style={{ marginRight: 4 }}
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••••••"
+                placeholderTextColor="#64748b"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
               />
-              <Text style={styles.civicRankBadgeText}>
-                {(currentUser.articlesCount || 0) > 2 || (currentUser.followersCount || 0) > 10
-                  ? 'Sentinelle Civique'
-                  : 'Citoyen Vigilant'}
-              </Text>
             </View>
-          </View>
-        </View>
 
-        {/* Jauge d'implication citoyenne */}
-        <View style={styles.civicScoreBox}>
-          <View style={styles.civicScoreHeader}>
-            <Text style={styles.civicScoreLabel}>NIVEAU D'ENGAGEMENT CITOYEN</Text>
-            <Text style={styles.civicScorePercent}>92% • RANG ÉLITE</Text>
-          </View>
-          <View style={styles.progressBarTrack}>
-            <View style={[styles.progressBarFill, { width: '92%' }]} />
-          </View>
-        </View>
-
-        {/* Grille 4 Métriques d'activité */}
-        <View style={styles.activityGrid}>
-          <View style={styles.activityTile}>
-            <AppIcon name="newspaper" size={18} color="#00d2ff" style={{ marginBottom: 4 }} />
-            <Text style={styles.activityTileValue}>
-              {currentUser.articlesCount ? currentUser.articlesCount * 4 + 18 : 28}
-            </Text>
-            <Text style={styles.activityTileLabel}>Dépêches Lues</Text>
-          </View>
-          <View style={styles.activityTile}>
-            <AppIcon name="shield" size={18} color="#00d2ff" style={{ marginBottom: 4 }} />
-            <Text style={styles.activityTileValue}>14</Text>
-            <Text style={styles.activityTileLabel}>Votes Exprimés</Text>
-          </View>
-          <View style={styles.activityTile}>
-            <AppIcon name="chatbubbles" size={18} color="#00d2ff" style={{ marginBottom: 4 }} />
-            <Text style={styles.activityTileValue}>
-              {currentUser.articlesCount ? currentUser.articlesCount * 3 + 6 : 12}
-            </Text>
-            <Text style={styles.activityTileLabel}>Débats & Avis</Text>
-          </View>
-          <View style={styles.activityTile}>
-            <AppIcon name="star" size={18} color="#eab308" style={{ marginBottom: 4 }} />
-            <Text style={styles.activityTileValue}>98.6%</Text>
-            <Text style={styles.activityTileLabel}>Score Fiabilité</Text>
-          </View>
-        </View>
-
-        {/* Journal des actions citoyennes récentes */}
-        <View style={styles.recentActivityBlock}>
-          <Text style={styles.recentActivityTitle}>DERNIÈRES CONTRIBUTIONS CITOYENNES</Text>
-          <View style={styles.activityItemRow}>
-            <Text style={styles.activityItemDot}>•</Text>
-            <Text style={styles.activityItemText}>
-              <Text style={styles.activityItemBold}>Vote certifié</Text> exprimé sur le décret de protection de l'information
-            </Text>
-            <Text style={styles.activityItemTime}>Aujourd'hui</Text>
-          </View>
-          <View style={styles.activityItemRow}>
-            <Text style={styles.activityItemDot}>•</Text>
-            <Text style={styles.activityItemText}>
-              <Text style={styles.activityItemBold}>Avis argumenté</Text> publié dans la tribune d'investigation
-            </Text>
-            <Text style={styles.activityItemTime}>Hier</Text>
-          </View>
-          <View style={styles.activityItemRow}>
-            <Text style={styles.activityItemDot}>•</Text>
-            <Text style={styles.activityItemText}>
-              <Text style={styles.activityItemBold}>Accréditation consultée</Text> auprès de la maison de presse officielle
-            </Text>
-            <Text style={styles.activityItemTime}>Il y a 3j</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* ESPACE MAISON DE PRESSE & RÉDACTION OFFICIELLE */}
-      <JournalistHouseSection
-        currentUser={currentUser}
-        onOpenCreateArticleForHouse={(houseId, houseName) => {
-          if (onOpenCreateArticle) {
-            onOpenCreateArticle(houseId, houseName);
-          }
-        }}
-        onOpenHouseModal={(h) => setSelectedHouseForDetail(h)}
-        onSelectArticle={onSelectArticle}
-        onCreateHouse={() => setShowCreateHouseModal(true)}
-        onUserUpdated={onUserUpdated}
-      />
-
-      {/* ESPACE CITOYEN : Candidature au Statut Journaliste */}
-      {!isJournalist && !isAdmin && (
-        <View style={styles.accreditationCard}>
-          <View style={styles.accreditationHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <AppIcon name="pencil" size={15} color="#00d2ff" style={{ marginRight: 6 }} />
-              <Text style={styles.accreditationTitle}>Accréditation Journaliste</Text>
-            </View>
-            {currentUser.verificationStatus === 'pending' ? (
-              <View style={[styles.statusBadgePill, { backgroundColor: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b' }]}>
-                <Text style={[styles.statusBadgeText, { color: '#f59e0b' }]}>En examen</Text>
-              </View>
-            ) : currentUser.verificationStatus === 'rejected' ? (
-              <View style={[styles.statusBadgePill, { backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444' }]}>
-                <Text style={[styles.statusBadgeText, { color: '#ef4444' }]}>Refusée</Text>
-              </View>
-            ) : (
-              <View style={[styles.statusBadgePill, { backgroundColor: 'rgba(6, 182, 212, 0.2)', borderColor: '#06b6d4' }]}>
-                <Text style={[styles.statusBadgeText, { color: '#06b6d4' }]}>Sur validation</Text>
-              </View>
-            )}
-          </View>
-
-          {currentUser.verificationStatus === 'pending' ? (
-            <View>
-              <Text style={styles.accreditationDesc}>
-                Votre dossier d'accréditation Journaliste a bien été transmis aux administrateurs de PURGE. La Rédaction en Chef examine actuellement vos références déontologiques.
-              </Text>
-              <TouchableOpacity
-                style={styles.refreshStatusBtn}
-                onPress={handleRefreshStatus}
-                activeOpacity={0.8}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <AppIcon name="refresh" size={13} color="#00d2ff" style={{ marginRight: 6 }} />
-                  <Text style={styles.refreshStatusBtnText}>VÉRIFIER SI VALIDÉ PAR L'ADMIN</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          ) : currentUser.verificationStatus === 'rejected' ? (
-            <View>
-              <Text style={styles.accreditationDesc}>
-                Votre précédente demande n'a pas été retenue par l'administration. Vous pouvez déposer un dossier mis à jour avec vos liens de publications.
-              </Text>
-              <TouchableOpacity
-                style={styles.applyBtn}
-                onPress={() => setShowApplyModal(true)}
-                activeOpacity={0.8}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <AppIcon name="document-text" size={13} color="#000" style={{ marginRight: 6 }} />
-                  <Text style={styles.applyBtnText}>DÉPOSER UNE NOUVELLE CANDIDATURE</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View>
-              <Text style={styles.accreditationDesc}>
-                Les articles et enquêtes sur PURGE sont réservés aux journalistes accrédités. Pour publier vos enquêtes et recevoir le badge de vérification, transmettez votre candidature aux administrateurs.
-              </Text>
-              <TouchableOpacity
-                style={styles.applyBtn}
-                onPress={() => setShowApplyModal(true)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.applyBtnText}>POSTULER AU STATUT JOURNALISTE</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* ESPACE ADMINISTRATEUR : Validation des Demandes d'Accréditation */}
-      {isAdmin && (
-        <View style={styles.adminReviewCard}>
-          <View style={styles.adminReviewHeaderRow}>
-            <View style={styles.adminTitleCol}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                <AppIcon name="shield" size={15} color="#00d2ff" style={{ marginRight: 6 }} />
-                <Text style={styles.adminReviewTitle}>Gestion des Accréditations</Text>
-              </View>
-              <Text style={styles.adminReviewSub}>
-                Validation des candidatures journalistes ({adminRequests.length} en attente)
-              </Text>
-            </View>
             <TouchableOpacity
-              style={styles.adminRefreshBtn}
-              onPress={loadAdminRequests}
-              disabled={loadingAdminRequests}
-              activeOpacity={0.7}
+              style={[styles.submitBtn, loading && styles.disabledBtn]}
+              onPress={handleAuthSubmit}
+              disabled={loading}
+              activeOpacity={0.8}
             >
-              {loadingAdminRequests ? (
-                <ActivityIndicator size="small" color="#06b6d4" />
+              {loading ? (
+                <ActivityIndicator color="#000000" size="small" />
               ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <AppIcon name="refresh" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
-                  <Text style={styles.adminRefreshBtnText}>Actualiser</Text>
-                </View>
+                <Text style={styles.submitBtnText}>
+                  {authMode === 'login' ? 'SE CONNECTER' : 'CRÉER MON COMPTE CITOYEN'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
 
-          {adminRequests.length === 0 ? (
-            <View style={styles.adminEmptyState}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
-                <AppIcon name="checkmark-circle" size={14} color="#10b981" style={{ marginRight: 6 }} />
-                <Text style={styles.adminEmptyStateText}>
-                  Aucune demande d'accréditation en attente.
-                </Text>
-              </View>
-              <Text style={styles.adminEmptyStateSub}>
-                Les nouvelles demandes soumises par les citoyens apparaîtront ici pour décision.
-              </Text>
-            </View>
-          ) : (
-            adminRequests.map((req) => (
-              <View key={req.id} style={styles.requestItemCard}>
-                <View style={styles.requestItemHeader}>
-                  <View style={styles.requestApplicantCol}>
-                    <Text style={styles.requestApplicantName}>{req.userName || 'Candidat'}</Text>
-                    <Text style={styles.requestApplicantEmail}>{req.userEmail}</Text>
-                  </View>
-                  <View style={styles.requestDateBadge}>
-                    <Text style={styles.requestDateText}>
-                      {req.createdAt ? new Date(req.createdAt).toLocaleDateString('fr-FR') : 'Récent'}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.requestDetailsBox}>
-                  <Text style={styles.requestDetailRow}>
-                    <Text style={styles.requestDetailLabel}>Média : </Text>
-                    <Text style={styles.requestDetailValue}>{req.mediaName || 'Non spécifié'}</Text>
-                  </Text>
-                  <Text style={styles.requestDetailRow}>
-                    <Text style={styles.requestDetailLabel}>Référence / CP : </Text>
-                    <Text style={styles.requestDetailValue}>{req.pressCardNumber || 'Citoyen d’investigation'}</Text>
-                  </Text>
-                  <Text style={styles.requestDetailRow}>
-                    <Text style={styles.requestDetailLabel}>Motivation : </Text>
-                    <Text style={styles.requestDetailValue}>{req.motivation}</Text>
-                  </Text>
-                  {req.documentUrl ? (
-                    <Text style={styles.requestDetailRow}>
-                      <Text style={styles.requestDetailLabel}>Lien : </Text>
-                      <Text style={styles.requestLinkValue}>{req.documentUrl}</Text>
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View style={styles.requestActionsRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.rejectActionBtn,
-                      processingRequestId === req.id && styles.disabledBtn,
-                    ]}
-                    onPress={() => handleReviewRequest(req.id, req.userName, 'rejected')}
-                    disabled={processingRequestId === req.id}
-                    activeOpacity={0.8}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                      <AppIcon name="close" size={13} color="#ef4444" style={{ marginRight: 4 }} />
-                      <Text style={styles.rejectActionBtnText}>Refuser</Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.approveActionBtn,
-                      processingRequestId === req.id && styles.disabledBtn,
-                    ]}
-                    onPress={() => handleReviewRequest(req.id, req.userName, 'approved')}
-                    disabled={processingRequestId === req.id}
-                    activeOpacity={0.8}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                      <AppIcon name="checkmark" size={13} color="#10b981" style={{ marginRight: 4 }} />
-                      <Text style={styles.approveActionBtnText}>Valider Journaliste</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
-        </View>
-      )}
-
-      {/* Actions de rédaction si journaliste ou admin */}
-      {(isJournalist || isAdmin) && onOpenCreateArticle && (
-        <TouchableOpacity
-          style={styles.createArticleBtn}
-          onPress={() => onOpenCreateArticle(currentUser?.mediaId, currentUser?.mediaName)}
-          activeOpacity={0.8}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            <AppIcon name="pencil" size={14} color="#000" style={{ marginRight: 6 }} />
-            <Text style={styles.createArticleBtnText}>
-              {currentUser?.mediaName ? `RÉDIGER UNE ENQUÊTE DANS « ${currentUser.mediaName.toUpperCase()} »` : 'RÉDIGER UNE NOUVELLE ENQUÊTE'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Bouton de Déconnexion */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-        <Text style={styles.logoutBtnText}>SE DÉCONNECTER</Text>
-      </TouchableOpacity>
-
-      {/* Modal de Demande d'Accréditation Journaliste */}
-      <Modal
-        visible={showApplyModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowApplyModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>Candidature Journaliste</Text>
-                <Text style={styles.modalSub}>Accréditation officielle PURGE</Text>
-              </View>
+          {/* Raccourcis comptes de test */}
+          <View style={styles.presetSection}>
+            <Text style={styles.presetTitle}>ACCÈS RAPIDES DE DÉMONSTRATION :</Text>
+            <View style={styles.presetGrid}>
               <TouchableOpacity
-                onPress={() => setShowApplyModal(false)}
-                style={styles.modalCloseBtn}
+                style={styles.presetPill}
+                onPress={() => handleSelectPreset('citoyen@purge.info', 'citoyen123')}
               >
-                <AppIcon name="close" size={18} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
-              <View style={styles.modalInputGroup}>
-                <Text style={styles.modalLabel}>Média ou Collectif d’appartenance</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  placeholder="Ex: Le Canard Libre, Radio Citoyenne, Indépendant"
-                  placeholderTextColor="#64748b"
-                  value={applyMediaName}
-                  onChangeText={setApplyMediaName}
-                />
-              </View>
-
-              <View style={styles.modalInputGroup}>
-                <Text style={styles.modalLabel}>Numéro Carte de Presse ou Référence d’enquête</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  placeholder="Ex: CP-78493 ou Enquêteur Citoyen"
-                  placeholderTextColor="#64748b"
-                  value={applyPressCard}
-                  onChangeText={setApplyPressCard}
-                />
-              </View>
-
-              <View style={styles.modalInputGroup}>
-                <Text style={styles.modalLabel}>Motivation & Thématiques d’investigation *</Text>
-                <TextInput
-                  style={[styles.modalInput, styles.modalTextArea]}
-                  placeholder="Expliquez vos sujets d'enquête, votre rigueur méthodologique et pourquoi vous souhaitez publier sur PURGE..."
-                  placeholderTextColor="#64748b"
-                  value={applyMotivation}
-                  onChangeText={setApplyMotivation}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <View style={styles.modalInputGroup}>
-                <Text style={styles.modalLabel}>Lien de référence / Portfolio / Article (Optionnel)</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  placeholder="https://..."
-                  placeholderTextColor="#64748b"
-                  value={applyPortfolioUrl}
-                  onChangeText={setApplyPortfolioUrl}
-                  autoCapitalize="none"
-                  keyboardType="url"
-                />
-              </View>
-
-              <View style={styles.modalNoticeBox}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                  <AppIcon name="shield" size={13} color="#00d2ff" style={{ marginRight: 6, marginTop: 2 }} />
-                  <Text style={styles.modalNoticeText}>
-                    Votre demande sera soumise pour validation manuelle aux administrateurs de PURGE. La validation vous attribuera le badge officiel et les droits de rédaction d'enquêtes.
-                  </Text>
-                </View>
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setShowApplyModal(false)}
-                disabled={submittingApply}
-              >
-                <Text style={styles.modalCancelBtnText}>Annuler</Text>
+                <Text style={styles.presetPillText}>👤 Citoyen</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalSubmitBtn, submittingApply && styles.disabledBtn]}
-                onPress={handleApplySubmit}
-                disabled={submittingApply}
+                style={styles.presetPill}
+                onPress={() => handleSelectPreset('itachi@purge.info', 'journaliste123')}
               >
-                {submittingApply ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
-                ) : (
-                  <Text style={styles.modalSubmitBtnText}>Transmettre ma demande</Text>
-                )}
+                <Text style={styles.presetPillText}>✍️ Journaliste</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.presetPill}
+                onPress={() => handleSelectPreset('admin@purge.info', 'admin123')}
+              >
+                <Text style={styles.presetPillText}>🛡️ Admin</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </Modal>
 
-      {/* Modal d'édition des informations personnelles et profil */}
+        {/* Modal Réinitialisation */}
+        <PasswordResetModal
+          visible={showPasswordResetModal}
+          onClose={() => setShowPasswordResetModal(false)}
+          defaultEmail={email}
+        />
+      </ScrollView>
+    );
+  }
+
+  // ==========================================
+  // VUE 2 : UTILISATEUR CONNECTÉ
+  // ==========================================
+  const isAdmin = isAdminRole(currentUser.role);
+  const isJournalist = isJournalistRole(currentUser.role) || isAdmin;
+
+  return (
+    <ScrollView style={styles.scrollMain} contentContainerStyle={styles.scrollMainContent}>
+      {/* 1. CARTE EN-TÊTE PROFIL */}
+      <ProfileHeaderCard
+        currentUser={currentUser}
+        onOpenEditProfile={() => setShowEditProfileModal(true)}
+        onOpenAvatarPicker={() => setShowAvatarModal(true)}
+        updatingAvatar={updatingAvatar}
+      />
+
+      {/* 2. ONGLETS DE NAVIGATION DANS LE PROFIL */}
+      <ProfileSegmentedTabs
+        activeTab={profileTab}
+        onChangeTab={setProfileTab}
+        pendingRequestsCount={isAdmin ? adminRequests.length : 0}
+      />
+
+      {/* 3. CONTENU SELON L'ONGLET ACTIF */}
+      {profileTab === 'activity' && (
+        <CitizenDashboardSection
+          currentUser={currentUser}
+          onSelectArticle={onSelectArticle}
+        />
+      )}
+
+      {profileTab === 'press' && (
+        <View style={{ gap: 16 }}>
+          {/* Carte officielle / Candidature & Centre d'administration */}
+          <PressAccreditationSection
+            currentUser={currentUser}
+            isAdmin={isAdmin}
+            isJournalist={isJournalist}
+            adminRequests={adminRequests}
+            loadingRequests={loadingAdminRequests}
+            processingRequestId={processingRequestId}
+            onRefreshRequests={loadAdminRequests}
+            onReviewRequest={handleReviewRequest}
+            onOpenApplyModal={() => setShowApplyModal(true)}
+            onOpenCreateArticle={onOpenCreateArticle}
+            onOpenCreateHouse={() => setShowCreateHouseModal(true)}
+            onRefreshProfileStatus={handleRefreshStatus}
+            refreshingStatus={refreshingStatus}
+          />
+
+          {/* Section Maison de Presse */}
+          <JournalistHouseSection
+            currentUser={currentUser}
+            onOpenCreateArticleForHouse={(houseId, houseName) => {
+              if (onOpenCreateArticle) {
+                onOpenCreateArticle(houseId, houseName);
+              }
+            }}
+            onOpenHouseModal={(h) => setSelectedHouseForDetail(h)}
+            onSelectArticle={onSelectArticle}
+            onCreateHouse={() => setShowCreateHouseModal(true)}
+            onUserUpdated={onUserUpdated}
+          />
+        </View>
+      )}
+
+      {profileTab === 'security' && (
+        <ProfileSecuritySection
+          currentUser={currentUser}
+          notificationsActive={notificationsActive}
+          onToggleNotifications={handleToggleNotifications}
+          onOpenPasswordReset={() => setShowPasswordResetModal(true)}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* ========================================== */}
+      {/* MODALES D'INTERACTION */}
+      {/* ========================================== */}
+
+      {/* 1. Modification du Profil */}
       <EditProfileModal
         visible={showEditProfileModal}
         currentUser={currentUser}
-        onUserUpdated={(u) => onUserUpdated(u)}
         onClose={() => setShowEditProfileModal(false)}
+        onUserUpdated={(updatedUser: User) => {
+          onUserUpdated(updatedUser);
+          setShowEditProfileModal(false);
+          Alert.alert('Profil mis à jour', 'Vos informations ont été enregistrées.');
+        }}
       />
 
-      {/* Modal de fondation d'une Maison de Presse */}
+      {/* 2. Sélection / Upload Photo de Profil */}
+      <ImageSelectModal
+        visible={showAvatarModal}
+        title="Changer ma photo de profil"
+        mode="avatar"
+        currentImageUrl={currentUser.avatar}
+        onClose={() => setShowAvatarModal(false)}
+        onSelectImage={handleSelectAvatar}
+      />
+
+      {/* 3. Fondation d'une Maison de Presse */}
       <CreateHouseModal
         visible={showCreateHouseModal}
         currentUser={currentUser}
-        onSuccess={(house) => {
+        onClose={() => setShowCreateHouseModal(false)}
+        onSuccess={(newHouse: MediaHouse) => {
+          setShowCreateHouseModal(false);
           const updatedUser: User = {
             ...currentUser,
-            mediaId: house.id,
-            mediaName: house.name,
+            mediaId: newHouse.id,
+            mediaName: newHouse.name,
             mediaHouseRole: 'Chef de Rédaction',
             role: currentUser.role === 'admin' ? 'admin' : 'journalist',
-            accountType: currentUser.role === 'admin' ? ('admin' as any) : 'journalist',
             isVerified: true,
           };
           onUserUpdated(updatedUser);
-          api.getProfile().then((res) => onUserUpdated(res.user)).catch(() => {});
+          Alert.alert('Félicitations', `Vous avez fondé la maison de presse « ${newHouse.name} ».`);
         }}
-        onClose={() => setShowCreateHouseModal(false)}
       />
 
-      {/* Modal universel de sélection d'avatar */}
-      <ImageSelectModal
-        visible={showAvatarModal}
-        title="Photo de Profil"
-        mode="avatar"
-        currentImageUrl={currentUser.avatar}
-        onSelectImage={handleSelectAvatar}
-        onClose={() => setShowAvatarModal(false)}
+      {/* 4. Détail d'une Maison de Presse */}
+      <MediaHouseDetailModal
+        visible={Boolean(selectedHouseForDetail)}
+        house={selectedHouseForDetail}
+        currentUser={currentUser}
+        onClose={() => setSelectedHouseForDetail(null)}
+        onSelectArticle={(art) => {
+          setSelectedHouseForDetail(null);
+          if (onSelectArticle) onSelectArticle(art);
+        }}
       />
 
-      {renderPasswordResetModal()}
+      {/* 5. Candidature Journaliste */}
+      <ApplyJournalistModal
+        visible={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        onSubmit={handleApplySubmit}
+      />
+
+      {/* 6. Réinitialisation / Changement de Mot de Passe */}
+      <PasswordResetModal
+        visible={showPasswordResetModal}
+        onClose={() => setShowPasswordResetModal(false)}
+        defaultEmail={currentUser.email}
+      />
     </ScrollView>
   );
 };
@@ -1145,87 +607,62 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 const styles = StyleSheet.create({
   scrollAuth: {
     padding: 16,
-    paddingBottom: 40,
+    paddingTop: 24,
     backgroundColor: '#020512',
     minHeight: '100%',
-    justifyContent: 'center',
   },
   authCard: {
     backgroundColor: '#070d1e',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: 'rgba(6, 182, 212, 0.25)',
+    alignItems: 'center',
   },
   authLogo: {
-    width: 48,
-    height: 48,
-    alignSelf: 'center',
-    marginBottom: 8,
+    width: 60,
+    height: 60,
+    marginBottom: 12,
   },
   authBrand: {
     color: '#06b6d4',
     fontSize: 11,
     fontWeight: '900',
-    textAlign: 'center',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     marginBottom: 4,
   },
   authTitle: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '900',
     textAlign: 'center',
-    letterSpacing: 0.5,
+    marginBottom: 6,
   },
   authSub: {
     color: '#94a3b8',
     fontSize: 12,
     textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 12,
-    lineHeight: 16,
-  },
-  cloudBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#020512',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    alignSelf: 'center',
-    marginBottom: 12,
-    borderWidth: 0.8,
-    borderColor: '#1e293b',
-  },
-  cloudDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10b981',
-    marginRight: 6,
-  },
-  cloudBadgeText: {
-    color: '#94a3b8',
-    fontSize: 11,
-    fontWeight: '600',
+    lineHeight: 18,
+    marginBottom: 18,
   },
   authTabs: {
     flexDirection: 'row',
     backgroundColor: '#020512',
-    borderRadius: 8,
-    padding: 4,
-    marginBottom: 14,
+    borderRadius: 10,
+    padding: 3,
+    width: '100%',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   authTabBtn: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 6,
+    borderRadius: 8,
   },
   activeAuthTabBtn: {
-    backgroundColor: '#0891b2',
+    backgroundColor: '#06b6d4',
   },
   authTabText: {
     color: '#64748b',
@@ -1234,1085 +671,107 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   activeAuthTabText: {
-    color: '#ffffff',
+    color: '#000000',
+    fontWeight: '900',
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: 8,
+    padding: 10,
+    width: '100%',
     marginBottom: 14,
   },
-  errorIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
   errorText: {
-    color: '#fca5a5',
-    fontSize: 12,
+    color: '#f87171',
+    fontSize: 11,
     flex: 1,
-    lineHeight: 16,
-    fontWeight: '600',
   },
-  inputGroup: {
-    marginBottom: 12,
+  formGroup: {
+    width: '100%',
+    gap: 12,
+  },
+  inputWrap: {
+    gap: 6,
   },
   inputLabel: {
-    color: '#cbd5e1',
-    fontSize: 12,
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  forgotPassText: {
+    color: '#06b6d4',
+    fontSize: 10,
     fontWeight: '700',
-    marginBottom: 6,
   },
   input: {
     backgroundColor: '#020512',
     borderWidth: 1,
     borderColor: '#1e293b',
     borderRadius: 8,
+    color: '#ffffff',
+    fontSize: 13,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#ffffff',
-    fontSize: 14,
-  },
-  accountTypeRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  accountTypeBtn: {
-    flex: 1,
-    backgroundColor: '#020512',
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  activeAccountTypeBtn: {
-    borderColor: '#06b6d4',
-    backgroundColor: '#0c1a38',
-  },
-  accountTypeText: {
-    color: '#94a3b8',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  activeAccountTypeText: {
-    color: '#06b6d4',
   },
   submitBtn: {
-    backgroundColor: '#0891b2',
-    borderRadius: 8,
+    backgroundColor: '#06b6d4',
     paddingVertical: 12,
+    borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 6,
-  },
-  disabledBtn: {
-    opacity: 0.6,
   },
   submitBtnText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  quickAccessSection: {
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
-    paddingTop: 12,
-  },
-  quickAccessLabel: {
-    color: '#64748b',
-    fontSize: 11,
-    marginBottom: 8,
-  },
-  quickBtnRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  quickBtn: {
-    flex: 1,
-    backgroundColor: '#0b1329',
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  quickBtnText: {
-    color: '#cbd5e1',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  notifPromptCard: {
-    backgroundColor: '#070d1e',
-    borderRadius: 14,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  notifPromptHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  notifPromptTitle: {
-    color: '#f8fafc',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  notifPromptSub: {
-    color: '#94a3b8',
-    fontSize: 11,
-    lineHeight: 16,
-    marginBottom: 10,
-  },
-  notifStatusPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  notifStatusPillText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  enableNotifBtn: {
-    backgroundColor: '#0284c7',
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  enableNotifBtnText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  notifActiveInfo: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-    justifyContent: 'center',
-  },
-  notifActiveInfoText: {
-    color: '#10b981',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  scrollProfile: {
-    padding: 16,
-    paddingBottom: 40,
-    backgroundColor: '#020512',
-  },
-  profileCard: {
-    backgroundColor: '#070d1e',
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    marginBottom: 14,
-  },
-  profileHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarWrapper: {
-    position: 'relative',
-    marginRight: 14,
-  },
-  avatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 2,
-    borderColor: '#06b6d4',
-  },
-  avatarPlaceholder: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#0b1329',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#06b6d4',
-  },
-  avatarInitial: {
-    color: '#06b6d4',
-    fontSize: 26,
-    fontWeight: '900',
-  },
-  cameraIconBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: '#0891b2',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraIconText: {
-    fontSize: 11,
-  },
-  nameSection: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userName: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '900',
-  },
-  verified: {
-    color: '#06b6d4',
-    fontSize: 15,
-  },
-  userEmail: {
-    color: '#94a3b8',
+    color: '#000000',
     fontSize: 12,
-    marginTop: 2,
-  },
-  roleBadge: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    borderWidth: 0.8,
-    borderColor: '#06b6d4',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-    marginTop: 6,
-  },
-  roleBadgeText: {
-    color: '#06b6d4',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  avatarLoadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  avatarLoadingText: {
-    color: '#94a3b8',
-    fontSize: 12,
-    marginLeft: 8,
-  },
-  bioText: {
-    color: '#cbd5e1',
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 12,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
-    marginTop: 14,
-    paddingTop: 12,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  statLabel: {
-    color: '#64748b',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  editProfileBtn: {
-    marginTop: 14,
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
-    borderWidth: 1,
-    borderColor: '#06b6d4',
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  editProfileBtnText: {
-    color: '#06b6d4',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  mediaHouseCard: {
-    backgroundColor: '#070d1e',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
-    marginBottom: 14,
-  },
-  mediaHouseHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  mediaHouseTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  mediaHouseSub: {
-    color: '#64748b',
-    fontSize: 10,
-    marginTop: 2,
-  },
-  mediaHouseBadge: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
-  },
-  mediaHouseBadgeText: {
-    color: '#06b6d4',
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  mediaHouseBody: {
-    gap: 10,
-  },
-  mediaHouseInfoBox: {
-    backgroundColor: 'rgba(2, 5, 18, 0.6)',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  mediaHouseLabel: {
-    color: '#94a3b8',
-    fontSize: 11,
-  },
-  mediaHouseNameText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginVertical: 4,
-  },
-  mediaHouseRoleText: {
-    color: '#06b6d4',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  mediaHouseActionsRow: {
-    marginTop: 4,
-  },
-  mediaHouseDesc: {
-    color: '#94a3b8',
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  mediaHouseBtn: {
-    backgroundColor: '#06b6d4',
-    paddingVertical: 11,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  mediaHouseBtnText: {
-    color: '#020512',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  settingsCard: {
-    backgroundColor: '#070d1e',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    marginBottom: 14,
-  },
-  settingsHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  settingsTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  settingsSub: {
-    color: '#94a3b8',
-    fontSize: 12,
-    lineHeight: 16,
-    marginBottom: 12,
-  },
-  settingsActionRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  viewNotifsBtn: {
-    backgroundColor: '#0f172a',
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewNotifsBtnText: {
-    color: '#cbd5e1',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  createArticleBtn: {
-    backgroundColor: '#0891b2',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  createArticleBtnText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  logoutBtn: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  logoutBtnText: {
-    color: '#f87171',
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  // Inscription Notice Citoyen
-  citizenNoticeCard: {
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  citizenNoticeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  citizenNoticeIcon: {
-    fontSize: 15,
-    marginRight: 6,
-  },
-  citizenNoticeTitle: {
-    color: '#06b6d4',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  citizenNoticeText: {
-    color: '#94a3b8',
-    fontSize: 11,
-    lineHeight: 16,
-  },
-
-  // Espace Citoyen : Carte Candidature Journaliste
-  accreditationCard: {
-    backgroundColor: '#070d1e',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    marginBottom: 14,
-  },
-  accreditationHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  accreditationTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  statusBadgePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    borderWidth: 1,
-  },
-  statusBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  accreditationDesc: {
-    color: '#94a3b8',
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: 12,
-  },
-  refreshStatusBtn: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderWidth: 1,
-    borderColor: '#f59e0b',
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  refreshStatusBtnText: {
-    color: '#f59e0b',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  applyBtn: {
-    backgroundColor: '#0891b2',
-    paddingVertical: 11,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  applyBtnText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-
-  // Espace Administrateur : Validation
-  adminReviewCard: {
-    backgroundColor: '#070d1e',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
-    marginBottom: 14,
-  },
-  adminReviewHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  adminTitleCol: {
-    flex: 1,
-  },
-  adminReviewTitle: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '900',
-  },
-  adminReviewSub: {
-    color: '#06b6d4',
-    fontSize: 11,
-    marginTop: 2,
-    fontWeight: '600',
-  },
-  adminRefreshBtn: {
-    backgroundColor: '#0f172a',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  adminRefreshBtnText: {
-    color: '#94a3b8',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  adminEmptyState: {
-    backgroundColor: '#020512',
-    padding: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    alignItems: 'center',
-  },
-  adminEmptyStateText: {
-    color: '#10b981',
-    fontSize: 12,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  adminEmptyStateSub: {
-    color: '#64748b',
-    fontSize: 11,
-    textAlign: 'center',
-  },
-  requestItemCard: {
-    backgroundColor: '#020512',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    marginBottom: 10,
-  },
-  requestItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  requestApplicantCol: {
-    flex: 1,
-  },
-  requestApplicantName: {
-    color: '#f8fafc',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  requestApplicantEmail: {
-    color: '#94a3b8',
-    fontSize: 11,
-    marginTop: 1,
-  },
-  requestDateBadge: {
-    backgroundColor: '#0f172a',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  requestDateText: {
-    color: '#64748b',
-    fontSize: 10,
-  },
-  requestDetailsBox: {
-    backgroundColor: '#090f23',
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 10,
-    gap: 4,
-  },
-  requestDetailRow: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  requestDetailLabel: {
-    color: '#64748b',
-    fontWeight: '700',
-  },
-  requestDetailValue: {
-    color: '#e2e8f0',
-  },
-  requestLinkValue: {
-    color: '#06b6d4',
-    textDecorationLine: 'underline',
-  },
-  requestActionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  rejectActionBtn: {
-    flex: 1,
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  rejectActionBtnText: {
-    color: '#f87171',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  approveActionBtn: {
-    flex: 1.5,
-    backgroundColor: '#10b981',
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  approveActionBtnText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-
-  // Modal Candidature
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  modalContainer: {
-    backgroundColor: '#070d1e',
-    borderRadius: 16,
-    maxHeight: '90%',
-    borderWidth: 1,
-    borderColor: '#06b6d4',
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
-    backgroundColor: '#020512',
-  },
-  modalTitle: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '900',
-  },
-  modalSub: {
-    color: '#06b6d4',
-    fontSize: 11,
-    marginTop: 2,
-    fontWeight: '600',
-  },
-  modalCloseBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCloseBtnText: {
-    color: '#94a3b8',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  modalScroll: {
-    padding: 16,
-  },
-  modalInputGroup: {
-    marginBottom: 12,
-  },
-  modalLabel: {
-    color: '#94a3b8',
-    fontSize: 11,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  modalInput: {
-    backgroundColor: '#020512',
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#ffffff',
-    fontSize: 12,
-  },
-  modalTextArea: {
-    minHeight: 80,
-  },
-  modalNoticeBox: {
-    backgroundColor: '#090f23',
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  modalNoticeText: {
-    color: '#64748b',
-    fontSize: 10,
-    lineHeight: 14,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
-    backgroundColor: '#020512',
-    gap: 8,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 11,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  modalCancelBtnText: {
-    color: '#94a3b8',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  modalSubmitBtn: {
-    flex: 2,
-    backgroundColor: '#0891b2',
-    paddingVertical: 11,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalSubmitBtnText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  // Style Tableau de Bord Citoyen
-  activityDashboardCard: {
-    backgroundColor: '#070d1e',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.25)',
-    gap: 12,
-  },
-  activityDashboardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  activityDashboardTitle: {
-    color: '#06b6d4',
-    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
-  activityDashboardSub: {
-    color: '#94a3b8',
-    fontSize: 11,
-    marginTop: 2,
+  disabledBtn: {
+    opacity: 0.5,
   },
-  civicRankBadge: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    borderWidth: 1,
-    borderColor: '#06b6d4',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  civicRankBadgeText: {
-    color: '#38bdf8',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  civicScoreBox: {
-    backgroundColor: 'rgba(2, 5, 18, 0.6)',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    gap: 6,
-  },
-  civicScoreHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  presetSection: {
+    marginTop: 20,
+    width: '100%',
     alignItems: 'center',
-  },
-  civicScoreLabel: {
-    color: '#64748b',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  civicScorePercent: {
-    color: '#10b981',
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  progressBarTrack: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#06b6d4',
-    borderRadius: 3,
-  },
-  activityGrid: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  activityTile: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  activityTileIcon: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  activityTileValue: {
-    color: '#f8fafc',
-    fontSize: 14,
-    fontWeight: '900',
-    marginBottom: 2,
-  },
-  activityTileLabel: {
-    color: '#94a3b8',
-    fontSize: 9,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  recentActivityBlock: {
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
-    paddingTop: 10,
-    gap: 6,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
-  recentActivityTitle: {
-    color: '#64748b',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  activityItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  activityItemDot: {
-    color: '#06b6d4',
-    fontSize: 12,
-  },
-  activityItemText: {
-    color: '#94a3b8',
-    fontSize: 11,
-    flex: 1,
-  },
-  activityItemBold: {
-    color: '#e2e8f0',
-    fontWeight: '700',
-  },
-  activityItemTime: {
+  presetTitle: {
     color: '#64748b',
     fontSize: 10,
-  },
-  // Sécurité & Réinitialisation Mot de passe
-  resetPassBtn: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.4)',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  resetPassBtnText: {
-    color: '#60a5fa',
-    fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: 0.5,
+    marginBottom: 10,
   },
-  resetModalContainer: {
-    width: '92%',
-    maxWidth: 420,
-    backgroundColor: '#070d1e',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
-    gap: 12,
-  },
-  resetModalHeader: {
-    gap: 4,
-  },
-  resetModalTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  resetModalSub: {
-    color: '#94a3b8',
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  resetForm: {
+  presetGrid: {
+    flexDirection: 'row',
     gap: 8,
   },
-  resetFieldLabel: {
+  presetPill: {
+    backgroundColor: '#0b1329',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  presetPillText: {
     color: '#cbd5e1',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  resetInput: {
-    backgroundColor: '#020512',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    color: '#ffffff',
-    fontSize: 13,
-  },
-  resetNoticeBox: {
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.2)',
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 4,
-  },
-  resetNoticeText: {
-    color: '#38bdf8',
-    fontSize: 10,
-    lineHeight: 14,
-  },
-  resetActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-    marginTop: 6,
-  },
-  cancelResetBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  cancelResetBtnText: {
-    color: '#64748b',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
-  confirmResetBtn: {
-    backgroundColor: '#06b6d4',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+  scrollMain: {
+    flex: 1,
+    backgroundColor: '#020512',
   },
-  confirmResetBtnText: {
-    color: '#020512',
-    fontSize: 12,
-    fontWeight: '900',
+  scrollMainContent: {
+    padding: 16,
+    paddingBottom: 40,
   },
 });

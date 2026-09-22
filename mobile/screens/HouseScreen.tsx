@@ -917,7 +917,11 @@ const styles = StyleSheet.create({
     height: 120,
   },
   heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     height: 120,
     backgroundColor: 'rgba(2, 5, 18, 0.45)',
   },

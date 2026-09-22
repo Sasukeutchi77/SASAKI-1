@@ -99,7 +99,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           limit: 25,
         });
 
-        if (res.articles && res.articles.length > 0) {
+        if (res && Array.isArray(res.articles)) {
           setArticles(res.articles);
           setHasMore(res.articles.length >= 10);
         }
@@ -110,7 +110,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         setRefreshing(false);
       }
     },
-    [feedType, selectedCategoryId, articles.length]
+    [feedType, selectedCategoryId]
   );
 
   const handleLoadMore = async () => {
@@ -214,17 +214,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     return articles.filter((a) => {
       const artTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       if (!artTime || isNaN(artTime)) return true;
-      const diff = now - artTime;
-      if (timeFilter === 'today') return diff <= oneDay * 1.5;
+      const diff = Math.max(0, now - artTime);
+      if (timeFilter === 'today') return diff <= oneDay * 2;
       if (timeFilter === 'week') return diff <= oneDay * 7;
       if (timeFilter === 'month') return diff <= oneDay * 30;
       return true;
     });
   }, [articles, timeFilter]);
 
-  // Article à la Une (Premier article du flux filtré)
-  const heroArticle = filteredArticles.length > 0 ? filteredArticles[0] : null;
-  const feedArticles = filteredArticles.length > 1 ? filteredArticles.slice(1) : [];
+  // Afficher la carte Vedette (Hero Card) uniquement sur le flux principal "Pour vous" sans filtre de catégorie ni filtre temporel
+  const isMainUnfilteredFeed = feedType === 'foryou' && !selectedCategoryId && timeFilter === 'all';
+  const heroArticle = isMainUnfilteredFeed && filteredArticles.length > 0 ? filteredArticles[0] : null;
+  const feedArticles = heroArticle ? filteredArticles.slice(1) : filteredArticles;
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
@@ -248,7 +249,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       <TouchableOpacity
         style={styles.breakingBanner}
         activeOpacity={0.88}
-        onPress={() => heroArticle && onSelectArticle(heroArticle)}
+        onPress={() => {
+          if (filteredArticles.length > 0) {
+            onSelectArticle(filteredArticles[0]);
+          }
+        }}
       >
         <View style={styles.breakingHeaderRow}>
           <View style={styles.breakingBadge}>
@@ -261,13 +266,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <Text style={styles.breakingTimeText}>Enquête Prioritaire</Text>
         </View>
         <Text style={styles.breakingHeadline} numberOfLines={2}>
-          {heroArticle?.title || 'Révélations sur les arènes et transferts clandestins d’actifs'}
+          {filteredArticles.length > 0
+            ? filteredArticles[0].title
+            : 'Décret d’application des sanctuaires civils et protocoles des zones neutres'}
         </Text>
         <View style={styles.breakingFooterRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <AppIcon name="building" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
+            <AppIcon name="shield" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
             <Text style={styles.breakingSourceText}>
-              {heroArticle?.mediaName || 'PURGE Rédaction'} • Fiabilité {heroArticle?.trustScore || 98}%
+              {filteredArticles.length > 0 && filteredArticles[0].mediaName
+                ? filteredArticles[0].mediaName
+                : 'PURGE RÉDACTION CENTRALE'}{' '}
+              • Fiabilité 98%
             </Text>
           </View>
           <Text style={styles.breakingActionText}>Consulter l’enquête ›</Text>
@@ -454,47 +464,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         ))}
       </View>
 
-      {/* 5. Carte Système de Confiance (Parité avec la version Web) */}
-      <View style={styles.trustCard}>
-        <View style={styles.trustCardHeader}>
-          <View style={styles.trustShieldIconBox}>
-            <AppIcon name="shield" size={18} color="#00d2ff" />
-          </View>
-          <View style={styles.trustTitleCol}>
-            <Text style={styles.trustTitle}>SYSTÈME DE CONFIANCE & DÉONTOLOGIE</Text>
-            <Text style={styles.trustSubtitle}>3 Niveaux de Vérification Certifiée</Text>
-          </View>
-          {onOpenTrustSystem && (
-            <TouchableOpacity
-              style={styles.trustDiscoverBtn}
-              onPress={onOpenTrustSystem}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.trustDiscoverBtnText}>Découvrir ›</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <Text style={styles.trustDesc}>
-          Toutes les publications sont signées, sourcées et rédigées par des journalistes et rédactions accrédités.
-        </Text>
-
-        <View style={styles.trustLevelsRow}>
-          <View style={styles.trustLevelPill}>
-            <Text style={styles.trustLevelNum}>Niv. 1</Text>
-            <Text style={styles.trustLevelLabel}>Journaliste</Text>
-          </View>
-          <View style={[styles.trustLevelPill, styles.trustLevelPillGreen]}>
-            <Text style={[styles.trustLevelNum, styles.trustLevelNumGreen]}>Niv. 2</Text>
-            <Text style={styles.trustLevelLabel}>Maison Presse</Text>
-          </View>
-          <View style={[styles.trustLevelPill, styles.trustLevelPillGold]}>
-            <Text style={[styles.trustLevelNum, styles.trustLevelNumGold]}>Niv. 3</Text>
-            <Text style={styles.trustLevelLabel}>Article Factuel</Text>
-          </View>
-        </View>
-      </View>
-
       {/* 5. Sondage Citoyen du Jour Interactif */}
       <View style={styles.pollCard}>
         <View style={styles.pollHeader}>
@@ -539,8 +508,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* Titre section du fil */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>DERNIÈRES DÉPÊCHES VÉRIFIÉES</Text>
-        <Text style={styles.sectionCount}>{articles.length} articles</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <AppIcon name="newspaper" size={14} color="#00d2ff" style={{ marginRight: 6 }} />
+          <Text style={styles.sectionTitle}>
+            {selectedCategoryId
+              ? `DÉPÊCHES • ${categories.find((c) => c.id === selectedCategoryId)?.name || 'FILTRÉES'}`
+              : feedType === 'trending'
+              ? 'DÉPÊCHES POPULAIRES'
+              : feedType === 'latest'
+              ? 'FIL CHRONOLOGIQUE'
+              : feedType === 'following'
+              ? 'VOS ABONNEMENTS'
+              : 'DERNIÈRES DÉPÊCHES'}
+          </Text>
+        </View>
+        <Text style={styles.sectionCount}>
+          {filteredArticles.length} dépêche{filteredArticles.length > 1 ? 's' : ''}
+        </Text>
       </View>
     </View>
   );
@@ -634,12 +618,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           )}
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={
-            articles.length === 0 ? (
+            feedArticles.length === 0 && !heroArticle ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyTitle}>Aucune publication</Text>
+                <AppIcon name="newspaper" size={42} color="#64748b" style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyTitle}>Aucune publication trouvée</Text>
                 <Text style={styles.emptySub}>
-                  Aucun article ne correspond à cette sélection pour l'instant.
+                  {feedType === 'following'
+                    ? "Vous n'êtes abonné à aucun journaliste ou maison de presse pour le moment. Découvrez les rédactions dans l'onglet 'Maisons' !"
+                    : "Aucune dépêche ne correspond à cette sélection de catégorie ou de période."}
                 </Text>
+                {(selectedCategoryId || timeFilter !== 'all') && (
+                  <TouchableOpacity
+                    style={styles.resetFiltersBtn}
+                    onPress={() => {
+                      setSelectedCategoryId('');
+                      setTimeFilter('all');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.resetFiltersBtnText}>Réinitialiser les filtres</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : undefined
           }
@@ -658,7 +657,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </Text>
                 </View>
               </View>
-            ) : null
+            ) : undefined
           }
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.4}
@@ -982,107 +981,6 @@ const styles = StyleSheet.create({
     color: '#06b6d4',
     fontWeight: '800',
   },
-  trustCard: {
-    backgroundColor: 'rgba(6, 182, 212, 0.06)',
-    borderRadius: 14,
-    padding: 14,
-    marginHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
-  },
-  trustCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  trustShieldIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
-  },
-  trustShieldEmoji: {
-    fontSize: 16,
-  },
-  trustTitleCol: {
-    flex: 1,
-  },
-  trustTitle: {
-    color: '#ffffff',
-    fontSize: 11.5,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-  },
-  trustSubtitle: {
-    color: '#00d2ff',
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 1,
-  },
-  trustDiscoverBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: 'rgba(6, 182, 212, 0.2)',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
-  },
-  trustDiscoverBtnText: {
-    color: '#00d2ff',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  trustDesc: {
-    color: '#94a3b8',
-    fontSize: 11.5,
-    lineHeight: 16,
-    marginBottom: 10,
-  },
-  trustLevelsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  trustLevelPill: {
-    flex: 1,
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
-    borderRadius: 8,
-    paddingVertical: 6,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.25)',
-  },
-  trustLevelPillGreen: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.25)',
-  },
-  trustLevelPillGold: {
-    backgroundColor: 'rgba(234, 179, 8, 0.1)',
-    borderColor: 'rgba(234, 179, 8, 0.25)',
-  },
-  trustLevelNum: {
-    color: '#00d2ff',
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  trustLevelNumGreen: {
-    color: '#10b981',
-  },
-  trustLevelNumGold: {
-    color: '#eab308',
-  },
-  trustLevelLabel: {
-    color: '#94a3b8',
-    fontSize: 9.5,
-    fontWeight: '700',
-    marginTop: 1,
-  },
   pollCard: {
     marginHorizontal: 16,
     marginTop: 14,
@@ -1213,6 +1111,22 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 13,
     textAlign: 'center',
+    lineHeight: 18,
+  },
+  resetFiltersBtn: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#06b6d4',
+  },
+  resetFiltersBtnText: {
+    color: '#00d2ff',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   houseFeedCard: {
     backgroundColor: '#081028',

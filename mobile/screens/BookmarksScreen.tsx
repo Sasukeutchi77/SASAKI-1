@@ -291,12 +291,6 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
         <View style={styles.headerTopRow}>
           <View>
             <Text style={styles.headerTitle}>Mes Favoris ({bookmarks.length})</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-              <AppIcon name="time" size={12} color="#64748b" style={{ marginRight: 4 }} />
-              <Text style={styles.headerSubtitle}>
-                ~{totalReadMinutes} min de lecture archivée
-              </Text>
-            </View>
           </View>
           {bookmarks.length > 0 && (
             <TouchableOpacity onPress={handleClearAll} style={styles.clearAllBtn} activeOpacity={0.7}>
@@ -456,9 +450,23 @@ export const BookmarksScreen: React.FC<BookmarksScreenProps> = ({
                   ? 'Modifiez vos filtres de dossier, catégorie ou terme de recherche.'
                   : "Appuyez sur l'icône de signet d'un article dans le fil pour l'ajouter à vos favoris."}
               </Text>
-              <TouchableOpacity style={styles.exploreBtn} onPress={onOpenFeed} activeOpacity={0.8}>
-                <Text style={styles.exploreBtnText}>EXPLORER LE FIL D'ACTUALITÉS</Text>
-              </TouchableOpacity>
+              {searchQuery || selectedCategory !== 'all' || selectedFolder !== 'all' ? (
+                <TouchableOpacity
+                  style={styles.resetBookmarksFilterBtn}
+                  onPress={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('all');
+                    setSelectedFolder('all');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.resetBookmarksFilterBtnText}>RÉINITIALISER LES FILTRES</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.exploreBtn} onPress={onOpenFeed} activeOpacity={0.8}>
+                  <Text style={styles.exploreBtnText}>EXPLORER LE FIL D'ACTUALITÉS</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
           refreshControl={
@@ -738,6 +746,20 @@ const styles = StyleSheet.create({
     color: '#00d2ff',
     fontSize: 12,
     fontWeight: '800',
+  },
+  resetBookmarksFilterBtn: {
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#00d2ff',
+  },
+  resetBookmarksFilterBtnText: {
+    color: '#00d2ff',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   // Bannière Hors-Ligne
   offlineBanner: {
