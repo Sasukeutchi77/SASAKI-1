@@ -382,7 +382,7 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
                       placeholder="Ex: L'Investigateur du Faso, Sentinelle Libre..."
                       placeholderTextColor="#64748b"
                       value={name}
-                      onChangeText={(val) => {
+                      onChangeText={(val: string) => {
                         setName(val);
                         if (errorMessage) setErrorMessage(null);
                       }}
@@ -435,7 +435,7 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
                       placeholder="Décrivez les principes fondamentaux, les méthodes d'enquête et les engagements de vérité portés par votre rédaction..."
                       placeholderTextColor="#64748b"
                       value={description}
-                      onChangeText={(val) => {
+                      onChangeText={(val: string) => {
                         setDescription(val);
                         if (errorMessage) setErrorMessage(null);
                       }}

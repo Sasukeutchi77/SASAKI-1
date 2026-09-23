@@ -1,3 +1,38 @@
+declare module 'react-native' {
+  export const View: any;
+  export const Text: any;
+  export const StyleSheet: any;
+  export const ScrollView: any;
+  export const TextInput: any;
+  export const TouchableOpacity: any;
+  export const Image: any;
+  export const ActivityIndicator: any;
+  export const Alert: any;
+  export const Modal: any;
+  export const Share: any;
+  export const Linking: any;
+  export const RefreshControl: any;
+  export const Dimensions: any;
+  export const FlatList: any;
+  export const KeyboardAvoidingView: any;
+  export const Platform: any;
+  export const BackHandler: any;
+  export type StyleProp<T = any> = any;
+  export type ImageSourcePropType = any;
+  export type TextStyle = any;
+  export type ViewStyle = any;
+  export type ImageStyle = any;
+}
+
+declare module '@expo/vector-icons' {
+  import React from 'react';
+  export const Ionicons: React.FC<any>;
+  export const MaterialIcons: React.FC<any>;
+  export const MaterialCommunityIcons: React.FC<any>;
+  export const FontAwesome: React.FC<any>;
+  export const FontAwesome5: React.FC<any>;
+}
+
 declare module 'react-native-safe-area-context' {
   export const SafeAreaProvider: any;
   export const SafeAreaView: any;

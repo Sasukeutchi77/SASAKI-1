@@ -39,7 +39,8 @@ export const PollWidget: React.FC<PollWidgetProps> = ({ poll, onVote }) => {
       <View style={styles.optionsList}>
         {(poll.options || []).map((opt) => {
           const isSelected = poll.userVotedOptionId === opt.id;
-          const percentage = total > 0 ? Math.round((opt.votesCount / total) * 100) : 0;
+          const optVotes = opt.votes ?? opt.votesCount ?? 0;
+          const percentage = total > 0 ? Math.round((optVotes / total) * 100) : 0;
 
           return (
             <TouchableOpacity

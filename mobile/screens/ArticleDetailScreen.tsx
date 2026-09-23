@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Share,
   Alert,
+  Linking,
 } from 'react-native';
 import { Article, Comment, User, MediaHouse } from '../types';
 import { api } from '../services/api';
@@ -397,6 +398,44 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
               </View>
             )}
           </View>
+
+          {/* Module Vidéo Reportage d'Investigation (Support jusqu'à 90 Mo) */}
+          {(article.videoUrl || article.videoMedia?.url) && (
+            <View style={styles.videoPlayerCard}>
+              <View style={styles.videoHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <AppIcon name="videocam" size={14} color="#00f3ff" style={{ marginRight: 6 }} />
+                  <Text style={styles.videoBadge}>REPORTAGE VIDÉO EXCLUSIF (MAX 90 MO)</Text>
+                </View>
+                <Text style={styles.videoFormat}>HD • STREAM</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.videoThumbnailWrapper}
+                activeOpacity={0.85}
+                onPress={() => {
+                  const vUrl = article.videoUrl || article.videoMedia?.url;
+                  if (vUrl) {
+                    Linking.openURL(vUrl).catch(() => {
+                      Alert.alert('Vidéo', 'Impossible d’ouvrir le lecteur vidéo externe.');
+                    });
+                  }
+                }}
+              >
+                <Image
+                  source={{ uri: article.videoThumbnail || coverUri }}
+                  style={styles.videoThumbnailImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.videoPlayOverlay}>
+                  <View style={styles.videoPlayCircle}>
+                    <AppIcon name="play" size={24} color="#020512" style={{ marginLeft: 3 }} />
+                  </View>
+                  <Text style={styles.videoPlayPrompt}>Lancer le reportage d'investigation</Text>
+                  <Text style={styles.videoSizeHint}>Flux vidéo optimisé • Enregistrement HD</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Résumé / Chapeau */}
           {article.summary ? (
@@ -851,6 +890,78 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     backgroundColor: '#06b6d4',
+  },
+  videoPlayerCard: {
+    backgroundColor: '#081028',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 243, 255, 0.35)',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  videoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  videoBadge: {
+    color: '#00f3ff',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  videoFormat: {
+    color: '#94a3b8',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  videoThumbnailWrapper: {
+    height: 180,
+    borderRadius: 10,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#020512',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoThumbnailImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.75,
+  },
+  videoPlayOverlay: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  videoPlayCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#00f3ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    shadowColor: '#00f3ff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  videoPlayPrompt: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  videoSizeHint: {
+    color: '#67e8f9',
+    fontSize: 10,
+    marginTop: 2,
+    textAlign: 'center',
   },
   summaryBox: {
     backgroundColor: 'rgba(6, 182, 212, 0.08)',

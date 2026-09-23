@@ -195,7 +195,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setUserVoted(optionId);
     setPoll((prev) => {
       const updatedOpts = prev.options.map((opt) =>
-        opt.id === optionId ? { ...opt, votesCount: opt.votesCount + 1 } : opt
+        opt.id === optionId ? { ...opt, votesCount: ((opt.votesCount ?? opt.votes) || 0) + 1 } : opt
       );
       return {
         ...prev,
@@ -474,8 +474,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         <View style={styles.pollOptionsContainer}>
           {poll.options.map((opt) => {
+            const optVotes = opt.votesCount ?? opt.votes ?? 0;
             const percentage =
-              poll.totalVotes > 0 ? Math.round((opt.votesCount / poll.totalVotes) * 100) : 0;
+              poll.totalVotes > 0 ? Math.round((optVotes / poll.totalVotes) * 100) : 0;
             const isSelected = userVoted === opt.id;
 
             return (

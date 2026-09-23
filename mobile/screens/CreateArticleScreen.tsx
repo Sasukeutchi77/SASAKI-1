@@ -52,6 +52,11 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
   const [showHousePicker, setShowHousePicker] = useState<boolean>(false);
   const [pickedImage, setPickedImage] = useState<PickImageResult | null>(null);
   const [directCoverUrl, setDirectCoverUrl] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [includePoll, setIncludePoll] = useState<boolean>(false);
+  const [pollQuestion, setPollQuestion] = useState<string>('');
+  const [pollOption1, setPollOption1] = useState<string>('D’accord / Favorable');
+  const [pollOption2, setPollOption2] = useState<string>('Opposé / Défavorable');
   const [showImageModal, setShowImageModal] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
@@ -214,12 +219,26 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
       }
 
       setUploadStatus('Publication de l’enquête...');
+      const pollPayload = includePoll && pollQuestion.trim()
+        ? {
+            id: `poll_${Date.now()}`,
+            question: pollQuestion.trim(),
+            options: [
+              { id: 'opt_1', text: pollOption1.trim() || 'Pour', votesCount: 0, votes: 0 },
+              { id: 'opt_2', text: pollOption2.trim() || 'Contre', votesCount: 0, votes: 0 },
+            ],
+            totalVotes: 0,
+          }
+        : undefined;
+
       const res = await api.createArticle({
         title: title.trim(),
         summary: summary.trim() || undefined,
         content: content.trim(),
         categoryId: selectedCategoryId,
         coverImage: coverImageUrl,
+        videoUrl: videoUrl.trim() || undefined,
+        poll: pollPayload,
         mediaHouseId: targetMediaHouseId,
         mediaHouseName: targetMediaHouseName,
         status: 'published',
@@ -457,6 +476,93 @@ export const CreateArticleScreen: React.FC<CreateArticleScreenProps> = ({
             multiline
             textAlignVertical="top"
           />
+        </View>
+
+        {/* Section Reportage Vidéo (Support jusqu'à 90 Mo) */}
+        <View style={styles.section}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={styles.label}>REPORTAGE VIDÉO (MAX 90 MO)</Text>
+            <Text style={{ color: '#00f3ff', fontSize: 10, fontWeight: '700' }}>MP4 • WEBM • CLOUD</Text>
+          </View>
+          <TextInput
+            style={styles.summaryInput}
+            placeholder="Lien vidéo direct MP4 / WebM ou Cloudinary (ex: https://.../reportage.mp4)"
+            placeholderTextColor="#64748b"
+            value={videoUrl}
+            onChangeText={setVideoUrl}
+            autoCapitalize="none"
+          />
+          <Text style={{ color: '#64748b', fontSize: 10, marginTop: 4 }}>
+            💡 Les reportages vidéo jusqu'à 90 Mo sont directement diffusés avec le lecteur immersif de l'application.
+          </Text>
+        </View>
+
+        {/* Section Sondage Citoyen Interactif */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#0c1228',
+              padding: 12,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: includePoll ? '#a855f7' : 'rgba(255, 255, 255, 0.1)',
+            }}
+            onPress={() => setIncludePoll(!includePoll)}
+            activeOpacity={0.8}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="bar-chart" size={16} color={includePoll ? '#a855f7' : '#94a3b8'} style={{ marginRight: 8 }} />
+              <View>
+                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>
+                  {includePoll ? '✓ Sondage d’opinion activé' : '+ Ajouter un sondage citoyen'}
+                </Text>
+                <Text style={{ color: '#64748b', fontSize: 10 }}>
+                  Recueillir les votes et l’avis direct des lecteurs sur cette publication
+                </Text>
+              </View>
+            </View>
+            <Text style={{ color: includePoll ? '#a855f7' : '#64748b', fontSize: 11, fontWeight: 'bold' }}>
+              {includePoll ? 'Désactiver' : 'Activer'}
+            </Text>
+          </TouchableOpacity>
+
+          {includePoll && (
+            <View style={{ marginTop: 10, padding: 12, backgroundColor: '#070b1a', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(168, 85, 247, 0.3)' }}>
+              <Text style={{ color: '#c084fc', fontSize: 10, fontWeight: '800', marginBottom: 6 }}>
+                QUESTION DU SONDAGE
+              </Text>
+              <TextInput
+                style={[styles.summaryInput, { height: 44, marginBottom: 10 }]}
+                placeholder="Ex : Approuvez-vous les mesures annoncées dans ce dossier ?"
+                placeholderTextColor="#64748b"
+                value={pollQuestion}
+                onChangeText={setPollQuestion}
+              />
+              <Text style={{ color: '#94a3b8', fontSize: 10, fontWeight: '700', marginBottom: 4 }}>
+                OPTION 1
+              </Text>
+              <TextInput
+                style={[styles.summaryInput, { height: 38, marginBottom: 8 }]}
+                placeholder="Option 1 (ex: Favorable)"
+                placeholderTextColor="#64748b"
+                value={pollOption1}
+                onChangeText={setPollOption1}
+              />
+              <Text style={{ color: '#94a3b8', fontSize: 10, fontWeight: '700', marginBottom: 4 }}>
+                OPTION 2
+              </Text>
+              <TextInput
+                style={[styles.summaryInput, { height: 38 }]}
+                placeholder="Option 2 (ex: Défavorable)"
+                placeholderTextColor="#64748b"
+                value={pollOption2}
+                onChangeText={setPollOption2}
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
 

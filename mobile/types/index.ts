@@ -72,7 +72,8 @@ export interface Category {
 export interface PollOption {
   id: string;
   text: string;
-  votesCount: number;
+  votesCount?: number;
+  votes?: number;
 }
 
 export interface Poll {

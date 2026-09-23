@@ -1010,6 +1010,9 @@ export const api = {
     content: string;
     categoryId: string;
     coverImage?: string;
+    videoUrl?: string;
+    videoThumbnail?: string;
+    poll?: Poll;
     tags?: string[];
     status?: 'published' | 'draft';
     mediaHouseId?: string;
@@ -1032,6 +1035,9 @@ export const api = {
       summary: data.summary || (data.content ? data.content.slice(0, 160) + '...' : ''),
       content: data.content,
       coverImage: data.coverImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=900&auto=format&fit=crop&q=80',
+      videoUrl: data.videoUrl,
+      videoThumbnail: data.videoThumbnail,
+      poll: data.poll,
       categoryId: data.categoryId,
       categoryName: cat?.name || 'PURGE',
       categorySlug: cat?.slug || 'purge',

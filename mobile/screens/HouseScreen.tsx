@@ -636,6 +636,25 @@ export const HouseScreen: React.FC<HouseScreenProps> = ({
                 y publier toutes vos enquêtes et dépêches exclusives.
               </Text>
 
+              {/* Règle Déontologique PURGE */}
+              <View style={{
+                backgroundColor: 'rgba(0, 210, 255, 0.08)',
+                borderColor: 'rgba(0, 210, 255, 0.25)',
+                borderWidth: 1,
+                borderRadius: 8,
+                padding: 10,
+                marginBottom: 16,
+              }}>
+                <Text style={{ color: '#00d2ff', fontSize: 11, fontWeight: '800', marginBottom: 2 }}>
+                  ⚖️ RÈGLE DÉONTOLOGIQUE STRICTE
+                </Text>
+                <Text style={{ color: '#94a3b8', fontSize: 11, lineHeight: 16 }}>
+                  {currentUser?.role === 'admin'
+                    ? 'Privilège Administrateur : Vous êtes autorisé à administrer et créer plusieurs rédactions.'
+                    : '1 seule maison par journaliste : Chaque journaliste ne peut fonder ou diriger qu’un seul organe d’information pour garantir son indépendance absolue.'}
+                </Text>
+              </View>
+
               <TouchableOpacity
                 style={styles.primaryActionBtn}
                 onPress={() => setShowCreateHouseModal(true)}
