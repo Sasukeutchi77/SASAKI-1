@@ -93,6 +93,9 @@ export interface Article {
   coverImage?: string;
   coverMedia?: CloudinaryMedia;
   images?: string[];
+  videoUrl?: string;
+  videoThumbnail?: string;
+  videoMedia?: CloudinaryMedia;
   categoryId: string;
   categoryName?: string;
   categorySlug?: string;

@@ -154,10 +154,20 @@ usersRouter.get(['/top-7-journalists', '/top-journalists'], (req: AuthenticatedR
 });
 
 // 2. Bookmarks list of current user
-usersRouter.get('/me/bookmarks', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+usersRouter.get('/me/bookmarks', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
+  if (!req.user) {
+    return res.json({ bookmarks: [] });
+  }
+
   const userBookmarkIds = data.bookmarks.filter((b) => b.userId === req.user!.id).map((b) => b.articleId);
-  const articles = data.articles.filter((a) => userBookmarkIds.includes(a.id) && a.status === 'published');
+  const articles = data.articles
+    .filter((a) => userBookmarkIds.includes(a.id) && a.status === 'published')
+    .map((art) => ({
+      ...art,
+      isBookmarked: true,
+      isLiked: data.likes.some((l) => l.userId === req.user!.id && l.articleId === art.id),
+    }));
 
   return res.json({ bookmarks: articles });
 });

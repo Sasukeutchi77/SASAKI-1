@@ -16,6 +16,8 @@ import {
   RankingsResponse,
   Poll,
 } from '../types';
+import { bookmarksStorage } from './bookmarksStorage';
+import { likesStorage } from './likesStorage';
 
 const TOKEN_KEY = 'purge_info_token';
 const USER_KEY = 'purge_info_user';
@@ -278,9 +280,15 @@ export const api = {
     if (params.page) query.set('page', String(params.page));
     if (params.limit) query.set('limit', String(params.limit));
 
-    return request<{ articles: Article[]; total: number; page: number; limit: number; hasMore: boolean }>(
+    const res = await request<{ articles: Article[]; total: number; page: number; limit: number; hasMore: boolean }>(
       `/api/articles?${query.toString()}`
     );
+    const enriched = (res.articles || []).map((art) => ({
+      ...art,
+      isLiked: !!art.isLiked || likesStorage.isLiked(art.id),
+      isBookmarked: !!art.isBookmarked || bookmarksStorage.isBookmarked(art.id),
+    }));
+    return { ...res, articles: enriched };
   },
 
   async getTags() {
@@ -386,7 +394,15 @@ export const api = {
   },
 
   async getArticle(id: string) {
-    return request<{ article: Article }>(`/api/articles/${id}`);
+    const res = await request<{ article: Article }>(`/api/articles/${id}`);
+    if (res.article) {
+      res.article = {
+        ...res.article,
+        isLiked: !!res.article.isLiked || likesStorage.isLiked(res.article.id),
+        isBookmarked: !!res.article.isBookmarked || bookmarksStorage.isBookmarked(res.article.id),
+      };
+    }
+    return res;
   },
 
   async recordView(id: string) {
@@ -427,22 +443,115 @@ export const api = {
     });
   },
 
+  async launchArticlePoll(
+    articleId: string,
+    pollData: { question: string; options: string[]; expiresAt?: string }
+  ) {
+    return request<{ poll: Poll; article: Article; message: string }>(`/api/articles/${articleId}/poll`, {
+      method: 'POST',
+      body: JSON.stringify(pollData),
+    });
+  },
+
+  async deleteArticlePoll(articleId: string) {
+    return request<{ message: string; article: Article }>(`/api/articles/${articleId}/poll`, {
+      method: 'DELETE',
+    });
+  },
+
+  async quickLaunchPoll(data: {
+    question: string;
+    options: string[];
+    title?: string;
+    context?: string;
+    categoryId?: string;
+    expiresAt?: string;
+  }) {
+    return request<{ article: Article; poll: Poll; message: string }>('/api/articles/polls/quick-launch', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   async deleteArticle(id: string) {
     return request<{ message: string }>(`/api/articles/${id}`, {
       method: 'DELETE',
     });
   },
 
-  async toggleLikeArticle(id: string) {
-    return request<{ liked: boolean; likesCount: number }>(`/api/articles/${id}/like`, {
-      method: 'POST',
-    });
+  async toggleLikeArticle(id: string, currentArticle?: Article) {
+    const isCurrentlyLiked = likesStorage.isLiked(id);
+    const token = getToken();
+
+    if (token) {
+      try {
+        const res = await request<{ liked: boolean; likesCount: number }>(`/api/articles/${id}/like`, {
+          method: 'POST',
+        });
+        likesStorage.setLiked(id, res.liked);
+        return res;
+      } catch (err) {
+        console.warn('Backend like failed, applying local fallback:', err);
+      }
+    }
+
+    // Local toggle fallback (instant & resilient)
+    const nextLiked = !isCurrentlyLiked;
+    likesStorage.setLiked(id, nextLiked);
+    const fallbackCount = currentArticle
+      ? nextLiked
+        ? (currentArticle.likesCount || 0) + 1
+        : Math.max(0, (currentArticle.likesCount || 1) - 1)
+      : nextLiked
+      ? 1
+      : 0;
+
+    return { liked: nextLiked, likesCount: fallbackCount };
   },
 
-  async toggleBookmarkArticle(id: string) {
-    return request<{ bookmarked: boolean }>(`/api/articles/${id}/bookmark`, {
-      method: 'POST',
-    });
+  async toggleBookmarkArticle(articleOrId: Article | string) {
+    const articleId = typeof articleOrId === 'string' ? articleOrId : articleOrId.id;
+    let fullArticle: Article | undefined = typeof articleOrId === 'object' ? articleOrId : undefined;
+
+    if (!fullArticle) {
+      fullArticle = bookmarksStorage.getBookmarks().find((b) => b.id === articleId);
+    }
+
+    const wasBookmarked = bookmarksStorage.isBookmarked(articleId);
+    const nextBookmarked = !wasBookmarked;
+
+    if (nextBookmarked) {
+      if (fullArticle) {
+        bookmarksStorage.saveBookmark(fullArticle);
+      } else {
+        this.getArticle(articleId)
+          .then((res) => {
+            if (res.article) bookmarksStorage.saveBookmark(res.article);
+          })
+          .catch(() => {});
+      }
+    } else {
+      bookmarksStorage.removeBookmark(articleId);
+    }
+
+    const token = getToken();
+    if (token) {
+      try {
+        const res = await request<{ bookmarked: boolean }>(`/api/articles/${articleId}/bookmark`, {
+          method: 'POST',
+        });
+        if (res.bookmarked) {
+          if (fullArticle) bookmarksStorage.saveBookmark(fullArticle);
+        } else {
+          bookmarksStorage.removeBookmark(articleId);
+        }
+        return res;
+      } catch (err) {
+        console.warn('Server bookmark sync error, retained locally:', err);
+      }
+    }
+
+    return { bookmarked: nextBookmarked };
   },
 
   async getComments(articleId: string) {
@@ -512,11 +621,27 @@ export const api = {
   },
 
   async getBookmarks() {
-    return request<{ bookmarks: Article[] }>('/api/users/me/bookmarks');
+    const token = getToken();
+    let serverBookmarks: Article[] = [];
+    if (token) {
+      try {
+        const res = await request<{ bookmarks: Article[] }>('/api/users/me/bookmarks');
+        serverBookmarks = res.bookmarks || [];
+      } catch (err) {
+        console.warn('Failed to load server bookmarks, falling back to local storage:', err);
+      }
+    }
+    const merged = bookmarksStorage.syncServerBookmarks(serverBookmarks);
+    const enriched = merged.map((art) => ({
+      ...art,
+      isBookmarked: true,
+      isLiked: !!art.isLiked || likesStorage.isLiked(art.id),
+    }));
+    return { bookmarks: enriched };
   },
 
   async getMyBookmarks() {
-    return request<{ bookmarks: Article[] }>('/api/users/me/bookmarks');
+    return this.getBookmarks();
   },
 
   async getNotifications() {

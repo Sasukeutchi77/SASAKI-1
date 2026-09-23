@@ -49,7 +49,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   onCaptionChange,
   label,
   description,
-  maxSizeMB = type === 'video' ? 60 : 10,
+  maxSizeMB = type === 'video' ? 90 : 10,
   aspectRatio = 'auto',
   showAltInput = type === 'image',
   showCaptionInput = false,
@@ -78,7 +78,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       const targetType: 'image' | 'video' = type === 'video' ? 'video' : 'image';
       const targetUsage: MediaUsageType = (usageType as MediaUsageType) || 'general';
 
-      const validation = validateMediaFile(file, targetType);
+      const validation = validateMediaFile(file, targetType, maxSizeMB);
       if (!validation.isValid) {
         setErrorMessage(validation.error || 'Fichier non valide.');
         return;

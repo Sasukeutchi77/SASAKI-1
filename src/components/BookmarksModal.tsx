@@ -3,6 +3,7 @@ import { X, Bookmark, Trash2, Clock, Eye, Heart, MessageSquare } from 'lucide-re
 import { Article } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { bookmarksStorage } from '../services/bookmarksStorage';
 
 interface BookmarksModalProps {
   onClose: () => void;
@@ -11,30 +12,33 @@ interface BookmarksModalProps {
 
 export const BookmarksModal: React.FC<BookmarksModalProps> = ({ onClose, onOpenArticle }) => {
   const { refreshUser } = useAuth();
-  const [bookmarks, setBookmarks] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [bookmarks, setBookmarks] = useState<Article[]>(() => bookmarksStorage.getBookmarks());
+  const [loading, setLoading] = useState(false);
 
   const loadBookmarks = async () => {
-    setLoading(true);
     try {
       const res = await api.getBookmarks();
-      setBookmarks(res.bookmarks);
+      setBookmarks(res.bookmarks || []);
     } catch (err) {
       console.error('Failed to load bookmarks:', err);
-    } finally {
-      setLoading(false);
+      setBookmarks(bookmarksStorage.getBookmarks());
     }
   };
 
   useEffect(() => {
     loadBookmarks();
+    const unsub = bookmarksStorage.subscribe((updated) => {
+      setBookmarks(updated);
+    });
+    return () => unsub();
   }, []);
 
   const handleRemove = async (articleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    bookmarksStorage.removeBookmark(articleId);
+    setBookmarks((prev) => prev.filter((b) => b.id !== articleId));
     try {
       await api.toggleBookmarkArticle(articleId);
-      setBookmarks((prev) => prev.filter((b) => b.id !== articleId));
       refreshUser();
     } catch (err) {
       console.error(err);

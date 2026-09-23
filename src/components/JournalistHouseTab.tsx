@@ -299,13 +299,13 @@ export const JournalistHouseTab: React.FC<JournalistHouseTabProps> = ({
         <div className="p-3.5 rounded-xl bg-[#060b1c] border border-cyan-500/20 text-xs text-slate-300 leading-relaxed space-y-1.5">
           <div className="flex items-center gap-2 text-cyan-300 font-bold">
             <Shield className="w-4 h-4 text-cyan-400" />
-            <span>Règle Déontologique PURGE : 1 seule maison par journaliste</span>
+            <span>Règle Déontologique : 1 seule maison par journaliste (sauf administrateurs)</span>
           </div>
           <p>
             Chaque compte de journaliste ne peut créer qu'<strong>une seule et unique maison de presse</strong>.
             En la fondant, vous en devenez automatiquement le <strong>Chef de Rédaction</strong> officiel. Vous pourrez
             ensuite recruter jusqu'à <strong>4 confrères journalistes accrédités</strong> (quota maximal de 5 membres)
-            pour former votre collectif d'investigation.
+            pour former votre collectif d'investigation. <em>Seuls les comptes administrateurs sont autorisés à créer plusieurs maisons de journalistes.</em>
           </p>
         </div>
       </div>

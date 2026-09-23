@@ -19,9 +19,9 @@ export function createExpressApp() {
   // Security HTTP headers
   app.use(securityHeaders);
 
-  // JSON and urlencoded body parser with sensible payload limits
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  // JSON and urlencoded body parser with generous payload limits to accommodate video uploads up to 90 Mo
+  app.use(express.json({ limit: '130mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '130mb' }));
 
   // Extract user authorization token
   app.use(extractUser);

@@ -43,6 +43,8 @@
         "mediaId": { "type": "string", "description": "Media house ID if affiliated" },
         "mediaName": { "type": "string", "description": "Media house display name" },
         "coverImage": { "type": "string", "description": "Featured cover image URL" },
+        "videoUrl": { "type": "string", "description": "Attached reporting video URL (MP4, WebM or direct streaming link up to 90MB)" },
+        "videoThumbnail": { "type": "string", "description": "Video poster thumbnail image URL" },
         "status": { "type": "string", "enum": ["draft", "pending", "published", "archived", "rejected"], "description": "Editorial status" },
         "likesCount": { "type": "number", "description": "Likes counter" },
         "viewsCount": { "type": "number", "description": "Read counter" },

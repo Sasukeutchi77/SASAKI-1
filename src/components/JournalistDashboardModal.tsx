@@ -20,14 +20,16 @@ import {
   Check,
   ExternalLink,
   Building2,
+  Vote,
 } from 'lucide-react';
-import { Article, User, MediaRecord, MediaHouse } from '../types';
+import { Article, User, MediaRecord, MediaHouse, Poll } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { MediaUploader } from './media/MediaUploader';
 import { getThumbnailUrl } from '../services/cloudinary';
 import { VerifiedBadge } from './VerifiedBadge';
 import { JournalistHouseTab } from './JournalistHouseTab';
+import { LaunchPollModal } from './LaunchPollModal';
 
 interface JournalistDashboardModalProps {
   onClose: () => void;
@@ -47,8 +49,13 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
   const { user, refreshUser } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'articles' | 'verification' | 'media' | 'house'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'polls' | 'verification' | 'media' | 'house'>('articles');
   const [myHouse, setMyHouse] = useState<MediaHouse | null>(null);
+
+  // Poll state
+  const [showLaunchPollModal, setShowLaunchPollModal] = useState<boolean>(false);
+  const [pollArticleToTarget, setPollArticleToTarget] = useState<string | undefined>(undefined);
+  const [deletingPollId, setDeletingPollId] = useState<string | null>(null);
 
   // Media library state
   const [mediaList, setMediaList] = useState<MediaRecord[]>([]);
@@ -76,6 +83,26 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeletePoll = async (articleId: string) => {
+    if (!window.confirm('Voulez-vous vraiment clôturer et retirer ce sondage citoyen ?')) {
+      return;
+    }
+    setDeletingPollId(articleId);
+    try {
+      await api.deleteArticlePoll(articleId);
+      await loadJournalistArticles();
+    } catch (err: any) {
+      alert(err.message || 'Impossible de retirer le sondage.');
+    } finally {
+      setDeletingPollId(null);
+    }
+  };
+
+  const handlePollSuccess = async (poll: Poll, updatedArt: Article) => {
+    await loadJournalistArticles();
+    setActiveTab('polls');
   };
 
   useEffect(() => {
@@ -166,6 +193,8 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
   const totalViews = articles.reduce((sum, a) => sum + (a.viewsCount || 0), 0);
   const totalLikes = articles.reduce((sum, a) => sum + (a.likesCount || 0), 0);
   const totalComments = articles.reduce((sum, a) => sum + (a.commentsCount || 0), 0);
+  const pollArticles = articles.filter((a) => a.poll && a.poll.question);
+  const totalPollVotes = pollArticles.reduce((sum, a) => sum + (a.poll?.totalVotes || 0), 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
@@ -195,6 +224,17 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
 
           <div className="flex items-center gap-2">
             <button
+              id="launch-poll-header-btn"
+              onClick={() => {
+                setPollArticleToTarget(undefined);
+                setShowLaunchPollModal(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-500 hover:brightness-110 text-white rounded-lg text-xs font-bold font-mono shadow-[0_0_15px_rgba(168,85,247,0.35)] transition-all cursor-pointer"
+            >
+              <Vote className="w-3.5 h-3.5" />
+              <span>Lancer un sondage</span>
+            </button>
+            <button
               onClick={() => {
                 onOpenCreateArticle();
                 onClose();
@@ -215,7 +255,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
 
         {/* Stats Grid */}
         <div className="p-6 bg-[#0e1224] border-b border-cyan-500/30 shrink-0 transition-all space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 font-mono">
             <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
               <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
                 <FileText className="w-3.5 h-3.5 text-cyan-400" /> Articles
@@ -230,11 +270,20 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
             </div>
             <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
               <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
-                <Heart className="w-3.5 h-3.5 text-cyan-400" /> Likes reçus
+                <Heart className="w-3.5 h-3.5 text-cyan-400" /> Likes
               </div>
               <div className="mt-1 text-xl font-black text-white">{totalLikes}</div>
             </div>
             <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
+              <div className="flex items-center gap-1.5 text-purple-400 text-xs font-semibold">
+                <Vote className="w-3.5 h-3.5 text-purple-400" /> Sondages
+              </div>
+              <div className="mt-1 text-xl font-black text-white flex items-baseline gap-1.5">
+                <span>{pollArticles.length}</span>
+                <span className="text-[10px] text-purple-300 font-normal">({totalPollVotes} votes)</span>
+              </div>
+            </div>
+            <div className="p-3.5 rounded-xl bg-[#101428] border border-cyan-500/30 shadow-[0_0_10px_rgba(0,243,255,0.05)] col-span-2 sm:col-span-1">
               <div className="flex items-center gap-1.5 text-cyan-400/80 text-xs font-semibold">
                 <Users className="w-3.5 h-3.5 text-cyan-400" /> Abonnés
               </div>
@@ -300,6 +349,19 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
             }`}
           >
             Mes Articles ({articles.length})
+          </button>
+
+          <button
+            id="tab-journalist-polls-btn"
+            onClick={() => setActiveTab('polls')}
+            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              activeTab === 'polls'
+                ? 'border-cyan-400 text-cyan-300 shadow-[0_2px_10px_rgba(0,243,255,0.4)]'
+                : 'border-transparent text-cyan-400/60 hover:text-cyan-200'
+            }`}
+          >
+            <Vote className="w-3.5 h-3.5" />
+            <span>Sondages ({pollArticles.length})</span>
           </button>
 
           <button
@@ -423,6 +485,33 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      {art.poll && art.poll.question ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPollArticleToTarget(art.id);
+                            setShowLaunchPollModal(true);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-950/80 border border-purple-500/40 text-purple-300 hover:text-white hover:border-purple-400 text-xs font-mono font-bold transition cursor-pointer"
+                          title="Gérer le sondage de cet article"
+                        >
+                          <Vote className="w-3.5 h-3.5 text-purple-400" />
+                          <span className="hidden sm:inline">Sondage ({art.poll.totalVotes || 0})</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPollArticleToTarget(art.id);
+                            setShowLaunchPollModal(true);
+                          }}
+                          className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-cyan-950/70 border border-cyan-500/30 text-cyan-300 hover:text-white hover:border-cyan-400 text-xs font-mono font-medium transition cursor-pointer"
+                          title="Lancer un sondage sur cet article"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-cyan-400" />
+                          <span className="hidden sm:inline">Sondage</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           onOpenEditArticle(art);
@@ -445,6 +534,175 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
                 ))}
               </div>
             )
+          ) : activeTab === 'polls' ? (
+            /* TAB: SONDAGES D'OPINION */
+            <div className="space-y-6">
+              {/* Polls Header Banner */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/50 via-[#101428] to-cyan-950/40 border border-purple-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono">
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                    <Vote className="w-5 h-5 text-purple-400" />
+                    Consultations Citoyennes & Sondages d'Opinion
+                  </h3>
+                  <p className="text-xs text-purple-200/70 mt-1 font-sans">
+                    Gérez vos sondages en direct, observez le comportement des votants et analysez les tendances de l'opinion publique.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="tab-polls-new-btn"
+                  onClick={() => {
+                    setPollArticleToTarget(undefined);
+                    setShowLaunchPollModal(true);
+                  }}
+                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 hover:brightness-110 text-white font-bold text-xs shadow-[0_0_15px_rgba(168,85,247,0.4)] transition cursor-pointer shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Nouveau sondage</span>
+                </button>
+              </div>
+
+              {/* Polls List */}
+              {loading ? (
+                <div className="p-12 text-center text-cyan-400 font-mono">Chargement des sondages...</div>
+              ) : pollArticles.length === 0 ? (
+                <div className="p-12 rounded-2xl bg-[#101428] border border-cyan-500/20 text-center space-y-4 font-mono">
+                  <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400">
+                    <Vote className="w-7 h-7" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-white">Aucun sondage lancé pour l'instant</h4>
+                    <p className="text-xs text-cyan-400/60 max-w-md mx-auto font-sans">
+                      Les journalistes accrédités peuvent lancer des consultations citoyennes interactives sur leurs articles ou en flash express pour recueillir l'avis de la communauté.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPollArticleToTarget(undefined);
+                      setShowLaunchPollModal(true);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 hover:brightness-110 text-white text-xs font-bold shadow-[0_0_15px_rgba(168,85,247,0.3)] transition cursor-pointer"
+                  >
+                    <Vote className="w-4 h-4" />
+                    <span>Lancer mon premier sondage</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {pollArticles.map((art) => {
+                    const poll = art.poll!;
+                    const totalVotes = poll.totalVotes || poll.options.reduce((s, o) => s + (o.votes || 0), 0);
+                    const sortedOptions = [...poll.options].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+                    const leading = sortedOptions[0];
+
+                    return (
+                      <div
+                        key={art.id}
+                        className="p-5 rounded-2xl bg-[#101428] border border-cyan-500/40 shadow-[0_0_20px_rgba(0,243,255,0.05)] space-y-4 flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="text-[10px] uppercase font-bold font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                              {art.categoryName || 'Actualité'}
+                            </span>
+                            <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400">
+                              <Vote className="w-3.5 h-3.5" />
+                              <span>{totalVotes} vote{totalVotes > 1 ? 's' : ''}</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4
+                              onClick={() => {
+                                onOpenArticle(art);
+                                onClose();
+                              }}
+                              className="text-xs font-mono text-cyan-400/80 hover:underline cursor-pointer truncate"
+                              title={art.title}
+                            >
+                              Article : {art.title}
+                            </h4>
+                            <h3 className="text-sm font-bold text-white mt-1 leading-snug">
+                              « {poll.question} »
+                            </h3>
+                          </div>
+
+                          {/* Options with live vote bars */}
+                          <div className="space-y-2 pt-1 font-sans">
+                            {poll.options.map((opt) => {
+                              const pct = totalVotes > 0 ? Math.round(((opt.votes || 0) / totalVotes) * 100) : 0;
+                              const isLeading = leading && leading.id === opt.id && (opt.votes || 0) > 0;
+
+                              return (
+                                <div key={opt.id} className="space-y-1">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className={`font-medium ${isLeading ? 'text-cyan-300 font-bold' : 'text-stone-300'}`}>
+                                      {opt.text} {isLeading && '👑'}
+                                    </span>
+                                    <span className="font-mono text-[11px] text-cyan-400 font-bold">
+                                      {opt.votes || 0} ({pct}%)
+                                    </span>
+                                  </div>
+                                  <div className="h-2 w-full rounded-full bg-slate-900 overflow-hidden border border-cyan-500/20">
+                                    <div
+                                      className={`h-full transition-all duration-500 ${
+                                        isLeading
+                                          ? 'bg-gradient-to-r from-purple-500 to-cyan-400'
+                                          : 'bg-gradient-to-r from-cyan-600 to-blue-600'
+                                      }`}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Footer Card Actions */}
+                        <div className="pt-3 border-t border-cyan-500/20 flex items-center justify-between font-mono text-xs">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onOpenArticle(art);
+                              onClose();
+                            }}
+                            className="text-cyan-400 hover:text-cyan-200 transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Voir l'article</span>
+                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPollArticleToTarget(art.id);
+                                setShowLaunchPollModal(true);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 hover:text-white transition cursor-pointer"
+                              title="Modifier ou réinitialiser le sondage"
+                            >
+                              Modifier
+                            </button>
+                            <button
+                              type="button"
+                              disabled={deletingPollId === art.id}
+                              onClick={() => handleDeletePoll(art.id)}
+                              className="p-1.5 rounded-lg text-red-400 hover:text-red-200 hover:bg-red-950/40 border border-red-500/30 transition cursor-pointer disabled:opacity-50"
+                              title="Retirer ce sondage"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           ) : activeTab === 'verification' ? (
             /* TAB: VERIFICATION */
             <div className="max-w-xl space-y-6">
@@ -773,6 +1031,20 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
           )}
         </div>
       </div>
+
+      {/* Launch Poll Modal */}
+      {showLaunchPollModal && (
+        <LaunchPollModal
+          isOpen={showLaunchPollModal}
+          onClose={() => {
+            setShowLaunchPollModal(false);
+            setPollArticleToTarget(undefined);
+          }}
+          myArticles={articles}
+          preselectedArticleId={pollArticleToTarget}
+          onSuccess={handlePollSuccess}
+        />
+      )}
     </div>
   );
 };

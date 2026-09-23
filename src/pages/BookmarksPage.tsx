@@ -19,6 +19,7 @@ import { Article } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { sfx } from '../services/soundEffects';
+import { bookmarksStorage } from '../services/bookmarksStorage';
 
 interface BookmarksPageProps {
   onBack: () => void;
@@ -48,6 +49,7 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
       setBookmarks(res.bookmarks || []);
     } catch (err) {
       console.error('Failed to load bookmarks:', err);
+      setBookmarks(bookmarksStorage.getBookmarks());
     } finally {
       setLoading(false);
     }
@@ -56,14 +58,20 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({
   useEffect(() => {
     loadBookmarks();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const unsub = bookmarksStorage.subscribe((updated) => {
+      setBookmarks(updated);
+    });
+    return () => unsub();
   }, []);
 
   const handleRemove = async (articleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     sfx.playMechanicalClick();
+    bookmarksStorage.removeBookmark(articleId);
+    setBookmarks((prev) => prev.filter((b) => b.id !== articleId));
     try {
       await api.toggleBookmarkArticle(articleId);
-      setBookmarks((prev) => prev.filter((b) => b.id !== articleId));
       refreshUser();
     } catch (err) {
       console.error(err);

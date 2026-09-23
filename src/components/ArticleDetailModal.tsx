@@ -30,6 +30,8 @@ import { ArticlePoll } from './ArticlePoll';
 import { VerifiedBadge } from './VerifiedBadge';
 import { sfx } from '../services/soundEffects';
 import { realtime } from '../services/realtime';
+import { bookmarksStorage } from '../services/bookmarksStorage';
+import { likesStorage } from '../services/likesStorage';
 
 interface ArticleDetailModalProps {
   articleId: string;
@@ -63,9 +65,9 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const [isSubmittingComment, setIsSubmittingComment] = useState<boolean>(false);
 
   // Optimistic article state
-  const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [isLiked, setIsLiked] = useState<boolean>(() => likesStorage.isLiked(articleId));
   const [likesCount, setLikesCount] = useState<number>(0);
-  const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(() => bookmarksStorage.isBookmarked(articleId));
   const [isFollowingAuthor, setIsFollowingAuthor] = useState<boolean>(false);
   const [followersCount, setFollowersCount] = useState<number>(0);
 
@@ -150,9 +152,9 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
       setLoading(true);
       const artRes = await api.getArticle(articleId);
       setArticle(artRes.article);
-      setIsLiked(!!artRes.article.isLiked);
+      setIsLiked(likesStorage.isLiked(artRes.article.id) || !!artRes.article.isLiked);
       setLikesCount(artRes.article.likesCount);
-      setIsBookmarked(!!artRes.article.isBookmarked);
+      setIsBookmarked(bookmarksStorage.isBookmarked(artRes.article.id) || !!artRes.article.isBookmarked);
 
       // Fetch author profile to get accurate follow state
       try {
@@ -324,41 +326,64 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     return () => clearTimeout(timer);
   }, [articleId]);
 
-  // Optimistic Like with Rollback
-  const handleLike = async () => {
-    if (!isAuthenticated) return onOpenAuth();
-    const prevLiked = isLiked;
-    const prevCount = likesCount;
+  // Synchronize with likes and bookmarks storage in real time
+  useEffect(() => {
+    if (!articleId) return;
+    const unsubLikes = likesStorage.subscribe((likedIds) => {
+      setIsLiked(likedIds.includes(articleId));
+    });
+    const unsubBookmarks = bookmarksStorage.subscribe((bookmarks) => {
+      setIsBookmarked(bookmarks.some((b) => b.id === articleId));
+    });
+    return () => {
+      unsubLikes();
+      unsubBookmarks();
+    };
+  }, [articleId]);
 
-    setIsLiked(!prevLiked);
-    setLikesCount(prevLiked ? Math.max(0, prevCount - 1) : prevCount + 1);
+  // Resilient Like handler
+  const handleLike = async () => {
+    sfx.playLike();
+
+    const nextLiked = !isLiked;
+    const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+
+    setIsLiked(nextLiked);
+    setLikesCount(nextCount);
+    likesStorage.setLiked(articleId, nextLiked);
+    setArticle((prev) => (prev ? { ...prev, isLiked: nextLiked, likesCount: nextCount } : prev));
 
     try {
-      const res = await api.toggleLikeArticle(articleId);
+      const res = await api.toggleLikeArticle(articleId, article || undefined);
       setIsLiked(res.liked);
       setLikesCount(res.likesCount);
       setArticle((prev) => (prev ? { ...prev, isLiked: res.liked, likesCount: res.likesCount } : prev));
     } catch (err) {
-      console.error('Like failed, rollback:', err);
-      setIsLiked(prevLiked);
-      setLikesCount(prevCount);
+      console.error('Like request error:', err);
     }
   };
 
-  // Optimistic Bookmark with Rollback
+  // Resilient Bookmark handler
   const handleBookmark = async () => {
-    if (!isAuthenticated) return onOpenAuth();
-    const prevBookmarked = isBookmarked;
-    setIsBookmarked(!prevBookmarked);
+    sfx.playMechanicalClick();
+    const nextBookmarked = !isBookmarked;
+    setIsBookmarked(nextBookmarked);
+    if (article) {
+      if (nextBookmarked) {
+        bookmarksStorage.saveBookmark(article);
+      } else {
+        bookmarksStorage.removeBookmark(article.id);
+      }
+      setArticle((prev) => (prev ? { ...prev, isBookmarked: nextBookmarked } : prev));
+    }
 
     try {
-      const res = await api.toggleBookmarkArticle(articleId);
+      const res = await api.toggleBookmarkArticle(article || articleId);
       setIsBookmarked(res.bookmarked);
       setArticle((prev) => (prev ? { ...prev, isBookmarked: res.bookmarked } : prev));
       refreshUser();
     } catch (err) {
-      console.error('Bookmark failed, rollback:', err);
-      setIsBookmarked(prevBookmarked);
+      console.error('Bookmark request error:', err);
     }
   };
 

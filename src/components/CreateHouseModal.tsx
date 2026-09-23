@@ -311,10 +311,10 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
               </div>
               <div className="space-y-2">
                 <h3 className="text-base font-black text-white">
-                  Limite Déontologique : 1 seule maison par journaliste
+                  Limite Déontologique : 1 seule maison par journaliste (sauf administrateurs)
                 </h3>
                 <p className="text-xs text-stone-300 max-w-md mx-auto leading-relaxed">
-                  Conformément aux règles éditoriales de PURGE, chaque compte de journaliste accrédité ne peut créer ou posséder qu'<strong>une seule maison de presse</strong>.
+                  Conformément aux règles éditoriales de PURGE, chaque compte de journaliste accrédité ne peut créer qu'<strong>une seule maison de presse</strong>. Seuls les comptes administrateur sont habilités à en créer plusieurs.
                 </p>
               </div>
 

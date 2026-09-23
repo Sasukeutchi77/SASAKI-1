@@ -237,7 +237,8 @@ housesRouter.get('/my-house', requireAuth, (req: AuthenticatedRequest, res: Resp
     },
     isChef,
     hasCreatedHouse: house.ownerId === user.id,
-    canCreate: false,
+    canCreate: user.role === 'admin' || isMasterAdmin(user.email),
+    isAdmin: user.role === 'admin' || isMasterAdmin(user.email),
     maxJournalists: MAX_JOURNALISTS_PER_HOUSE,
     canAddMembers: isChef && memberIds.length < MAX_JOURNALISTS_PER_HOUSE,
   });
@@ -393,11 +394,14 @@ housesRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
   const data = db.getData();
   const user = req.user!;
 
-  // Règle déontologique absolue : Chaque compte de journaliste ne peut créer qu'UNE SEULE maison de presse
+  const isSuperAdmin = user.role === 'admin' || isMasterAdmin(user.email);
+
+  // Règle déontologique : Chaque compte de journaliste ne peut créer qu'UNE SEULE maison de presse.
+  // Seuls les comptes administrateur sont habilités à créer plusieurs maisons de journalistes.
   const ownedHouse = (data.mediaHouses || []).find((m) => m.ownerId === user.id);
-  if (ownedHouse && !isMasterAdmin(user.email)) {
-    return res.status(400).json({
-      error: `Chaque compte de journaliste ne peut créer qu'une seule maison de presse. Vous avez déjà fondé « ${ownedHouse.name} ». Vous ne pouvez pas en créer une seconde.`,
+  if (ownedHouse && !isSuperAdmin) {
+    return res.status(403).json({
+      error: `Règle déontologique absolue : Chaque compte de journaliste ne peut créer qu'une seule maison de presse. Vous avez déjà fondé « ${ownedHouse.name} ». Seuls les administrateurs sont autorisés à en créer plusieurs.`,
       house: ownedHouse,
     });
   }
@@ -407,9 +411,9 @@ housesRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
       (m.members && Array.isArray(m.members) && m.members.includes(user.id)) ||
       (user.mediaId && m.id === user.mediaId)
   );
-  if (existingMemberHouse && !isMasterAdmin(user.email)) {
-    return res.status(400).json({
-      error: `Vous appartenez déjà à la maison de presse « ${existingMemberHouse.name} ». Un journaliste ne peut être rattaché qu'à une seule maison à la fois.`,
+  if (existingMemberHouse && !isSuperAdmin) {
+    return res.status(403).json({
+      error: `Vous appartenez déjà à la maison de presse « ${existingMemberHouse.name} ». Un journaliste ne peut être rattaché qu'à une seule maison de presse à la fois.`,
       house: existingMemberHouse,
     });
   }

@@ -82,8 +82,8 @@ export function isValidUrl(
 
   const trimmed = url.trim();
 
-  // Safe image data URIs (e.g. data:image/png;base64,... or data:image/jpeg;base64,...) or mobile device image paths
-  if (/^data:image\//i.test(trimmed) || trimmed.startsWith('file://') || trimmed.startsWith('content://')) {
+  // Safe image and video data URIs (e.g. data:image/png;base64,... or data:video/mp4;base64,...) or mobile device image paths
+  if (/^data:(image|video)\//i.test(trimmed) || trimmed.startsWith('file://') || trimmed.startsWith('content://')) {
     return true;
   }
 

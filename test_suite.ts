@@ -88,6 +88,35 @@ async function runProductionTestSuite() {
   } as unknown as File;
   expect(!validateMediaFile(fakeExecutable, 'image').isValid, 'Executable file upload rejected as image');
 
+  // Video Tests with 90 Mo limit
+  const fakeValidVideo = {
+    name: 'reportage_purge.mp4',
+    type: 'video/mp4',
+    size: 45 * 1024 * 1024, // 45 MB <= 90 MB
+  } as unknown as File;
+  expect(validateMediaFile(fakeValidVideo, 'video').isValid, '45MB MP4 video accepted (< 90 Mo)');
+
+  const fake88MBVideo = {
+    name: 'investigation_full_hd.webm',
+    type: 'video/webm',
+    size: 88 * 1024 * 1024, // 88 MB <= 90 MB
+  } as unknown as File;
+  expect(validateMediaFile(fake88MBVideo, 'video').isValid, '88MB WebM video accepted (< 90 Mo)');
+
+  const fakeOversizedVideo = {
+    name: 'massive_raw_footage.mp4',
+    type: 'video/mp4',
+    size: 95 * 1024 * 1024, // 95 MB > 90 MB
+  } as unknown as File;
+  const oversizedRes = validateMediaFile(fakeOversizedVideo, 'video');
+  expect(!oversizedRes.isValid && oversizedRes.error?.includes('90 Mo'), '95MB video rejected with 90 Mo limit notice');
+
+  // Safe Video URL / Data URI tests
+  expect(isValidUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'), 'Valid MP4 video URL accepted');
+  expect(isValidUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'YouTube video link accepted');
+  expect(isValidUrl('data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQ=='), 'Safe data:video/mp4 URI accepted');
+  expect(!isValidUrl('javascript:alert("hacked")'), 'Dangerous javascript URI rejected');
+
   // Section 5: Database Seeding & Realism Verification
   console.log('\n--- Section 5: Database Integrity ---');
   const data = db.getData();
@@ -133,6 +162,70 @@ async function runProductionTestSuite() {
   expect(followerRecipients.has('user_A'), 'Follower of media house receives real-time publication');
   expect(followerRecipients.has('user_B'), 'Follower of journalist receives real-time publication');
   expect(!followerRecipients.has('journ_456'), 'Author does not receive duplicate self-notification');
+
+  // Section 7: Journalist Poll Creation & Citizen Voting
+  console.log('\n--- Section 7: Poll Creation & Citizen Voting Logic ---');
+  const isValidPoll = (question: string, options: string[]) => {
+    if (!question || question.trim().length < 5) return false;
+    const cleanOpts = options.map((o) => o.trim()).filter(Boolean);
+    return cleanOpts.length >= 2 && cleanOpts.length <= 6;
+  };
+
+  expect(isValidPoll('Faut-il interdire les téléphones à l\'école ?', ['Oui', 'Non', 'Neutre']), 'Valid poll configuration accepted');
+  expect(!isValidPoll('Non', ['Oui', 'Non']), 'Poll question under 5 characters rejected');
+  expect(!isValidPoll('Question valide ?', ['Seule option']), 'Poll with fewer than 2 options rejected');
+  expect(!isValidPoll('Question valide ?', ['1', '2', '3', '4', '5', '6', '7']), 'Poll with more than 6 options rejected');
+
+  // Poll Vote calculation
+  const samplePoll = {
+    id: 'poll_test',
+    question: 'Avis sur la réforme ?',
+    options: [
+      { id: 'opt_1', text: 'Pour', votes: 12 },
+      { id: 'opt_2', text: 'Contre', votes: 28 },
+    ],
+    totalVotes: 40,
+  };
+  const totalVotes = samplePoll.options.reduce((sum, o) => sum + o.votes, 0);
+  expect(totalVotes === 40, 'Poll total votes accurately calculated');
+  const pctOpt2 = Math.round((samplePoll.options[1].votes / totalVotes) * 100);
+  expect(pctOpt2 === 70, 'Poll option percentage calculated correctly (70%)');
+
+  // Section 8: Media House Creation Limit (1 per journalist, multiple for admins)
+  console.log('\n--- Section 8: Media House Creation Limits (Journalist vs Admin) ---');
+  const existingHouses = [
+    { id: 'house_1', name: 'Le Flambeau', ownerId: 'user_journalist_1', members: ['user_journalist_1'] },
+  ];
+
+  const canCreateMediaHouse = (userId: string, role: string, email: string) => {
+    const isSuperAdmin = role === 'admin' || email === 'mikeysano45t@gmail.com';
+    if (isSuperAdmin) return true; // Admins can create multiple houses
+
+    const owned = existingHouses.find((h) => h.ownerId === userId);
+    if (owned) return false; // Non-admin cannot create a 2nd house
+
+    const member = existingHouses.find((h) => h.members.includes(userId));
+    if (member) return false; // Non-admin already in a house cannot create one
+
+    return true;
+  };
+
+  expect(
+    !canCreateMediaHouse('user_journalist_1', 'journalist', 'journalist1@fasoinfo.bf'),
+    'Journalist who already founded a media house cannot create a second one'
+  );
+  expect(
+    canCreateMediaHouse('user_journalist_new', 'journalist', 'newjournalist@fasoinfo.bf'),
+    'Journalist with no prior media house is allowed to create their first house'
+  );
+  expect(
+    canCreateMediaHouse('user_journalist_1', 'admin', 'admin@fasoinfo.bf'),
+    'Admin account is allowed to create multiple media houses even if they already own one'
+  );
+  expect(
+    canCreateMediaHouse('user_journalist_1', 'journalist', 'mikeysano45t@gmail.com'),
+    'Master Admin email is allowed to create multiple media houses'
+  );
 
   console.log(`\n========================================`);
   console.log(`Summary: ${passed} Passed, ${failed} Failed`);

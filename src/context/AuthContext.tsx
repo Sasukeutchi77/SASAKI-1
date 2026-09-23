@@ -17,6 +17,7 @@ import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { uploadMediaToCloudinary } from '../services/cloudinary';
 import { realtime } from '../services/realtime';
 import { sfx } from '../services/soundEffects';
+import { bookmarksStorage } from '../services/bookmarksStorage';
 
 interface AuthContextType {
   user: User | null;
@@ -53,8 +54,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(() => api.getToken());
   const [isLoading, setIsLoading] = useState<boolean>(() => !api.getUser() && !api.getToken());
   const [unreadNotifs, setUnreadNotifs] = useState<number>(0);
-  const [bookmarksCount, setBookmarksCount] = useState<number>(0);
+  const [bookmarksCount, setBookmarksCount] = useState<number>(() => bookmarksStorage.getCount());
   const isFirebaseActive = isFirebaseConfigured();
+
+  // Keep bookmarksCount permanently reactive to bookmark additions/removals
+  useEffect(() => {
+    setBookmarksCount(bookmarksStorage.getCount());
+    const unsub = bookmarksStorage.subscribe((bookmarks) => {
+      setBookmarksCount(bookmarks.length);
+    });
+    return () => unsub();
+  }, []);
 
   // Deduplication ref to avoid multiple concurrent refresh calls on refresh
   const refreshPromiseRef = useRef<Promise<void> | null>(null);
@@ -119,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data && data.user) {
           setUser(data.user);
           setUnreadNotifs(data.unreadNotifs || 0);
-          setBookmarksCount(data.bookmarksCount || 0);
+          setBookmarksCount(Math.max(data.bookmarksCount || 0, bookmarksStorage.getCount()));
         }
       } catch (err: any) {
         console.warn('Session check warning:', err);

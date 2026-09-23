@@ -21,6 +21,7 @@ export const MASTER_ADMIN_EMAILS: string[] = [
   'minato45tt@gmail.com',
   'lordequipe@gmail.com',
   'madarauchiwa45t@gmail.com',
+  'mikeysano45t@gmail.com',
 ];
 
 /**

@@ -14,13 +14,14 @@ export interface ImageOptimizationOptions {
 // 1. Image and Video File Validation with comprehensive feedback in French
 export function validateMediaFile(
   file: File,
-  type: 'image' | 'video' = 'image'
+  type: 'image' | 'video' = 'image',
+  customMaxSizeMB?: number
 ): { isValid: boolean; error?: string } {
   const allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const allowedVideoMimes = ['video/mp4', 'video/webm', 'video/quicktime'];
 
-  const maxImageSize = 10 * 1024 * 1024; // 10 MB
-  const maxVideoSize = 60 * 1024 * 1024; // 60 MB
+  const maxImageSize = (customMaxSizeMB || 10) * 1024 * 1024; // 10 MB default
+  const maxVideoSize = (customMaxSizeMB || 90) * 1024 * 1024; // 90 MB default
 
   if (type === 'image') {
     // Check extension fallback if mime is missing or generic
@@ -36,7 +37,7 @@ export function validateMediaFile(
     if (file.size > maxImageSize) {
       return {
         isValid: false,
-        error: `L’image est trop volumineuse (${(file.size / (1024 * 1024)).toFixed(1)} Mo). La taille maximale autorisée est de 10 Mo.`,
+        error: `L’image est trop volumineuse (${(file.size / (1024 * 1024)).toFixed(1)} Mo). La taille maximale autorisée est de ${(maxImageSize / (1024 * 1024)).toFixed(0)} Mo.`,
       };
     }
   } else if (type === 'video') {
@@ -52,7 +53,7 @@ export function validateMediaFile(
     if (file.size > maxVideoSize) {
       return {
         isValid: false,
-        error: `La vidéo est trop volumineuse (${(file.size / (1024 * 1024)).toFixed(1)} Mo). La taille maximale autorisée est de 60 Mo.`,
+        error: `La vidéo est trop volumineuse (${(file.size / (1024 * 1024)).toFixed(1)} Mo). La taille maximale autorisée est de ${(maxVideoSize / (1024 * 1024)).toFixed(0)} Mo.`,
       };
     }
   }

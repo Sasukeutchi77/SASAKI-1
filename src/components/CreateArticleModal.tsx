@@ -659,10 +659,10 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
                   <VideoIcon className="w-4 h-4 text-cyan-400" />
-                  3. Reportage Vidéo (Optionnel)
+                  3. Reportage Vidéo (Optionnel - Max. 90 Mo)
                 </h3>
                 <p className="text-xs text-cyan-400/60">
-                  Ajoutez un enregistrement vidéo ou une interview via Cloudinary (MP4, WebM, max. 60 Mo).
+                  Ajoutez un enregistrement vidéo d'investigation ou une interview (MP4, WebM, MOV jusqu'à 90 Mo).
                 </p>
               </div>
               {videoUrl && (
@@ -683,22 +683,74 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
             {videoUrl ? (
               <div className="space-y-2">
                 <VideoPlayer src={videoUrl} poster={videoThumbnail} title={title} />
-                <p className="text-[11px] text-cyan-400/60">
-                  Aperçu du lecteur vidéo tel qu'il apparaîtra dans l'article.
-                </p>
+                <div className="flex items-center justify-between text-[11px] text-cyan-400/70 pt-1">
+                  <span>Vidéo prête pour la diffusion avec le reportage.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVideoUrl(undefined);
+                      setVideoMedia(undefined);
+                      setVideoThumbnail(undefined);
+                    }}
+                    className="text-red-400 hover:text-red-300 transition"
+                  >
+                    Changer de vidéo
+                  </button>
+                </div>
               </div>
             ) : (
-              <MediaUploader
-                type="video"
-                usageType="article_video"
-                maxSizeMB={60}
-                aspectRatio="16/9"
-                onChange={(media) => {
-                  setVideoUrl(media.url);
-                  setVideoMedia(media);
-                  setVideoThumbnail(media.thumbnailUrl);
-                }}
-              />
+              <div className="space-y-3">
+                <MediaUploader
+                  type="video"
+                  usageType="article_video"
+                  maxSizeMB={90}
+                  aspectRatio="16/9"
+                  onChange={(media) => {
+                    setVideoUrl(media.url);
+                    setVideoMedia(media);
+                    setVideoThumbnail(media.thumbnailUrl);
+                  }}
+                />
+
+                {/* Direct Video URL input for YouTube / Vimeo / external MP4 stream */}
+                <div className="pt-2 border-t border-cyan-500/20">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                    <span className="text-xs font-bold text-cyan-300">
+                      Ou insérer un lien vidéo direct (YouTube, Vimeo, flux MP4) :
+                    </span>
+                    <span className="text-[10px] text-cyan-400/60 font-mono">
+                      Ex: https://youtube.com/watch?v=... ou https://.../video.mp4
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      id="input-direct-video-url"
+                      placeholder="Collez ici le lien de la vidéo..."
+                      className="flex-1 px-3 py-2 text-xs bg-[#141933] border border-cyan-500/40 rounded-xl focus:outline-none focus:border-cyan-400 text-white font-mono"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const val = (e.currentTarget as HTMLInputElement).value.trim();
+                          if (val) setVideoUrl(val);
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById('input-direct-video-url') as HTMLInputElement | null;
+                        if (el && el.value.trim()) {
+                          setVideoUrl(el.value.trim());
+                        }
+                      }}
+                      className="px-3.5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-[0_0_12px_rgba(0,243,255,0.4)] transition cursor-pointer"
+                    >
+                      Insérer
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

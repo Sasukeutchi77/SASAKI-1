@@ -6,6 +6,8 @@ import { ArticleCard } from '../components/ArticleCard';
 import { ArticleCardSkeleton } from '../components/ui/Skeleton';
 import { realtime } from '../services/realtime';
 import { sfx } from '../services/soundEffects';
+import { likesStorage } from '../services/likesStorage';
+import { bookmarksStorage } from '../services/bookmarksStorage';
 import {
   Flame,
   Clock,
@@ -304,8 +306,18 @@ export const Home: React.FC<HomeProps> = ({
 
     // 4. When an article receives a like
     const unsubArticleLiked = realtime.on('article:liked', ({ articleId, likesCount }: { articleId: string; likesCount: number }) => {
-      setArticles((prev) => prev.map((a) => (a.id === articleId ? { ...a, likesCount } : a)));
-      setFeaturedArticle((prev) => (prev && prev.id === articleId ? { ...prev, likesCount } : prev));
+      setArticles((prev) =>
+        prev.map((a) =>
+          a.id === articleId
+            ? { ...a, likesCount, isLiked: likesStorage.isLiked(articleId) || a.isLiked }
+            : a
+        )
+      );
+      setFeaturedArticle((prev) =>
+        prev && prev.id === articleId
+          ? { ...prev, likesCount, isLiked: likesStorage.isLiked(articleId) || prev.isLiked }
+          : prev
+      );
     });
 
     // 5. When an article is viewed

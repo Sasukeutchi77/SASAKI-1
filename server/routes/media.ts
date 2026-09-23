@@ -39,6 +39,8 @@ export function saveBase64MediaLocally(dataUri: string, prefix = 'media'): strin
     else if (mime.includes('webp')) ext = 'webp';
     else if (mime.includes('gif')) ext = 'gif';
     else if (mime.includes('mp4')) ext = 'mp4';
+    else if (mime.includes('webm')) ext = 'webm';
+    else if (mime.includes('quicktime') || mime.includes('mov')) ext = 'mov';
 
     const base64Data = dataUri.substring(commaIdx + 1);
     const buffer = Buffer.from(base64Data, 'base64');
@@ -188,7 +190,7 @@ mediaRouter.post('/upload', requireAuth, mediaUploadLimiter, async (req: Authent
   const estimatedSizeBytes = Math.round((base64Length * 3) / 4);
 
   const maxImageSize = 10 * 1024 * 1024; // 10 MB
-  const maxVideoSize = 60 * 1024 * 1024; // 60 MB
+  const maxVideoSize = 90 * 1024 * 1024; // 90 MB
 
   if (type === 'image' && estimatedSizeBytes > maxImageSize) {
     return res.status(400).json({
@@ -198,7 +200,7 @@ mediaRouter.post('/upload', requireAuth, mediaUploadLimiter, async (req: Authent
 
   if (type === 'video' && estimatedSizeBytes > maxVideoSize) {
     return res.status(400).json({
-      error: `La vidéo dépasse la limite autorisée de 60 Mo (taille estimée : ${(estimatedSizeBytes / (1024 * 1024)).toFixed(1)} Mo).`,
+      error: `La vidéo dépasse la limite autorisée de 90 Mo (taille estimée : ${(estimatedSizeBytes / (1024 * 1024)).toFixed(1)} Mo).`,
     });
   }
 

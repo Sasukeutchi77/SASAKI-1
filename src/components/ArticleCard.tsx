@@ -9,12 +9,17 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  Play,
+  Video as VideoIcon,
 } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { realtime } from '../services/realtime';
 import { ShareModal } from './ShareModal';
+import { bookmarksStorage } from '../services/bookmarksStorage';
+import { likesStorage } from '../services/likesStorage';
+import { sfx } from '../services/soundEffects';
 
 export interface ArticleCardProps {
   article: Article;
@@ -39,20 +44,37 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   className = '',
   titleClassName = '',
 }) => {
-  const { isAuthenticated, refreshUser } = useAuth();
-  const [isLiked, setIsLiked] = useState<boolean>(!!article.isLiked);
+  const { refreshUser } = useAuth();
+  const [isLiked, setIsLiked] = useState<boolean>(() => likesStorage.isLiked(article.id) || !!article.isLiked);
   const [likesCount, setLikesCount] = useState<number>(article.likesCount);
-  const [isBookmarked, setIsBookmarked] = useState<boolean>(!!article.isBookmarked);
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(() => bookmarksStorage.isBookmarked(article.id) || !!article.isBookmarked);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
 
-  // Sync state when article prop changes (e.g. from server refresh or user interaction elsewhere)
+  // Sync state when article id or explicit property flags change
   useEffect(() => {
-    setIsLiked(!!article.isLiked);
+    const locallyLiked = likesStorage.isLiked(article.id);
+    setIsLiked(locallyLiked || !!article.isLiked);
     setLikesCount(article.likesCount);
-    setIsBookmarked(!!article.isBookmarked);
-  }, [article.id, article.isLiked, article.likesCount, article.isBookmarked]);
 
-  // Real-time listener for likes
+    const locallyBookmarked = bookmarksStorage.isBookmarked(article.id);
+    setIsBookmarked(locallyBookmarked || !!article.isBookmarked);
+  }, [article.id, article.isLiked, article.isBookmarked]);
+
+  // Subscribe to central likes and bookmarks changes so all cards stay synchronized
+  useEffect(() => {
+    const unsubLikes = likesStorage.subscribe((likedIds) => {
+      setIsLiked(likedIds.includes(article.id));
+    });
+    const unsubBookmarks = bookmarksStorage.subscribe((bookmarks) => {
+      setIsBookmarked(bookmarks.some((b) => b.id === article.id));
+    });
+    return () => {
+      unsubLikes();
+      unsubBookmarks();
+    };
+  }, [article.id]);
+
+  // Real-time listener for likes count changes
   useEffect(() => {
     const unsub = realtime.on('article:liked', ({ articleId: aId, likesCount: aLikes }: { articleId: string; likesCount: number }) => {
       if (aId === article.id) {
@@ -81,49 +103,46 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     }
   };
 
-  // Optimistic UI for Likes
+  // Optimistic UI for Likes - Resilient and permanent
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAuthenticated) {
-      onOpenAuth();
-      return;
-    }
+    sfx.playLike();
 
-    const prevLiked = isLiked;
-    const prevCount = likesCount;
+    const nextLiked = !isLiked;
+    const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
 
-    setIsLiked(!prevLiked);
-    setLikesCount(prevLiked ? Math.max(0, prevCount - 1) : prevCount + 1);
+    setIsLiked(nextLiked);
+    setLikesCount(nextCount);
+    likesStorage.setLiked(article.id, nextLiked);
 
     try {
-      const res = await api.toggleLikeArticle(article.id);
+      const res = await api.toggleLikeArticle(article.id, article);
       setIsLiked(res.liked);
       setLikesCount(res.likesCount);
     } catch (err) {
-      console.error('Like failed, rollback:', err);
-      setIsLiked(prevLiked);
-      setLikesCount(prevCount);
+      console.error('Like request error:', err);
     }
   };
 
-  // Optimistic UI for Bookmarks
+  // Optimistic UI for Bookmarks - Resilient and permanent
   const handleBookmark = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAuthenticated) {
-      onOpenAuth();
-      return;
+    sfx.playMechanicalClick();
+
+    const nextBookmarked = !isBookmarked;
+    setIsBookmarked(nextBookmarked);
+    if (nextBookmarked) {
+      bookmarksStorage.saveBookmark(article);
+    } else {
+      bookmarksStorage.removeBookmark(article.id);
     }
 
-    const prevBookmarked = isBookmarked;
-    setIsBookmarked(!prevBookmarked);
-
     try {
-      const res = await api.toggleBookmarkArticle(article.id);
+      const res = await api.toggleBookmarkArticle(article);
       setIsBookmarked(res.bookmarked);
       refreshUser();
     } catch (err) {
-      console.error('Bookmark failed, rollback:', err);
-      setIsBookmarked(prevBookmarked);
+      console.error('Bookmark request error:', err);
     }
   };
 
@@ -235,6 +254,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <span className="text-xs text-blue-200 font-medium">
               {formatDate(article.createdAt)}
             </span>
+            {article.videoUrl && (
+              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-600 text-white flex items-center gap-1 shadow-[0_0_10px_rgba(239,68,68,0.7)] font-mono">
+                <Play className="w-2.5 h-2.5 fill-current" />
+                Vidéo
+              </span>
+            )}
             <span className="text-xs text-blue-400/60">•</span>
             <span className="text-xs text-blue-200 flex items-center gap-1 font-mono">
               <Clock className="w-3 h-3 text-cyan-400" />
@@ -588,6 +613,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
           />
+          {article.videoUrl && (
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-red-600/90 text-white border border-red-400/60 backdrop-blur-xs text-[10px] font-mono font-bold flex items-center gap-1 shadow-lg">
+              <Play className="w-2.5 h-2.5 fill-current" />
+              <span>REPORTAGE VIDÉO</span>
+            </div>
+          )}
           <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1">
             <Clock className="w-3 h-3 text-cyan-400" />
             <span>{readingTimeMinutes} min</span>

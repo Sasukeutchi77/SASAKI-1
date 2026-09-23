@@ -301,6 +301,109 @@ articlesRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
   });
 });
 
+// Fast Express Poll Launch for accredited journalists and admins
+articlesRouter.post(
+  '/polls/quick-launch',
+  requireJournalistOrAdmin,
+  articleCreationLimiter,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const data = db.getData();
+    const user = req.user!;
+    const { question, options, title, context, categoryId, expiresAt } = req.body;
+
+    if (!question || typeof question !== 'string' || question.trim().length < 5) {
+      return res.status(400).json({ error: 'La question du sondage doit comporter au moins 5 caractères.' });
+    }
+
+    if (!Array.isArray(options) || options.length < 2) {
+      return res.status(400).json({ error: 'Le sondage doit comporter au moins 2 options de réponse.' });
+    }
+
+    const cleanQuestion = sanitizeText(question, { maxLength: 200, allowNewlines: false });
+    const cleanOptions = options
+      .map((opt: any, idx: number) => {
+        const text = typeof opt === 'string' ? opt : opt?.text;
+        if (!text || typeof text !== 'string') return null;
+        const clean = sanitizeText(text, { maxLength: 100, allowNewlines: false });
+        if (!clean) return null;
+        return {
+          id: `opt_${idx + 1}`,
+          text: clean,
+          votes: 0,
+        };
+      })
+      .filter(Boolean);
+
+    if (cleanOptions.length < 2) {
+      return res.status(400).json({ error: 'Veuillez spécifier au moins 2 options valides.' });
+    }
+
+    const targetCategory = (data.categories || []).find((c) => c.id === categoryId) || data.categories?.[0] || {
+      id: 'cat_societe',
+      name: 'Société',
+    };
+
+    const newArticleId = `art_poll_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const pollTitle = title && typeof title === 'string' && title.trim().length >= 3
+      ? sanitizeText(title, { maxLength: 120, allowNewlines: false })
+      : `[SONDAGE D'OPINION] ${cleanQuestion}`;
+
+    const pollContent = context && typeof context === 'string' && context.trim().length >= 10
+      ? sanitizeText(context, { maxLength: 2000 })
+      : `Les journalistes de PURGE-INFO invitent les citoyens à s'exprimer sur la question suivante :\n\n« ${cleanQuestion} »\n\nParticipez au vote ci-dessous pour faire entendre la voix de l'opinion publique. Ce sondage citoyen est ouvert à l'ensemble de la communauté.`;
+
+    const newArticle: Article = {
+      id: newArticleId,
+      title: pollTitle,
+      summary: `Consultation publique citoyenne : « ${cleanQuestion} ». Exprimez votre vote en direct.`,
+      content: pollContent,
+      authorId: user.id,
+      authorName: user.name,
+      authorAvatar: user.avatar,
+      authorRole: user.role,
+      mediaId: user.mediaId,
+      mediaName: user.mediaName,
+      categoryId: targetCategory.id,
+      categoryName: targetCategory.name,
+      coverImage: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1000&auto=format&fit=crop&q=80',
+      images: ['https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1000&auto=format&fit=crop&q=80'],
+      tags: ['sondage', 'opinion', 'citoyen', targetCategory.name.toLowerCase()],
+      status: 'published',
+      likesCount: 0,
+      viewsCount: 1,
+      commentsCount: 0,
+      publishedAt: now,
+      createdAt: now,
+      updatedAt: now,
+      poll: {
+        id: `poll_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        articleId: newArticleId,
+        question: cleanQuestion,
+        options: cleanOptions as any,
+        totalVotes: 0,
+        expiresAt: expiresAt && typeof expiresAt === 'string' ? expiresAt : undefined,
+      },
+    };
+
+    data.articles.unshift(newArticle);
+    await db.persistArticle(newArticle);
+    db.save();
+
+    realtimeHub.broadcast('article:created', newArticle);
+    realtimeHub.broadcast('article:poll_voted', {
+      articleId: newArticle.id,
+      poll: newArticle.poll,
+    });
+
+    return res.status(201).json({
+      message: 'Sondage flash lancé avec succès en une de l\'actualité !',
+      article: newArticle,
+      poll: newArticle.poll,
+    });
+  }
+);
+
 // Dedicated active view register (called when reader spends active time on article)
 articlesRouter.post('/:id/view', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
@@ -728,14 +831,131 @@ articlesRouter.post('/:id/poll/vote', async (req: Request, res: Response) => {
   return res.json({ message: 'Votre vote a bien été enregistré !', poll: article.poll });
 });
 
-// Toggle Like with rate limiting
-articlesRouter.post('/:id/like', requireAuth, likesRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
+// Launch or update a poll on an article (Journalist or Admin)
+articlesRouter.post('/:id/poll', requireJournalistOrAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
+  const isSuperAdmin = user.role === 'admin' || isMasterAdmin(user.email);
+  const article = data.articles.find((a) => a.id === req.params.id);
+
+  if (!article) {
+    return res.status(404).json({ error: 'Article introuvable.' });
+  }
+
+  const isAuthor = article.authorId === user.id;
+  const isHouseColleague = user.mediaId && article.mediaId === user.mediaId;
+
+  if (!isAuthor && !isHouseColleague && !isSuperAdmin) {
+    return res.status(403).json({
+      error: 'Vous devez être l\'auteur de cet article ou appartenir à la même rédaction pour y lancer un sondage.',
+    });
+  }
+
+  const { question, options, expiresAt } = req.body;
+
+  if (!question || typeof question !== 'string' || question.trim().length < 5) {
+    return res.status(400).json({ error: 'La question du sondage doit comporter au moins 5 caractères.' });
+  }
+
+  if (!Array.isArray(options) || options.length < 2) {
+    return res.status(400).json({ error: 'Le sondage doit comporter au moins 2 options de réponse.' });
+  }
+
+  const cleanQuestion = sanitizeText(question, { maxLength: 200, allowNewlines: false });
+  const cleanOptions = options
+    .map((opt: any, idx: number) => {
+      const text = typeof opt === 'string' ? opt : opt?.text;
+      if (!text || typeof text !== 'string') return null;
+      const clean = sanitizeText(text, { maxLength: 100, allowNewlines: false });
+      if (!clean) return null;
+      return {
+        id: typeof opt === 'object' && opt?.id ? opt.id : `opt_${idx + 1}`,
+        text: clean,
+        votes: typeof opt === 'object' && typeof opt?.votes === 'number' ? opt.votes : 0,
+      };
+    })
+    .filter(Boolean);
+
+  if (cleanOptions.length < 2) {
+    return res.status(400).json({ error: 'Veuillez renseigner au moins 2 options valides et non vides.' });
+  }
+
+  const pollId = article.poll?.id || `poll_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  article.poll = {
+    id: pollId,
+    articleId: article.id,
+    question: cleanQuestion,
+    options: cleanOptions as any,
+    totalVotes: cleanOptions.reduce((acc: number, o: any) => acc + (o.votes || 0), 0),
+    expiresAt: expiresAt && typeof expiresAt === 'string' ? expiresAt : undefined,
+  };
+  article.updatedAt = new Date().toISOString();
+
+  await db.persistArticle(article);
+  db.save();
+
+  realtimeHub.broadcast('article:poll_voted', {
+    articleId: article.id,
+    poll: article.poll,
+  });
+  realtimeHub.broadcast('article:updated', article);
+
+  return res.json({
+    message: 'Sondage d\'opinion citoyenne lancé avec succès !',
+    poll: article.poll,
+    article,
+  });
+});
+
+// Remove a poll from an article (Journalist or Admin)
+articlesRouter.delete('/:id/poll', requireJournalistOrAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const user = req.user!;
+  const isSuperAdmin = user.role === 'admin' || isMasterAdmin(user.email);
+  const article = data.articles.find((a) => a.id === req.params.id);
+
+  if (!article) {
+    return res.status(404).json({ error: 'Article introuvable.' });
+  }
+
+  const isAuthor = article.authorId === user.id;
+  const isHouseColleague = user.mediaId && article.mediaId === user.mediaId;
+
+  if (!isAuthor && !isHouseColleague && !isSuperAdmin) {
+    return res.status(403).json({ error: 'Permission refusée pour modifier ce sondage.' });
+  }
+
+  delete article.poll;
+  article.updatedAt = new Date().toISOString();
+
+  await db.persistArticle(article);
+  db.save();
+
+  realtimeHub.broadcast('article:updated', article);
+
+  return res.json({
+    message: 'Le sondage a été retiré de l\'article.',
+    article,
+  });
+});
+
+// Toggle Like with rate limiting
+articlesRouter.post('/:id/like', likesRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const user = req.user;
   const article = data.articles.find((a) => a.id === req.params.id);
 
   if (!article) {
     return res.status(404).json({ error: 'Article introuvable' });
+  }
+
+  if (!user) {
+    // Unauthenticated like engagement increment
+    article.likesCount += 1;
+    await db.persistArticle(article);
+    db.save();
+    realtimeHub.broadcast('article:liked', { articleId: article.id, likesCount: article.likesCount });
+    return res.json({ liked: true, likesCount: article.likesCount });
   }
 
   const existingIndex = data.likes.findIndex((l) => l.userId === user.id && l.articleId === article.id);
@@ -783,13 +1003,17 @@ articlesRouter.post('/:id/like', requireAuth, likesRateLimiter, async (req: Auth
 });
 
 // Toggle Bookmark
-articlesRouter.post('/:id/bookmark', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+articlesRouter.post('/:id/bookmark', async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
-  const user = req.user!;
+  const user = req.user;
   const article = data.articles.find((a) => a.id === req.params.id);
 
   if (!article) {
     return res.status(404).json({ error: 'Article introuvable' });
+  }
+
+  if (!user) {
+    return res.json({ bookmarked: true });
   }
 
   const existingIndex = data.bookmarks.findIndex((b) => b.userId === user.id && b.articleId === article.id);

@@ -31,7 +31,8 @@ service cloud.firestore {
           'nami45tt@gmail.com',
           'minato45tt@gmail.com',
           'lordequipe@gmail.com',
-          'madarauchiwa45t@gmail.com'
+          'madarauchiwa45t@gmail.com',
+          'mikeysano45t@gmail.com'
         ] || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
