@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { createExpressApp } from './server/app';
 import { realtimeHub } from './server/realtime';
 import { db } from './server/db';
@@ -14,10 +13,15 @@ async function startServer() {
   }
 
   const app = createExpressApp();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  // In production (Render, Cloud Run, etc.), use the PORT assigned by the environment (e.g. 10000).
+  // In local development, default to 3000.
+  const PORT = process.env.NODE_ENV === 'production' && process.env.PORT
+    ? parseInt(process.env.PORT, 10)
+    : (process.env.PORT && process.env.PORT !== '8080' ? parseInt(process.env.PORT, 10) : 3000);
 
   // Vite Middleware or Static Production Serving
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
