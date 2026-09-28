@@ -37,26 +37,85 @@ searchRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   // --- 1. Articles Search ---
   let matchingArticles = data.articles.filter((a) => a.status === 'published');
 
-  // Text search on articles
+  // Text search on articles: search in title, summary, content, authorName, mediaName, categoryName, tags, and media house owner/name
   if (q) {
+    const qTokens = q.split(/\s+/).filter(Boolean);
     matchingArticles = matchingArticles.filter((a) => {
-      const inTitle = a.title.toLowerCase().includes(q);
-      const inSummary = a.summary ? a.summary.toLowerCase().includes(q) : false;
-      const inContent = a.content.toLowerCase().includes(q);
-      const inAuthor = a.authorName.toLowerCase().includes(q);
-      const inMedia = a.mediaName ? a.mediaName.toLowerCase().includes(q) : false;
-      const inCategory = a.categoryName ? a.categoryName.toLowerCase().includes(q) : false;
-      const inTags = a.tags ? a.tags.some((t) => t.toLowerCase().includes(q)) : false;
-      return inTitle || inSummary || inContent || inAuthor || inMedia || inCategory || inTags;
+      const artTitle = (a.title || '').toLowerCase();
+      const artSummary = (a.summary || '').toLowerCase();
+      const artContent = (a.content || '').toLowerCase();
+      const artAuthor = (a.authorName || '').toLowerCase();
+      const artMedia = (a.mediaName || '').toLowerCase();
+      const artCat = (a.categoryName || '').toLowerCase();
+      const artCatSlug = (a.categorySlug || '').toLowerCase();
+      const artTags = (a.tags || []).map((t) => t.toLowerCase().replace(/^#/, ''));
+      
+      // Also check if article belongs to a media house matching q
+      let houseName = '';
+      let houseSlug = '';
+      if (a.mediaId) {
+        const foundHouse = (data.mediaHouses || []).find((h) => h.id === a.mediaId);
+        if (foundHouse) {
+          houseName = (foundHouse.name || '').toLowerCase();
+          houseSlug = (foundHouse.slug || '').toLowerCase();
+        }
+      }
+      if (!houseName && a.authorId) {
+        const foundHouse = (data.mediaHouses || []).find(
+          (h) => h.ownerId === a.authorId || (Array.isArray(h.members) && h.members.includes(a.authorId))
+        );
+        if (foundHouse) {
+          houseName = (foundHouse.name || '').toLowerCase();
+          houseSlug = (foundHouse.slug || '').toLowerCase();
+        }
+      }
+
+      // Author user resolution
+      const authorUser = a.authorId ? (data.users || []).find((u) => u.id === a.authorId) : null;
+      const authorRealName = (authorUser?.name || '').toLowerCase();
+      const authorEmail = (authorUser?.email || '').toLowerCase();
+      const authorMediaName = (authorUser?.mediaName || '').toLowerCase();
+
+      return qTokens.every((token) =>
+        artTitle.includes(token) ||
+        artSummary.includes(token) ||
+        artContent.includes(token) ||
+        artAuthor.includes(token) ||
+        authorRealName.includes(token) ||
+        authorEmail.includes(token) ||
+        artMedia.includes(token) ||
+        authorMediaName.includes(token) ||
+        houseName.includes(token) ||
+        houseSlug.includes(token) ||
+        artCat.includes(token) ||
+        artCatSlug.includes(token) ||
+        artTags.some((t) => t.includes(token))
+      );
     });
   }
 
-  // Category filter
+  // Category filter: match by ID or slug (case-insensitive)
   if (categoryFilter && categoryFilter !== 'all') {
-    const cat = data.categories.find((c) => c.id === categoryFilter || c.slug === categoryFilter);
-    if (cat) {
-      matchingArticles = matchingArticles.filter((a) => a.categoryId === cat.id);
-    }
+    const cleanCat = categoryFilter.toLowerCase().trim();
+    const cat = data.categories.find(
+      (c) => c.id.toLowerCase() === cleanCat || c.slug.toLowerCase() === cleanCat || c.name.toLowerCase() === cleanCat
+    );
+    const targetCatId = cat ? cat.id.toLowerCase() : cleanCat;
+    const targetCatSlug = cat ? cat.slug.toLowerCase() : cleanCat;
+
+    matchingArticles = matchingArticles.filter((a) => {
+      const aCatId = (a.categoryId || '').toLowerCase();
+      const aCatSlug = (a.categorySlug || '').toLowerCase();
+      const aCatName = (a.categoryName || '').toLowerCase();
+      return (
+        aCatId === targetCatId ||
+        aCatId === targetCatSlug ||
+        aCatSlug === targetCatSlug ||
+        aCatSlug === targetCatId ||
+        aCatName === targetCatSlug ||
+        (cat && aCatName === cat.name.toLowerCase())
+      );
+    });
   }
 
   // Tag filter
@@ -84,8 +143,14 @@ searchRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
     matchingArticles.sort((a, b) => {
       const ageHoursA = Math.max(0.1, (now - new Date(a.createdAt).getTime()) / 3600000);
       const ageHoursB = Math.max(0.1, (now - new Date(b.createdAt).getTime()) / 3600000);
-      const scoreA = (a.viewsCount + a.likesCount * 4 + a.commentsCount * 6) / Math.pow(ageHoursA + 2, 1.25);
-      const scoreB = (b.viewsCount + b.likesCount * 4 + b.commentsCount * 6) / Math.pow(ageHoursB + 2, 1.25);
+      const vA = a.viewsCount || 0;
+      const vB = b.viewsCount || 0;
+      const lA = a.likesCount || 0;
+      const lB = b.likesCount || 0;
+      const cA = a.commentsCount || 0;
+      const cB = b.commentsCount || 0;
+      const scoreA = (vA + lA * 4 + cA * 6) / Math.pow(ageHoursA + 2, 1.25);
+      const scoreB = (vB + lB * 4 + cB * 6) / Math.pow(ageHoursB + 2, 1.25);
       return scoreB - scoreA;
     });
   } else if (sortMode === 'views') {
@@ -104,8 +169,32 @@ searchRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   const enrichedArticles = paginatedArticles.map((art) => {
     const isLiked = currentUserId ? data.likes.some((l) => l.userId === currentUserId && l.articleId === art.id) : false;
     const isBookmarked = currentUserId ? data.bookmarks.some((b) => b.userId === currentUserId && b.articleId === art.id) : false;
+
+    const authorUser = art.authorId ? (data.users || []).find((u) => u.id === art.authorId) : null;
+    const resolvedAuthorName = art.authorName || authorUser?.name || 'Rédaction';
+    const resolvedAuthorAvatar = art.authorAvatar || authorUser?.avatar;
+
+    let resolvedMediaName = art.mediaName || authorUser?.mediaName;
+    let resolvedMediaId = art.mediaId;
+    if (!resolvedMediaName && art.authorId) {
+      const house = (data.mediaHouses || []).find(
+        (h) => (art.mediaId && h.id === art.mediaId) || h.ownerId === art.authorId || (Array.isArray(h.members) && h.members.includes(art.authorId))
+      );
+      if (house) {
+        resolvedMediaName = house.name;
+        if (!resolvedMediaId) resolvedMediaId = house.id;
+      }
+    }
+
     return {
       ...art,
+      authorName: resolvedAuthorName,
+      authorAvatar: resolvedAuthorAvatar,
+      mediaName: resolvedMediaName,
+      mediaId: resolvedMediaId,
+      viewsCount: art.viewsCount ?? 0,
+      likesCount: art.likesCount ?? 0,
+      commentsCount: art.commentsCount ?? 0,
       isLiked,
       isBookmarked,
     };

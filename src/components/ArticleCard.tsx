@@ -46,7 +46,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 }) => {
   const { refreshUser } = useAuth();
   const [isLiked, setIsLiked] = useState<boolean>(() => likesStorage.isLiked(article.id) || !!article.isLiked);
-  const [likesCount, setLikesCount] = useState<number>(article.likesCount);
+  const [likesCount, setLikesCount] = useState<number>(() => article.likesCount ?? 0);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(() => bookmarksStorage.isBookmarked(article.id) || !!article.isBookmarked);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
 
@@ -54,11 +54,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   useEffect(() => {
     const locallyLiked = likesStorage.isLiked(article.id);
     setIsLiked(locallyLiked || !!article.isLiked);
-    setLikesCount(article.likesCount);
+    setLikesCount(article.likesCount ?? 0);
 
     const locallyBookmarked = bookmarksStorage.isBookmarked(article.id);
     setIsBookmarked(locallyBookmarked || !!article.isBookmarked);
-  }, [article.id, article.isLiked, article.isBookmarked]);
+  }, [article.id, article.likesCount, article.isLiked, article.isBookmarked]);
 
   // Subscribe to central likes and bookmarks changes so all cards stay synchronized
   useEffect(() => {

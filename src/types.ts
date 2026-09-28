@@ -257,6 +257,8 @@ export interface Article {
   categoryId: string;
   categoryName: string;
   category?: string;
+  categorySlug?: string;
+  slug?: string;
   excerpt?: string;
   imageUrl?: string;
   publishedAt?: string;

@@ -164,7 +164,7 @@ function createInitialData(): DatabaseSchema {
       isVerified: true,
       verificationStatus: 'approved',
       status: 'active',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      avatar: '/assets/images/anime_itachi_avatar.jpg',
       bio: 'Compte Administrateur Officiel de la plateforme PURGE-INFO.',
       createdAt: '2026-01-01T08:00:00Z',
     },
@@ -178,7 +178,7 @@ function createInitialData(): DatabaseSchema {
       isVerified: true,
       verificationStatus: 'approved',
       status: 'active',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      avatar: '/assets/images/anime_sasuke_avatar.jpg',
       bio: 'Compte Administrateur Officiel de la plateforme PURGE-INFO.',
       createdAt: '2026-01-01T08:00:00Z',
     },
@@ -192,7 +192,7 @@ function createInitialData(): DatabaseSchema {
       isVerified: true,
       verificationStatus: 'approved',
       status: 'active',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      avatar: '/assets/images/anime_minato_avatar.jpg',
       bio: 'Chroniqueur en Chef & Observateur des Décrets de Sécurité de la Purge.',
       followersCount: 0,
       articlesCount: 0,
@@ -455,10 +455,33 @@ function mergeDatabaseState(local: DatabaseSchema, cloud: DatabaseSchema): Datab
   const mergedBookmarks = unionById(local.bookmarks, cloud.bookmarks);
   const mergedFollows = unionById(local.follows, cloud.follows);
 
-  // Reconcile article like counts with definitive likes records
+  // Reconcile article statistics and relationships
   mergedArticles.forEach((art) => {
     const matchingLikesCount = mergedLikes.filter((l) => l.articleId === art.id).length;
     art.likesCount = Math.max(art.likesCount || 0, matchingLikesCount);
+
+    const matchingCommentsCount = mergedComments.filter((c) => c.articleId === art.id).length;
+    art.commentsCount = Math.max(art.commentsCount || 0, matchingCommentsCount);
+
+    art.viewsCount = Number.isFinite(art.viewsCount) ? Math.max(0, art.viewsCount || 0) : 0;
+
+    if (!art.authorName && art.authorId) {
+      const author = mergedUsers.find((u) => u.id === art.authorId);
+      if (author) {
+        art.authorName = author.name;
+        if (!art.authorAvatar && author.avatar) art.authorAvatar = author.avatar;
+      }
+    }
+
+    if (!art.mediaId && art.authorId) {
+      const house = mergedHouses.find(
+        (h) => h.ownerId === art.authorId || (Array.isArray(h.members) && h.members.includes(art.authorId))
+      );
+      if (house) {
+        art.mediaId = house.id;
+        art.mediaName = house.name;
+      }
+    }
   });
 
   return {
@@ -488,9 +511,37 @@ class Database {
     this.data = this.loadData();
     this.ensureMasterAdmins();
     this.ensureApprovedJournalists();
+    this.ensureDataSanity();
     // Automatically initialize Cloud Firestore persistence in the background
     this.initCloudPersistence().catch((err) => {
       console.warn('[DB] Cloud persistence initial check failed:', err);
+    });
+  }
+
+  public ensureDataSanity() {
+    if (!this.data.articles) this.data.articles = [];
+    this.data.articles.forEach((art) => {
+      art.viewsCount = Number.isFinite(art.viewsCount) ? Math.max(0, art.viewsCount || 0) : 0;
+      art.likesCount = Number.isFinite(art.likesCount) ? Math.max(0, art.likesCount || 0) : 0;
+      art.commentsCount = Number.isFinite(art.commentsCount) ? Math.max(0, art.commentsCount || 0) : 0;
+
+      if (!art.authorName && art.authorId) {
+        const author = (this.data.users || []).find((u) => u.id === art.authorId);
+        if (author) {
+          art.authorName = author.name;
+          if (!art.authorAvatar && author.avatar) art.authorAvatar = author.avatar;
+        }
+      }
+
+      if (!art.mediaId && art.authorId) {
+        const house = (this.data.mediaHouses || []).find(
+          (h) => h.ownerId === art.authorId || (Array.isArray(h.members) && h.members.includes(art.authorId))
+        );
+        if (house) {
+          art.mediaId = house.id;
+          art.mediaName = house.name;
+        }
+      }
     });
   }
 
@@ -503,6 +554,7 @@ class Database {
         this.data = mergeDatabaseState(this.data, cloudData);
         this.ensureMasterAdmins();
         this.ensureApprovedJournalists();
+        this.ensureDataSanity();
         this.isCloudReady = true;
         this.saveDataDirect(this.data);
         // Immediately sync back merged set so Cloud Firestore receives any items that were only local

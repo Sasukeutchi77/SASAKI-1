@@ -30,6 +30,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setError(null);
     setSuccessMessage(null);
 
@@ -89,14 +90,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
         await loginWithEmail(email.trim(), password);
         onClose();
       } catch (err: any) {
-        setError(formatAuthErrorMessage(err));
+        // Prevent any event propagation or form auto-navigation
+        const formattedErr = formatAuthErrorMessage(err);
+        setError(formattedErr);
+        // Clear password on failed login to prevent browser password manager from prompting to save invalid credentials
+        setPassword('');
       } finally {
         setLoading(false);
       }
     }
   };
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleAuth = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setError(null);
     setGoogleLoading(true);
     try {
@@ -110,8 +117,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto">
-      <div className="relative w-full max-w-md bg-[#040817] border border-blue-500/30 rounded-2xl shadow-[0_0_50px_rgba(29,104,255,0.25)] overflow-hidden flex flex-col my-4 max-h-[92vh] transition-all text-slate-100">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="relative w-full max-w-md bg-[#040817] border border-blue-500/30 rounded-2xl shadow-[0_0_50px_rgba(29,104,255,0.25)] overflow-hidden flex flex-col my-4 max-h-[92vh] transition-all text-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#0b142c] to-[#040817] border-b border-blue-500/20 px-6 py-4 flex items-center justify-between shrink-0 transition-all">
           <div className="flex items-center gap-3">
@@ -135,6 +150,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 text-blue-300/60 hover:text-cyan-200 hover:bg-blue-600/20 rounded-full transition-colors cursor-pointer"
           >
@@ -256,7 +272,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form 
+            onSubmit={handleSubmit} 
+            className="space-y-3.5"
+            noValidate
+          >
             {mode === 'register' && (
               <div>
                 <label className="block text-xs font-bold font-mono text-cyan-300 uppercase tracking-wider mb-1">
@@ -267,6 +287,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   <input
                     type="text"
                     required
+                    autoComplete="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ex: Clara Dupont"
@@ -285,6 +306,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                 <input
                   type="email"
                   required
+                  autoComplete="username email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre.email@exemple.bf"
@@ -314,6 +336,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Au moins 6 caractères"
@@ -341,6 +364,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     required
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirmez votre mot de passe"

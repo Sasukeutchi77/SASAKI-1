@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   ShieldCheck,
@@ -14,6 +14,7 @@ import {
   Users,
   Bell,
   ArrowRight,
+  ArrowLeft,
   ExternalLink,
 } from 'lucide-react';
 import { sfx } from '../services/soundEffects';
@@ -33,44 +34,79 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'levels' | 'charter' | 'moderation' | 'difference'>('levels');
 
-  if (!isOpen) return null;
-
-  const handleClose = () => {
-    sfx.playMechanicalClick();
+  const handleClose = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     onClose();
+    setTimeout(() => {
+      try {
+        sfx.playMechanicalClick();
+      } catch {}
+    }, 0);
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose(e);
+      }}
+    >
       <div
         className="relative w-full max-w-3xl max-h-[92vh] flex flex-col bg-[#070913] border border-cyan-500/40 rounded-2xl sm:rounded-3xl shadow-[0_0_50px_rgba(0,243,255,0.2)] text-slate-100 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-950/40 via-[#0a0f24] to-emerald-950/30 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-cyan-500/20 via-emerald-500/20 to-cyan-400/30 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+        {/* Header with instant Back Button */}
+        <div className="p-4 sm:p-6 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-950/40 via-[#0a0f24] to-emerald-950/30 flex items-center justify-between shrink-0 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              id="trust-modal-back-btn-header"
+              type="button"
+              onClick={handleClose}
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 shadow-[0_0_12px_rgba(0,243,255,0.25)]"
+              title="Retourner à l'application"
+            >
+              <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+              <span className="text-xs font-bold font-mono hidden xs:inline">Retour</span>
+            </button>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-cyan-500/20 via-emerald-500/20 to-cyan-400/30 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(0,243,255,0.3)] shrink-0">
               <ShieldCheck className="w-6 h-6 text-cyan-400" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base sm:text-xl font-black text-white tracking-tight">
+                <h2 className="text-base sm:text-xl font-black text-white tracking-tight truncate">
                   Système de Confiance & Vérification
                 </h2>
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
                   Déontologie Certifiée
                 </span>
               </div>
-              <p className="text-xs text-cyan-400/70 font-mono mt-0.5">
+              <p className="text-xs text-cyan-400/70 font-mono mt-0.5 truncate">
                 Comprendre d’où vient l’information et comment nous garantissons sa crédibilité
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={handleClose}
-            className="p-2 rounded-xl text-cyan-400/60 hover:text-white hover:bg-cyan-500/20 transition-all cursor-pointer"
-            title="Fermer"
+            className="p-2 rounded-xl text-cyan-400/60 hover:text-white hover:bg-cyan-500/20 transition-all cursor-pointer shrink-0 active:scale-95"
+            title="Fermer la charte"
           >
             <X className="w-5 h-5" />
           </button>

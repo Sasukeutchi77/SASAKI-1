@@ -35,6 +35,7 @@ import { likesStorage } from '../services/likesStorage';
 
 interface ArticleDetailModalProps {
   articleId: string;
+  initialArticle?: Article | null;
   onClose: () => void;
   onOpenProfile: (userId: string) => void;
   onOpenAuth: () => void;
@@ -47,6 +48,7 @@ interface ArticleDetailModalProps {
 
 export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   articleId,
+  initialArticle,
   onClose,
   onOpenProfile,
   onOpenAuth,
@@ -57,17 +59,17 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   onOpenTrustSystem,
 }) => {
   const { user, isAuthenticated, refreshUser } = useAuth();
-  const [article, setArticle] = useState<Article | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [article, setArticle] = useState<Article | null>(() => (initialArticle && initialArticle.id === articleId ? initialArticle : null));
+  const [loading, setLoading] = useState<boolean>(() => !(initialArticle && initialArticle.id === articleId));
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmittingComment, setIsSubmittingComment] = useState<boolean>(false);
 
   // Optimistic article state
-  const [isLiked, setIsLiked] = useState<boolean>(() => likesStorage.isLiked(articleId));
-  const [likesCount, setLikesCount] = useState<number>(0);
-  const [isBookmarked, setIsBookmarked] = useState<boolean>(() => bookmarksStorage.isBookmarked(articleId));
+  const [isLiked, setIsLiked] = useState<boolean>(() => likesStorage.isLiked(articleId) || (initialArticle && initialArticle.id === articleId ? !!initialArticle.isLiked : false));
+  const [likesCount, setLikesCount] = useState<number>(() => (initialArticle && initialArticle.id === articleId ? initialArticle.likesCount ?? 0 : 0));
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(() => bookmarksStorage.isBookmarked(articleId) || (initialArticle && initialArticle.id === articleId ? !!initialArticle.isBookmarked : false));
   const [isFollowingAuthor, setIsFollowingAuthor] = useState<boolean>(false);
   const [followersCount, setFollowersCount] = useState<number>(0);
 
@@ -153,7 +155,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
       const artRes = await api.getArticle(articleId);
       setArticle(artRes.article);
       setIsLiked(likesStorage.isLiked(artRes.article.id) || !!artRes.article.isLiked);
-      setLikesCount(artRes.article.likesCount);
+      setLikesCount(artRes.article.likesCount ?? 0);
       setIsBookmarked(bookmarksStorage.isBookmarked(artRes.article.id) || !!artRes.article.isBookmarked);
 
       // Fetch author profile to get accurate follow state

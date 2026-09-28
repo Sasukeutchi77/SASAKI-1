@@ -453,6 +453,7 @@ export function AppContent() {
       {activeArticleId && (
         <ArticleDetailModal
           articleId={activeArticleId}
+          initialArticle={activeArticle && activeArticle.id === activeArticleId ? activeArticle : undefined}
           onClose={handleCloseArticle}
           onOpenProfile={(uid) => {
             handleCloseArticle();

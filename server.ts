@@ -13,11 +13,8 @@ async function startServer() {
   }
 
   const app = createExpressApp();
-  // In production (Render, Cloud Run, etc.), use the PORT assigned by the environment (e.g. 10000).
-  // In local development, default to 3000.
-  const PORT = process.env.NODE_ENV === 'production' && process.env.PORT
-    ? parseInt(process.env.PORT, 10)
-    : (process.env.PORT && process.env.PORT !== '8080' ? parseInt(process.env.PORT, 10) : 3000);
+  // AI Studio requires dev server on port 3000 and host 0.0.0.0
+  const PORT = 3000;
 
   // Vite Middleware or Static Production Serving
   if (process.env.NODE_ENV !== 'production') {
@@ -26,7 +23,7 @@ async function startServer() {
       server: {
         middlewareMode: true,
         allowedHosts: true,
-        hmr: process.env.DISABLE_HMR !== 'true',
+        hmr: false,
       },
       appType: 'spa',
     });

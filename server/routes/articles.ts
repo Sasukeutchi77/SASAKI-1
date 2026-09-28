@@ -72,9 +72,12 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
 
   // Category filter (by id or slug)
   if (category && category !== 'all') {
-    const catObj = data.categories.find((c) => c.id === category || c.slug === category);
+    const cleanCat = String(category).toLowerCase().trim();
+    const catObj = data.categories.find((c) => c.id.toLowerCase() === cleanCat || c.slug.toLowerCase() === cleanCat);
     if (catObj) {
-      list = list.filter((a) => a.categoryId === catObj.id);
+      list = list.filter((a) => (a.categoryId || '').toLowerCase() === catObj.id.toLowerCase() || (a.categoryId || '').toLowerCase() === catObj.slug.toLowerCase() || (a.categorySlug || '').toLowerCase() === catObj.slug.toLowerCase());
+    } else {
+      list = list.filter((a) => (a.categoryId || '').toLowerCase() === cleanCat || (a.categorySlug || '').toLowerCase() === cleanCat);
     }
   }
 
@@ -87,15 +90,42 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   // Global search filter
   if (search) {
     const q = String(search).toLowerCase().trim();
-    list = list.filter(
-      (a) =>
-        a.title.toLowerCase().includes(q) ||
-        (a.summary && a.summary.toLowerCase().includes(q)) ||
-        a.content.toLowerCase().includes(q) ||
-        a.authorName.toLowerCase().includes(q) ||
-        (a.mediaName && a.mediaName.toLowerCase().includes(q)) ||
-        (a.tags && a.tags.some((t) => t.toLowerCase().includes(q)))
-    );
+    list = list.filter((a) => {
+      const artTitle = (a.title || '').toLowerCase();
+      const artSummary = (a.summary || '').toLowerCase();
+      const artContent = (a.content || '').toLowerCase();
+      const artAuthor = (a.authorName || '').toLowerCase();
+      const artMedia = (a.mediaName || '').toLowerCase();
+      
+      // Also resolve media house from mediaHouses collection if mediaName isn't directly on article
+      let houseName = '';
+      if (a.mediaId) {
+        const found = (data.mediaHouses || []).find((h) => h.id === a.mediaId);
+        if (found) houseName = (found.name || '').toLowerCase();
+      }
+      if (!houseName && a.authorId) {
+        const found = (data.mediaHouses || []).find(
+          (h) => h.ownerId === a.authorId || (Array.isArray(h.members) && h.members.includes(a.authorId))
+        );
+        if (found) houseName = (found.name || '').toLowerCase();
+      }
+
+      const authorUser = a.authorId ? (data.users || []).find((u) => u.id === a.authorId) : null;
+      const authorRealName = (authorUser?.name || '').toLowerCase();
+      const authorMediaName = (authorUser?.mediaName || '').toLowerCase();
+
+      return (
+        artTitle.includes(q) ||
+        artSummary.includes(q) ||
+        artContent.includes(q) ||
+        artAuthor.includes(q) ||
+        authorRealName.includes(q) ||
+        artMedia.includes(q) ||
+        houseName.includes(q) ||
+        authorMediaName.includes(q) ||
+        (a.tags && a.tags.some((t) => (t || '').toLowerCase().includes(q)))
+      );
+    });
   }
 
   // Date range filter
@@ -123,8 +153,14 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
     list.sort((a, b) => {
       const ageHoursA = Math.max(0.1, (now - new Date(a.createdAt).getTime()) / 3600000);
       const ageHoursB = Math.max(0.1, (now - new Date(b.createdAt).getTime()) / 3600000);
-      const scoreA = (a.viewsCount + a.likesCount * 4 + a.commentsCount * 6) / Math.pow(ageHoursA + 2, 1.25);
-      const scoreB = (b.viewsCount + b.likesCount * 4 + b.commentsCount * 6) / Math.pow(ageHoursB + 2, 1.25);
+      const vA = a.viewsCount || 0;
+      const vB = b.viewsCount || 0;
+      const lA = a.likesCount || 0;
+      const lB = b.likesCount || 0;
+      const cA = a.commentsCount || 0;
+      const cB = b.commentsCount || 0;
+      const scoreA = (vA + lA * 4 + cA * 6) / Math.pow(ageHoursA + 2, 1.25);
+      const scoreB = (vB + lB * 4 + cB * 6) / Math.pow(ageHoursB + 2, 1.25);
       return scoreB - scoreA;
     });
   } else if (sort === 'latest') {
@@ -145,8 +181,14 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
       const ageHoursB = Math.max(0.05, (now - new Date(b.createdAt).getTime()) / 3600000);
       const freshA = 12 / Math.pow(ageHoursA + 0.8, 1.2);
       const freshB = 12 / Math.pow(ageHoursB + 0.8, 1.2);
-      const scoreA = freshA + (a.viewsCount + a.likesCount * 4 + a.commentsCount * 6) / Math.pow(ageHoursA + 2, 1.35);
-      const scoreB = freshB + (b.viewsCount + b.likesCount * 4 + b.commentsCount * 6) / Math.pow(ageHoursB + 2, 1.35);
+      const vA = a.viewsCount || 0;
+      const vB = b.viewsCount || 0;
+      const lA = a.likesCount || 0;
+      const lB = b.likesCount || 0;
+      const cA = a.commentsCount || 0;
+      const cB = b.commentsCount || 0;
+      const scoreA = freshA + (vA + lA * 4 + cA * 6) / Math.pow(ageHoursA + 2, 1.35);
+      const scoreB = freshB + (vB + lB * 4 + cB * 6) / Math.pow(ageHoursB + 2, 1.35);
       if (Math.abs(scoreB - scoreA) > 0.001) return scoreB - scoreA;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
@@ -174,8 +216,15 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
         const freshA = 16 / Math.pow(ageHoursA + 0.6, 1.15);
         const freshB = 16 / Math.pow(ageHoursB + 0.6, 1.15);
 
-        const engA = (a.viewsCount * 0.5 + a.likesCount * 3 + a.commentsCount * 5) / Math.pow(ageHoursA + 2, 1.15);
-        const engB = (b.viewsCount * 0.5 + b.likesCount * 3 + b.commentsCount * 5) / Math.pow(ageHoursB + 2, 1.15);
+        const vA = a.viewsCount || 0;
+        const vB = b.viewsCount || 0;
+        const lA = a.likesCount || 0;
+        const lB = b.likesCount || 0;
+        const cA = a.commentsCount || 0;
+        const cB = b.commentsCount || 0;
+
+        const engA = (vA * 0.5 + lA * 3 + cA * 5) / Math.pow(ageHoursA + 2, 1.15);
+        const engB = (vB * 0.5 + lB * 3 + cB * 5) / Math.pow(ageHoursB + 2, 1.15);
 
         const scoreA = isFollowedA + catAffinityA + freshA + engA;
         const scoreB = isFollowedB + catAffinityB + freshB + engB;
@@ -189,8 +238,14 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
         const ageHoursB = Math.max(0.05, (now - new Date(b.createdAt).getTime()) / 3600000);
         const freshA = 16 / Math.pow(ageHoursA + 0.6, 1.15);
         const freshB = 16 / Math.pow(ageHoursB + 0.6, 1.15);
-        const scoreA = freshA + (a.viewsCount + a.likesCount * 3 + a.commentsCount * 4) / Math.pow(ageHoursA + 2, 1.25);
-        const scoreB = freshB + (b.viewsCount + b.likesCount * 3 + b.commentsCount * 4) / Math.pow(ageHoursB + 2, 1.25);
+        const vA = a.viewsCount || 0;
+        const vB = b.viewsCount || 0;
+        const lA = a.likesCount || 0;
+        const lB = b.likesCount || 0;
+        const cA = a.commentsCount || 0;
+        const cB = b.commentsCount || 0;
+        const scoreA = freshA + (vA + lA * 3 + cA * 4) / Math.pow(ageHoursA + 2, 1.25);
+        const scoreB = freshB + (vB + lB * 3 + cB * 4) / Math.pow(ageHoursB + 2, 1.25);
         if (Math.abs(scoreB - scoreA) > 0.001) return scoreB - scoreA;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
@@ -207,12 +262,36 @@ articlesRouter.get('/', (req: AuthenticatedRequest, res: Response) => {
   const startIndex = (page - 1) * limit;
   const paginatedList = list.slice(startIndex, startIndex + limit);
 
-  // Enrich with user's like/bookmark status
+  // Enrich with user's like/bookmark status, author details and media house
   const enriched = paginatedList.map((art) => {
     const isLiked = req.user ? data.likes.some((l) => l.userId === req.user!.id && l.articleId === art.id) : false;
     const isBookmarked = req.user ? data.bookmarks.some((b) => b.userId === req.user!.id && b.articleId === art.id) : false;
+
+    const authorUser = art.authorId ? (data.users || []).find((u) => u.id === art.authorId) : null;
+    const resolvedAuthorName = art.authorName || authorUser?.name || 'Rédaction';
+    const resolvedAuthorAvatar = art.authorAvatar || authorUser?.avatar;
+
+    let resolvedMediaName = art.mediaName || authorUser?.mediaName;
+    let resolvedMediaId = art.mediaId;
+    if (!resolvedMediaName && art.authorId) {
+      const house = (data.mediaHouses || []).find(
+        (h) => (art.mediaId && h.id === art.mediaId) || h.ownerId === art.authorId || (Array.isArray(h.members) && h.members.includes(art.authorId))
+      );
+      if (house) {
+        resolvedMediaName = house.name;
+        if (!resolvedMediaId) resolvedMediaId = house.id;
+      }
+    }
+
     return {
       ...art,
+      authorName: resolvedAuthorName,
+      authorAvatar: resolvedAuthorAvatar,
+      mediaName: resolvedMediaName,
+      mediaId: resolvedMediaId,
+      viewsCount: art.viewsCount ?? 0,
+      likesCount: art.likesCount ?? 0,
+      commentsCount: art.commentsCount ?? 0,
       isLiked,
       isBookmarked,
     };
@@ -277,7 +356,7 @@ articlesRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
   );
 
   if (!recentView) {
-    article.viewsCount += 1;
+    article.viewsCount = (article.viewsCount || 0) + 1;
     data.views.push({
       id: `vw_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       articleId: article.id,
@@ -292,9 +371,32 @@ articlesRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
   const isLiked = req.user ? data.likes.some((l) => l.userId === req.user!.id && l.articleId === article.id) : false;
   const isBookmarked = req.user ? data.bookmarks.some((b) => b.userId === req.user!.id && b.articleId === article.id) : false;
 
+  const authorUser = article.authorId ? (data.users || []).find((u) => u.id === article.authorId) : null;
+  const resolvedAuthorName = article.authorName || authorUser?.name || 'Rédaction';
+  const resolvedAuthorAvatar = article.authorAvatar || authorUser?.avatar;
+
+  let resolvedMediaName = article.mediaName || authorUser?.mediaName;
+  let resolvedMediaId = article.mediaId;
+  if (!resolvedMediaName && article.authorId) {
+    const house = (data.mediaHouses || []).find(
+      (h) => (article.mediaId && h.id === article.mediaId) || h.ownerId === article.authorId || (Array.isArray(h.members) && h.members.includes(article.authorId))
+    );
+    if (house) {
+      resolvedMediaName = house.name;
+      if (!resolvedMediaId) resolvedMediaId = house.id;
+    }
+  }
+
   return res.json({
     article: {
       ...article,
+      authorName: resolvedAuthorName,
+      authorAvatar: resolvedAuthorAvatar,
+      mediaName: resolvedMediaName,
+      mediaId: resolvedMediaId,
+      viewsCount: article.viewsCount ?? 0,
+      likesCount: article.likesCount ?? 0,
+      commentsCount: article.commentsCount ?? 0,
       isLiked,
       isBookmarked,
     },
@@ -366,8 +468,8 @@ articlesRouter.post(
       mediaName: user.mediaName,
       categoryId: targetCategory.id,
       categoryName: targetCategory.name,
-      coverImage: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1000&auto=format&fit=crop&q=80',
-      images: ['https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1000&auto=format&fit=crop&q=80'],
+      coverImage: '/assets/images/manga_poll_banner.jpg',
+      images: ['/assets/images/manga_poll_banner.jpg'],
       tags: ['sondage', 'opinion', 'citoyen', targetCategory.name.toLowerCase()],
       status: 'published',
       likesCount: 0,
