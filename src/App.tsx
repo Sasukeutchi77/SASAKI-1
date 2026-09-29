@@ -296,8 +296,8 @@ export function AppContent() {
         </div>
       )}
 
-      {/* Main Content Area */}
-      <div className="flex-1 w-full max-w-full" key={feedRefreshKey}>
+      {/* Main Content Area with smooth transition */}
+      <div className="flex-1 w-full max-w-full animate-in fade-in duration-150">
         {currentView === 'search' ? (
           <SearchPage
             initialQuery={searchQuery}

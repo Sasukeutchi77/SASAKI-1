@@ -19,6 +19,10 @@ import {
   ArrowRight,
   RefreshCw,
   SlidersHorizontal,
+  HelpCircle,
+  RotateCcw,
+  Lightbulb,
+  Tag,
 } from 'lucide-react';
 import { VerifiedBadge } from '../components/VerifiedBadge';
 import { Article, Category, User, UserRole } from '../types';
@@ -53,6 +57,232 @@ interface MediaItem {
   followersCount: number;
   isFollowing: boolean;
 }
+
+const SUGGESTED_SEARCH_TERMS = [
+  'Purgeur',
+  'Décret n°44',
+  'Arène Centrale',
+  'Sasuke Uchiha',
+  'Sasaki',
+  'Sanctuaires',
+  'Sommet des Clans',
+  'Duel des Maîtres',
+  'Sondage',
+];
+
+interface SearchEmptyFilterStateProps {
+  query: string;
+  selectedCategory: string;
+  selectedTagFilter: string;
+  dateRange: string;
+  categories: Category[];
+  customTitle?: string;
+  customDescription?: string;
+  onSelectTerm: (term: string) => void;
+  onSelectCategory: (catSlug: string) => void;
+  onClearCategory: () => void;
+  onClearTag: () => void;
+  onClearDate: () => void;
+  onClearQuery: () => void;
+  onResetAll: () => void;
+}
+
+const SearchEmptyFilterState: React.FC<SearchEmptyFilterStateProps> = ({
+  query,
+  selectedCategory,
+  selectedTagFilter,
+  dateRange,
+  categories,
+  customTitle,
+  customDescription,
+  onSelectTerm,
+  onSelectCategory,
+  onClearCategory,
+  onClearTag,
+  onClearDate,
+  onClearQuery,
+  onResetAll,
+}) => {
+  const currentCategoryObj = categories.find(
+    (c) => c.slug === selectedCategory || c.id === selectedCategory
+  );
+
+  const hasFilterActive =
+    (selectedCategory && selectedCategory !== 'all') ||
+    !!selectedTagFilter ||
+    (dateRange && dateRange !== 'all');
+
+  const dateLabels: Record<string, string> = {
+    today: 'Dernières 24h',
+    week: 'Cette semaine (7 jours)',
+    month: 'Ce mois-ci',
+    year: 'Cette année',
+  };
+
+  return (
+    <div className="bg-[#0a0f24] rounded-2xl border border-cyan-500/30 p-6 sm:p-10 text-center max-w-2xl mx-auto shadow-[0_0_40px_rgba(0,210,255,0.08)] animate-in fade-in duration-300">
+      <div className="w-16 h-16 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 mx-auto flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(0,210,255,0.25)]">
+        <HelpCircle className="w-8 h-8 text-cyan-400 stroke-[2]" />
+      </div>
+
+      <h3 className="text-lg sm:text-xl font-black text-white mb-2 font-mono">
+        {customTitle ||
+          (hasFilterActive
+            ? 'Aucun contenu ne correspond à cette combinaison de filtres'
+            : query
+            ? `Aucun résultat pour « ${query} »`
+            : 'Aucun contenu trouvé')}
+      </h3>
+
+      <p className="text-xs sm:text-sm text-blue-200/70 max-w-lg mx-auto mb-6 leading-relaxed">
+        {customDescription ||
+          (hasFilterActive
+            ? 'Vos filtres actuels restreignent fortement les articles disponibles. Retirez un ou plusieurs critères pour élargir votre recherche, ou essayez l’une des suggestions populaires ci-dessous.'
+            : 'Vérifiez l’orthographe de votre recherche ou cliquez directement sur l’un des thèmes et rubriques suggérés pour découvrir les articles publiés.')}
+      </p>
+
+      {/* Active criteria chips with 1-click removal */}
+      {(hasFilterActive || query) && (
+        <div className="mb-6 p-3 sm:p-4 rounded-xl bg-[#040817] border border-blue-500/30 text-left">
+          <div className="text-[11px] font-bold font-mono text-cyan-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <Filter className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Critères actuellement appliqués :</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {query && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-blue-600/20 text-cyan-200 border border-blue-400/40 shadow-xs">
+                <span>Mot-clé : « {query} »</span>
+                <button
+                  type="button"
+                  onClick={onClearQuery}
+                  className="hover:text-white p-0.5 rounded cursor-pointer"
+                  title="Supprimer ce mot-clé"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            )}
+            {selectedCategory && selectedCategory !== 'all' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-400/40 shadow-xs">
+                <span>Rubrique : {currentCategoryObj?.name || selectedCategory}</span>
+                <button
+                  type="button"
+                  onClick={onClearCategory}
+                  className="hover:text-white p-0.5 rounded cursor-pointer"
+                  title="Retirer le filtre de rubrique"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            )}
+            {selectedTagFilter && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-purple-950/70 text-purple-200 border border-purple-400/40 shadow-xs">
+                <span>Tag : #{selectedTagFilter}</span>
+                <button
+                  type="button"
+                  onClick={onClearTag}
+                  className="hover:text-white p-0.5 rounded cursor-pointer"
+                  title="Retirer ce tag"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            )}
+            {dateRange && dateRange !== 'all' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-950/70 text-emerald-200 border border-emerald-400/40 shadow-xs">
+                <span>Date : {dateLabels[dateRange] || dateRange}</span>
+                <button
+                  type="button"
+                  onClick={onClearDate}
+                  className="hover:text-white p-0.5 rounded cursor-pointer"
+                  title="Retirer ce filtre de date"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Suggested search terms */}
+      <div className="mb-6 text-left">
+        <div className="text-[11px] font-bold font-mono text-cyan-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+          <Lightbulb className="w-3.5 h-3.5 text-yellow-400" />
+          <span>Suggestions de termes recommandés :</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {SUGGESTED_SEARCH_TERMS.map((term) => (
+            <button
+              key={term}
+              type="button"
+              onClick={() => onSelectTerm(term)}
+              className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-cyan-200 bg-[#070e24] hover:bg-blue-600/30 border border-blue-500/35 hover:border-cyan-400 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-[0_0_10px_rgba(0,210,255,0.1)]"
+            >
+              <Search className="w-3 h-3 text-cyan-400" />
+              <span>{term}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Direct category alternatives */}
+      {categories && categories.length > 0 && (
+        <div className="mb-7 text-left">
+          <div className="text-[11px] font-bold font-mono text-cyan-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Explorer par rubrique disponible :</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onSelectCategory(c.slug || c.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 border ${
+                  selectedCategory === c.slug || selectedCategory === c.id
+                    ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400 shadow-[0_0_12px_rgba(0,210,255,0.25)]'
+                    : 'bg-[#070e24] hover:bg-[#0c163a] text-blue-200/80 border-blue-500/30 hover:border-cyan-400/50'
+                }`}
+              >
+                <span>{c.name}</span>
+                {c.articleCount !== undefined && (
+                  <span className="text-[10px] text-cyan-400/70 font-mono">({c.articleCount})</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Action Buttons */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        {hasFilterActive && (
+          <button
+            type="button"
+            onClick={() => {
+              onClearCategory();
+              onClearTag();
+              onClearDate();
+            }}
+            className="w-full sm:w-auto px-5 py-2.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-400/40 text-cyan-200 rounded-xl font-bold font-mono text-xs transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>Effacer les filtres uniquement</span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onResetAll}
+          className="w-full sm:w-auto py-2.5 px-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black font-mono text-xs rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Réinitialiser tous les critères</span>
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const SearchPage: React.FC<SearchPageProps> = ({
   initialQuery = '',
@@ -930,28 +1160,40 @@ export const SearchPage: React.FC<SearchPageProps> = ({
 
             {/* If No results across everything */}
             {articlesTotal === 0 && journalistsTotal === 0 && mediaTotal === 0 && categoryTotal === 0 && tagsTotal === 0 && (
-              <div className="bg-white rounded-2xl border border-stone-200 p-12 text-center max-w-lg mx-auto shadow-xs">
-                <div className="w-16 h-16 rounded-full bg-stone-100 text-stone-400 mx-auto flex items-center justify-center mb-4">
-                  <Search className="w-8 h-8" />
-                </div>
-                <h3 className="text-lg font-bold text-stone-900 mb-1">Aucun résultat trouvé</h3>
-                <p className="text-sm text-stone-500 mb-6">
-                  Nous n'avons trouvé aucun contenu correspondant à vos critères. Essayez avec d'autres mots-clés ou supprimez vos filtres.
-                </p>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      setQuery('');
-                      setSelectedCategory('all');
-                      setSelectedTagFilter('');
-                      setDateRange('all');
-                    }}
-                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition-colors"
-                  >
-                    Effacer tous les critères
-                  </button>
-                </div>
-              </div>
+              <SearchEmptyFilterState
+                query={query}
+                selectedCategory={selectedCategory}
+                selectedTagFilter={selectedTagFilter}
+                dateRange={dateRange}
+                categories={categories}
+                onSelectTerm={(term) => {
+                  setQuery(term);
+                  setSelectedCategory('all');
+                  setSelectedTagFilter('');
+                }}
+                onSelectCategory={(slug) => {
+                  setSelectedCategory(slug);
+                  if (onSelectCategory) onSelectCategory(slug);
+                }}
+                onClearCategory={() => {
+                  setSelectedCategory('all');
+                  if (onSelectCategory) onSelectCategory(null);
+                }}
+                onClearTag={() => {
+                  setSelectedTagFilter('');
+                  if (onSelectTag) onSelectTag('');
+                }}
+                onClearDate={() => setDateRange('all')}
+                onClearQuery={() => setQuery('')}
+                onResetAll={() => {
+                  setQuery('');
+                  setSelectedCategory('all');
+                  setSelectedTagFilter('');
+                  setDateRange('all');
+                  if (onSelectCategory) onSelectCategory(null);
+                  if (onSelectTag) onSelectTag('');
+                }}
+              />
             )}
 
             {/* TAB: TOUS (MIXED HIGHLIGHTS VIEW) */}
@@ -1207,9 +1449,42 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             {activeTab === 'articles' && (
               <div className="space-y-6">
                 {articles.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center text-stone-500">
-                    Aucun article ne correspond à ces filtres.
-                  </div>
+                  <SearchEmptyFilterState
+                    query={query}
+                    selectedCategory={selectedCategory}
+                    selectedTagFilter={selectedTagFilter}
+                    dateRange={dateRange}
+                    categories={categories}
+                    customTitle="Aucun article ne correspond à vos filtres actuels"
+                    customDescription="Aucune publication ne correspond à la combinaison actuelle de votre recherche et de vos critères de rubrique ou de date. Modifiez vos filtres ou testez l'un des termes suggérés ci-dessous."
+                    onSelectTerm={(term) => {
+                      setQuery(term);
+                      setSelectedCategory('all');
+                      setSelectedTagFilter('');
+                    }}
+                    onSelectCategory={(slug) => {
+                      setSelectedCategory(slug);
+                      if (onSelectCategory) onSelectCategory(slug);
+                    }}
+                    onClearCategory={() => {
+                      setSelectedCategory('all');
+                      if (onSelectCategory) onSelectCategory(null);
+                    }}
+                    onClearTag={() => {
+                      setSelectedTagFilter('');
+                      if (onSelectTag) onSelectTag('');
+                    }}
+                    onClearDate={() => setDateRange('all')}
+                    onClearQuery={() => setQuery('')}
+                    onResetAll={() => {
+                      setQuery('');
+                      setSelectedCategory('all');
+                      setSelectedTagFilter('');
+                      setDateRange('all');
+                      if (onSelectCategory) onSelectCategory(null);
+                      if (onSelectTag) onSelectTag('');
+                    }}
+                  />
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1256,9 +1531,42 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             {activeTab === 'journalists' && (
               <div className="space-y-6">
                 {journalists.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center text-stone-500">
-                    Aucun journaliste trouvé pour « {query} ».
-                  </div>
+                  <SearchEmptyFilterState
+                    query={query}
+                    selectedCategory={selectedCategory}
+                    selectedTagFilter={selectedTagFilter}
+                    dateRange={dateRange}
+                    categories={categories}
+                    customTitle={`Aucun journaliste trouvé pour « ${query || 'votre recherche'} »`}
+                    customDescription="Aucun correspondant ou journaliste accrédité ne correspond exactement à ces critères. Essayez avec un pseudonyme comme « Lord », « Minato » ou « Itachi »."
+                    onSelectTerm={(term) => {
+                      setQuery(term);
+                      setSelectedCategory('all');
+                      setSelectedTagFilter('');
+                    }}
+                    onSelectCategory={(slug) => {
+                      setSelectedCategory(slug);
+                      if (onSelectCategory) onSelectCategory(slug);
+                    }}
+                    onClearCategory={() => {
+                      setSelectedCategory('all');
+                      if (onSelectCategory) onSelectCategory(null);
+                    }}
+                    onClearTag={() => {
+                      setSelectedTagFilter('');
+                      if (onSelectTag) onSelectTag('');
+                    }}
+                    onClearDate={() => setDateRange('all')}
+                    onClearQuery={() => setQuery('')}
+                    onResetAll={() => {
+                      setQuery('');
+                      setSelectedCategory('all');
+                      setSelectedTagFilter('');
+                      setDateRange('all');
+                      if (onSelectCategory) onSelectCategory(null);
+                      if (onSelectTag) onSelectTag('');
+                    }}
+                  />
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {journalists.map((j) => (
@@ -1323,9 +1631,42 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             {activeTab === 'media' && (
               <div className="space-y-6">
                 {mediaList.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center text-stone-500">
-                    Aucun média ou organe de presse trouvé pour « {query} ».
-                  </div>
+                  <SearchEmptyFilterState
+                    query={query}
+                    selectedCategory={selectedCategory}
+                    selectedTagFilter={selectedTagFilter}
+                    dateRange={dateRange}
+                    categories={categories}
+                    customTitle={`Aucune maison de presse trouvée pour « ${query || 'votre recherche'} »`}
+                    customDescription="Aucun organe ou collectif de presse ne correspond à cette recherche. Essayez avec « SASAKI » ou explorez les maisons certifiées de la communauté."
+                    onSelectTerm={(term) => {
+                      setQuery(term);
+                      setSelectedCategory('all');
+                      setSelectedTagFilter('');
+                    }}
+                    onSelectCategory={(slug) => {
+                      setSelectedCategory(slug);
+                      if (onSelectCategory) onSelectCategory(slug);
+                    }}
+                    onClearCategory={() => {
+                      setSelectedCategory('all');
+                      if (onSelectCategory) onSelectCategory(null);
+                    }}
+                    onClearTag={() => {
+                      setSelectedTagFilter('');
+                      if (onSelectTag) onSelectTag('');
+                    }}
+                    onClearDate={() => setDateRange('all')}
+                    onClearQuery={() => setQuery('')}
+                    onResetAll={() => {
+                      setQuery('');
+                      setSelectedCategory('all');
+                      setSelectedTagFilter('');
+                      setDateRange('all');
+                      if (onSelectCategory) onSelectCategory(null);
+                      if (onSelectTag) onSelectTag('');
+                    }}
+                  />
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {mediaList.map((m) => (

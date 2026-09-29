@@ -148,47 +148,62 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  useEffect(() => {
+    if (initialArticle && initialArticle.id === articleId) {
+      setArticle(initialArticle);
+      setLoading(false);
+      setIsLiked(likesStorage.isLiked(articleId) || !!initialArticle.isLiked);
+      setLikesCount(initialArticle.likesCount ?? 0);
+      setIsBookmarked(bookmarksStorage.isBookmarked(articleId) || !!initialArticle.isBookmarked);
+    }
+    loadData();
+  }, [articleId]);
+
   // Fetch article details & comments
   const loadData = async () => {
     try {
-      setLoading(true);
+      if (!article && !(initialArticle && initialArticle.id === articleId)) {
+        setLoading(true);
+      }
       const artRes = await api.getArticle(articleId);
-      setArticle(artRes.article);
-      setIsLiked(likesStorage.isLiked(artRes.article.id) || !!artRes.article.isLiked);
-      setLikesCount(artRes.article.likesCount ?? 0);
-      setIsBookmarked(bookmarksStorage.isBookmarked(artRes.article.id) || !!artRes.article.isBookmarked);
+      if (artRes && artRes.article) {
+        setArticle(artRes.article);
+        setIsLiked(likesStorage.isLiked(artRes.article.id) || !!artRes.article.isLiked);
+        setLikesCount(artRes.article.likesCount ?? 0);
+        setIsBookmarked(bookmarksStorage.isBookmarked(artRes.article.id) || !!artRes.article.isBookmarked);
 
-      // Fetch author profile to get accurate follow state
-      try {
-        const authorProfile = await api.getUserProfile(artRes.article.authorId);
-        setIsFollowingAuthor(!!authorProfile.user.isFollowing);
-        setFollowersCount(authorProfile.user.followersCount || 0);
-      } catch {
-        // Ignored
+        // Fetch author profile to get accurate follow state
+        try {
+          const authorProfile = await api.getUserProfile(artRes.article.authorId);
+          setIsFollowingAuthor(!!authorProfile.user.isFollowing);
+          setFollowersCount(authorProfile.user.followersCount || 0);
+        } catch {
+          // Ignored
+        }
+
+        // Fetch related recommendations in the same category
+        if (artRes.article?.categoryId) {
+          api.getArticles({ category: artRes.article.categoryId, limit: 4 })
+            .then((rel) => {
+              setRelatedArticles((rel.articles || []).filter((a) => a.id !== articleId).slice(0, 3));
+            })
+            .catch(() => {});
+        }
       }
 
       // Fetch comments
-      const commRes = await api.getComments(articleId);
-      setComments(commRes.comments);
-
-      // Fetch related recommendations in the same category
-      if (artRes.article?.categoryId) {
-        api.getArticles({ category: artRes.article.categoryId, limit: 4 })
-          .then((rel) => {
-            setRelatedArticles((rel.articles || []).filter((a) => a.id !== articleId).slice(0, 3));
-          })
-          .catch(() => {});
-      }
+      try {
+        const commRes = await api.getComments(articleId);
+        if (commRes && commRes.comments) {
+          setComments(commRes.comments);
+        }
+      } catch {}
     } catch (err) {
       console.error('Failed to load article:', err);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, [articleId]);
 
   // Real-time synchronization for comments, likes, views and article edits
   useEffect(() => {
@@ -668,9 +683,37 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
         </div>
 
         {loading || !article ? (
-          <div className="p-16 text-center text-cyan-400">
-            <div className="w-8 h-8 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4 shadow-[0_0_10px_rgba(0,243,255,0.8)]" />
-            <p className="font-mono text-sm">Chargement de l'article...</p>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 animate-pulse">
+            <div className="space-y-3">
+              <div className="h-4 w-28 bg-blue-900/40 rounded-full border border-cyan-500/20" />
+              <div className="h-8 sm:h-12 w-11/12 bg-blue-950/60 rounded-xl border border-cyan-500/20" />
+              <div className="h-8 sm:h-12 w-3/4 bg-blue-950/50 rounded-xl border border-cyan-500/20" />
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#0b142c]/60 border border-blue-500/20 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-cyan-950/60 border border-cyan-500/30" />
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-cyan-900/40 rounded" />
+                  <div className="h-3 w-20 bg-blue-900/30 rounded" />
+                </div>
+              </div>
+              <div className="h-8 w-24 bg-cyan-950/40 rounded-xl border border-cyan-500/20" />
+            </div>
+
+            <div className="aspect-[16/9] w-full rounded-2xl bg-gradient-to-tr from-[#060a1e] to-[#0d1738] border border-blue-500/30 flex items-center justify-center">
+              <div className="flex items-center gap-2 text-xs font-mono text-cyan-400/70">
+                <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                <span>Chargement de la publication...</span>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <div className="h-4 w-full bg-blue-950/40 rounded" />
+              <div className="h-4 w-full bg-blue-950/40 rounded" />
+              <div className="h-4 w-5/6 bg-blue-950/40 rounded" />
+              <div className="h-4 w-4/6 bg-blue-950/40 rounded" />
+            </div>
           </div>
         ) : (
           <div

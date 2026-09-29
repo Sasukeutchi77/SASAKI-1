@@ -90,11 +90,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
         await loginWithEmail(email.trim(), password);
         onClose();
       } catch (err: any) {
-        // Prevent any event propagation or form auto-navigation
+        // Retain user strictly on the login modal without auto-navigation
         const formattedErr = formatAuthErrorMessage(err);
         setError(formattedErr);
-        // Clear password on failed login to prevent browser password manager from prompting to save invalid credentials
+        // Clear password immediately so password managers do not capture invalid credentials
         setPassword('');
+        try {
+          if (window.navigator && 'credentials' in window.navigator && window.navigator.credentials.preventSilentAccess) {
+            window.navigator.credentials.preventSilentAccess();
+          }
+          (document.activeElement as HTMLElement)?.blur?.();
+        } catch {}
       } finally {
         setLoading(false);
       }
@@ -276,6 +282,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
             onSubmit={handleSubmit} 
             className="space-y-3.5"
             noValidate
+            autoComplete="off"
+            data-lpignore="true"
           >
             {mode === 'register' && (
               <div>
@@ -287,7 +295,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   <input
                     type="text"
                     required
-                    autoComplete="name"
+                    autoComplete="off"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ex: Clara Dupont"
@@ -306,7 +314,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                 <input
                   type="email"
                   required
-                  autoComplete="username email"
+                  autoComplete="off"
+                  data-lpignore="true"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre.email@exemple.bf"
@@ -336,7 +345,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    autoComplete="new-password"
+                    data-lpignore="true"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Au moins 6 caractères"

@@ -34,17 +34,15 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'levels' | 'charter' | 'moderation' | 'difference'>('levels');
 
-  const handleClose = (e?: React.MouseEvent | React.KeyboardEvent) => {
+  const handleClose = (e?: React.SyntheticEvent | Event) => {
     if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+      if ('preventDefault' in e) e.preventDefault();
+      if ('stopPropagation' in e) e.stopPropagation();
     }
     onClose();
-    setTimeout(() => {
-      try {
-        sfx.playMechanicalClick();
-      } catch {}
-    }, 0);
+    try {
+      sfx.playMechanicalClick();
+    } catch {}
   };
 
   useEffect(() => {
@@ -77,8 +75,13 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
             <button
               id="trust-modal-back-btn-header"
               type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClose(e);
+              }}
               onClick={handleClose}
-              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 shadow-[0_0_12px_rgba(0,243,255,0.25)]"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 shadow-[0_0_12px_rgba(0,243,255,0.25)] touch-manipulation select-none"
               title="Retourner à l'application"
             >
               <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
@@ -104,8 +107,13 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
 
           <button
             type="button"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleClose(e);
+            }}
             onClick={handleClose}
-            className="p-2 rounded-xl text-cyan-400/60 hover:text-white hover:bg-cyan-500/20 transition-all cursor-pointer shrink-0 active:scale-95"
+            className="p-2 rounded-xl text-cyan-400/60 hover:text-white hover:bg-cyan-500/20 transition-all cursor-pointer shrink-0 active:scale-95 touch-manipulation select-none"
             title="Fermer la charte"
           >
             <X className="w-5 h-5" />
@@ -485,6 +493,24 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
                     <span><strong>Indépendance :</strong> Refuser toute pression, rétribution occulte ou conflit d'intérêts incompatible avec la mission d'informer.</span>
                   </div>
                 </div>
+
+                <div className="pt-3 border-t border-cyan-500/15 flex items-center justify-between">
+                  <span className="text-[11px] text-cyan-400/80 font-mono">Approuvée par l'ensemble des rédactions</span>
+                  <button
+                    id="charter-inline-back-btn"
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleClose(e);
+                    }}
+                    onClick={handleClose}
+                    className="px-4 py-2 rounded-xl text-xs font-bold font-mono text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-[0_0_12px_rgba(0,243,255,0.2)] touch-manipulation select-none"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Retour</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -501,21 +527,30 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             {onOpenMediaHouses && (
               <button
-                onClick={() => {
-                  handleClose();
+                type="button"
+                onClick={(e) => {
+                  handleClose(e);
                   onOpenMediaHouses();
                 }}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-cyan-300 bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/30 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-cyan-300 bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/30 transition-all cursor-pointer active:scale-95 touch-manipulation"
               >
                 Explorer les Maisons de Presse
               </button>
             )}
 
             <button
+              id="trust-modal-footer-back-btn"
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClose(e);
+              }}
               onClick={handleClose}
-              className="px-5 py-2 rounded-xl text-xs font-bold font-mono text-black bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all cursor-pointer"
+              className="px-5 py-2.5 rounded-xl text-xs font-black font-mono text-black bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all cursor-pointer active:scale-95 flex items-center gap-2 touch-manipulation select-none"
             >
-              Compris
+              <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Retour à la lecture</span>
             </button>
           </div>
         </div>
