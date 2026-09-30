@@ -29,6 +29,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { MediaUploader } from './media/MediaUploader';
 import { VideoPlayer } from './media/VideoPlayer';
+import { getHarmonizedImageClass } from '../utils/imageHarmonizer';
 
 interface CreateArticleModalProps {
   categories: Category[];
@@ -580,7 +581,7 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
                     <img
                       src={item.url}
                       alt={item.altText || `Photo ${idx + 1}`}
-                      className="w-20 h-20 object-cover rounded-lg shrink-0 border border-cyan-500/40"
+                      className={getHarmonizedImageClass(item.url, "w-20 h-20 object-cover rounded-lg shrink-0 border border-cyan-500/40")}
                     />
 
                     <div className="flex-1 w-full space-y-2">

@@ -31,6 +31,7 @@ import { searchHistory } from '../services/searchHistory';
 import { ArticleCard } from '../components/ArticleCard';
 import { useAuth } from '../context/AuthContext';
 import { realtime } from '../services/realtime';
+import { getHarmonizedImageClass } from '../utils/imageHarmonizer';
 
 interface SearchPageProps {
   initialQuery?: string;
@@ -730,7 +731,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                             <img
                               src={art.coverImage}
                               alt=""
-                              className="w-8 h-8 rounded-md object-cover shrink-0"
+                              className={getHarmonizedImageClass(art.coverImage, "w-8 h-8 rounded-md object-cover shrink-0")}
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold text-stone-900 truncate group-hover:text-emerald-700">

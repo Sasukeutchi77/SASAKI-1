@@ -9,9 +9,11 @@ import {
   AlertCircle,
   Eye,
   FileText,
+  Sparkles,
 } from 'lucide-react';
 import { CloudinaryMedia, MediaUsageType } from '../../types';
 import { uploadMediaToCloudinary, validateMediaFile, getOptimizedImageUrl } from '../../services/cloudinary';
+import { isRealPhotoImage, getHarmonizedImageClass } from '../../utils/imageHarmonizer';
 
 export interface MediaUploaderProps {
   type?: 'image' | 'video';
@@ -230,8 +232,16 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               <img
                 src={getOptimizedImageUrl(previewUrl, { quality: 'auto', format: 'auto' })}
                 alt={altText || 'Aperçu du média'}
-                className="w-full h-full object-cover"
+                className={getHarmonizedImageClass(previewUrl, "w-full h-full object-cover")}
               />
+            )}
+
+            {/* Indicator badge if real photo harmonization filter is active */}
+            {type === 'image' && isRealPhotoImage(previewUrl) && (
+              <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-cyan-950/90 border border-cyan-400/50 backdrop-blur-xs text-[10px] font-mono font-bold text-cyan-300 flex items-center gap-1 shadow-md z-10">
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+                <span>Filtre Manga Sépia / N&B actif</span>
+              </div>
             )}
 
             {/* Hover overlay with action buttons */}

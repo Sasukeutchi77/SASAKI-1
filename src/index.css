@@ -254,3 +254,38 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* =========================================================================
+   MANGA & ANIME HARMONIZATION FILTER FOR REAL PHOTOS
+   ========================================================================= */
+
+/* Adjusted grayscale and sepia filter that harmonizes real photos
+   with the high-contrast anime/manga cyberpunk aesthetic */
+.manga-real-photo-filter {
+  filter: grayscale(42%) sepia(24%) contrast(126%) brightness(93%);
+  transition: filter 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s ease;
+}
+
+.group:hover .manga-real-photo-filter,
+.manga-real-photo-filter:hover {
+  filter: grayscale(28%) sepia(16%) contrast(130%) brightness(98%);
+}
+
+/* Subtle manga halftone/vignette container overlay to ground photos into cyber aesthetic */
+.manga-photo-frame {
+  position: relative;
+  overflow: hidden;
+}
+
+.manga-photo-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at center, transparent 40%, rgba(4, 8, 23, 0.42) 100%),
+    linear-gradient(180deg, rgba(0, 210, 255, 0.05) 0%, transparent 60%, rgba(4, 8, 23, 0.5) 100%);
+  mix-blend-mode: multiply;
+  transition: opacity 0.3s ease;
+}
+

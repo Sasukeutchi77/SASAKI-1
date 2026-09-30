@@ -16,21 +16,21 @@ export interface PickImageResult {
 }
 
 export const AVATAR_PRESETS = [
-  { id: 'av1', label: 'Journaliste Investigation', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80' },
-  { id: 'av2', label: 'Rédacteur Politique', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80' },
-  { id: 'av3', label: 'Correspondante Afrique', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80' },
-  { id: 'av4', label: 'Analyste Économie', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80' },
-  { id: 'av5', label: 'Chroniqueuse Société', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80' },
-  { id: 'av6', label: 'Grand Reporter', url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80' },
+  { id: 'av1', label: 'Sasuke Uchiha (Shinobi)', url: '/assets/images/anime_sasuke_avatar.jpg' },
+  { id: 'av2', label: 'Minato Namikaze (Éclair Jaune)', url: '/assets/images/anime_minato_avatar.jpg' },
+  { id: 'av3', label: 'Itachi Uchiha (Maître des Ombres)', url: '/assets/images/anime_itachi_avatar.jpg' },
+  { id: 'av4', label: 'Seigneur Purgeur (Cyberpunk)', url: '/assets/images/anime_lord_purgeur.jpg' },
+  { id: 'av5', label: 'Purgeur d’Élite (Armure)', url: '/assets/images/anime_elite_purgeur_training.jpg' },
+  { id: 'av6', label: 'Correspondant SASAKI', url: '/assets/images/purge_app_logo_1789222395660.jpg' },
 ];
 
 export const ARTICLE_COVER_PRESETS = [
-  { id: 'cov1', label: 'Investigation & Dossiers', url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'cov2', label: 'Politique & Gouvernance', url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'cov3', label: 'Économie & Marchés', url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'cov4', label: 'Sécurité & Géopolitique', url: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'cov5', label: 'Société & Droits Citoyens', url: 'https://images.unsplash.com/photo-1494178270175-e96de2971df9?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'cov6', label: 'Technologie & Numérique', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80' },
+  { id: 'cov1', label: 'Décrets Officiels & Sanctuaires', url: '/assets/images/anime_decree_cover.jpg' },
+  { id: 'cov2', label: 'Arène Centrale & Duels des Maîtres', url: '/assets/images/anime_arena_cover.jpg' },
+  { id: 'cov3', label: 'Seigneurs Purgeurs (Haute Sécurité)', url: '/assets/images/anime_lord_purgeur.jpg' },
+  { id: 'cov4', label: 'Le Sommet des Sept Clans (Pacte)', url: '/assets/images/anime_clans_sombre_pacte.jpg' },
+  { id: 'cov5', label: 'Entraînement des Purgeurs d’Élite', url: '/assets/images/anime_elite_purgeur_training.jpg' },
+  { id: 'cov6', label: 'Consultation & Sondage Citoyen', url: '/assets/images/manga_poll_banner.jpg' },
 ];
 
 export async function requestMediaPermissions(): Promise<boolean> {

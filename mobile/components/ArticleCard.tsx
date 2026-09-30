@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Article } from '../types';
 import { AppIcon } from './AppIcon';
+import { isRealPhotoImage } from '../utils/imageHarmonizer';
 
 interface ArticleCardProps {
   article: Article;
@@ -24,6 +25,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop&q=80';
   const coverUri = article.coverImage || article.coverMedia?.url || defaultCover;
   const trustScore = article.trustScore || 96;
+  const isReal = isRealPhotoImage(coverUri);
 
   const renderHighlightedText = (text: string, query?: string, isTitle = false) => {
     const q = query?.trim();
@@ -63,7 +65,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       {/* Image de couverture avec Badge Catégorie & Fiabilité */}
       <View style={styles.imageWrapper}>
-        <Image source={{ uri: coverUri }} style={styles.coverImage} resizeMode="cover" />
+        <Image
+          source={{ uri: coverUri }}
+          style={[styles.coverImage, isReal && styles.realPhotoCover]}
+          resizeMode="cover"
+        />
+        {isReal && <View style={styles.mangaPhotoOverlay} pointerEvents="none" />}
         <View style={styles.topBadgesRow}>
           <View style={styles.badgeLeft}>
             {article.categoryName && (
@@ -220,6 +227,13 @@ const styles = StyleSheet.create({
   coverImage: {
     width: '100%',
     height: '100%',
+  },
+  realPhotoCover: {
+    opacity: 0.92,
+  },
+  mangaPhotoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(28, 20, 10, 0.22)',
   },
   topBadgesRow: {
     position: 'absolute',

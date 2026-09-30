@@ -32,6 +32,7 @@ import { sfx } from '../services/soundEffects';
 import { realtime } from '../services/realtime';
 import { bookmarksStorage } from '../services/bookmarksStorage';
 import { likesStorage } from '../services/likesStorage';
+import { isRealPhotoImage, getHarmonizedImageClass, getHarmonizedFrameClass } from '../utils/imageHarmonizer';
 
 interface ArticleDetailModalProps {
   articleId: string;
@@ -819,12 +820,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
             {/* Main Cover Image */}
             {article.coverImage && (
-              <div className="mt-6 rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-800 aspect-[16/9] shadow-sm">
+              <div className={`mt-6 rounded-2xl overflow-hidden bg-slate-900 border border-blue-500/30 aspect-[16/9] shadow-lg ${getHarmonizedFrameClass(article.coverImage)}`}>
                 <img
                   src={getCoverUrl(article.coverImage, 1200, 675)}
                   alt={article.coverImageAlt || article.title}
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
+                  className={getHarmonizedImageClass(article.coverImage, "w-full h-full object-cover")}
                 />
               </div>
             )}
@@ -966,12 +967,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                       className="group cursor-pointer flex sm:flex-col gap-3 p-3 rounded-xl bg-gradient-to-b from-[#0e1936]/80 to-[#050b1c]/95 hover:from-[#122048]/90 hover:to-[#070e24]/98 border border-blue-500/25 hover:border-cyan-400/60 shadow-[0_4px_15px_rgba(0,10,35,0.4)] hover:shadow-[0_8px_25px_rgba(29,104,255,0.25)] transition-all"
                     >
                       {rel.coverImage && (
-                        <div className="w-20 h-20 sm:w-full sm:h-28 rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-blue-500/20">
+                        <div className={`w-20 h-20 sm:w-full sm:h-28 rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-blue-500/20 ${getHarmonizedFrameClass(rel.coverImage)}`}>
                           <img
                             src={getCoverUrl(rel.coverImage, 400, 240)}
                             alt={rel.title}
                             referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className={getHarmonizedImageClass(rel.coverImage, "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300")}
                           />
                         </div>
                       )}

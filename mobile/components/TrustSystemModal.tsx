@@ -33,9 +33,18 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
         <View style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={onClose}
+              activeOpacity={0.6}
+            >
+              <AppIcon name="arrow-back" size={16} color="#06b6d4" />
+              <Text style={styles.backBtnText}>Retour</Text>
+            </TouchableOpacity>
+
             <View style={styles.headerTitleRow}>
               <View style={styles.shieldIconWrapper}>
-                <AppIcon name="shield" size={20} color="#06b6d4" />
+                <AppIcon name="shield" size={18} color="#06b6d4" />
               </View>
               <View style={styles.titleWrapper}>
                 <View style={styles.titleBadgeRow}>
@@ -44,12 +53,12 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
                     <Text style={styles.certifiedText}>CERTIFIÉ</Text>
                   </View>
                 </View>
-                <Text style={styles.subtitle}>
-                  Déontologie, rigueur journalistique & lutte contre les fake news
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  Déontologie, rigueur & intégrité
                 </Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.6}>
               <AppIcon name="close" size={16} color="#94a3b8" />
             </TouchableOpacity>
           </View>
@@ -261,8 +270,8 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
 
           {/* Footer Action */}
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.gotItBtn} onPress={onClose} activeOpacity={0.8}>
-              <Text style={styles.gotItBtnText}>J'AI COMPRIS LA CHARTE</Text>
+            <TouchableOpacity style={styles.gotItBtn} onPress={onClose} activeOpacity={0.6}>
+              <Text style={styles.gotItBtnText}>RETOURNER À L'APPLICATION</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -296,6 +305,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(6, 182, 212, 0.2)',
     backgroundColor: '#0a1028',
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.35)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  backBtnText: {
+    color: '#06b6d4',
+    fontSize: 12,
+    fontWeight: '800',
   },
   headerTitleRow: {
     flexDirection: 'row',

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ArticleMediaItem } from '../../types';
 import { getOptimizedImageUrl, getThumbnailUrl } from '../../services/cloudinary';
+import { getHarmonizedImageClass, getHarmonizedFrameClass } from '../../utils/imageHarmonizer';
 
 export interface PhotoGalleryProps {
   items: (ArticleMediaItem | string)[];
@@ -113,7 +114,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
             <div
               key={item.id || index}
               onClick={() => openLightbox(index)}
-              className="relative group aspect-square bg-neutral-100 dark:bg-neutral-800 overflow-hidden cursor-pointer"
+              className={`relative group aspect-square bg-slate-900 overflow-hidden cursor-pointer ${getHarmonizedFrameClass(item.url)}`}
             >
               <img
                 src={getOptimizedImageUrl(item.url, {
@@ -123,7 +124,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   quality: 'auto',
                 })}
                 alt={item.altText || `Photo ${index + 1}`}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                className={getHarmonizedImageClass(item.url, "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300")}
                 loading="lazy"
               />
 
@@ -196,7 +197,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   quality: 'auto',
                 })}
                 alt={currentItem.altText || `Photo ${activeLightboxIndex + 1}`}
-                className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-2xl"
+                className={getHarmonizedImageClass(currentItem.url, "max-h-[75vh] max-w-full object-contain rounded-lg shadow-2xl")}
               />
             </div>
 

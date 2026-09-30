@@ -17,6 +17,7 @@ import { PollWidget } from '../components/PollWidget';
 import { CommentSection } from '../components/CommentSection';
 import { MediaHouseDetailModal } from '../components/MediaHouseDetailModal';
 import { AppIcon } from '../components/AppIcon';
+import { isRealPhotoImage } from '../utils/imageHarmonizer';
 
 interface ArticleDetailScreenProps {
   article: Article;
@@ -199,6 +200,7 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
     'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop&q=80';
   const coverUri = article.coverImage || article.coverMedia?.url || defaultCover;
   const trustScore = article.trustScore || 98;
+  const isRealPhoto = isRealPhotoImage(coverUri);
   const estimatedReadTime = Math.max(1, Math.ceil((article.content || '').split(/\s+/).length / 180));
 
   return (
@@ -308,7 +310,12 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
       >
         {/* Grande Image de Couverture */}
         <View style={styles.coverWrapper}>
-          <Image source={{ uri: coverUri }} style={styles.coverImage} resizeMode="cover" />
+          <Image
+            source={{ uri: coverUri }}
+            style={[styles.coverImage, isRealPhoto && styles.realPhotoCover]}
+            resizeMode="cover"
+          />
+          {isRealPhoto && <View style={styles.mangaPhotoOverlay} pointerEvents="none" />}
           <View style={styles.badgesOverlay}>
             {article.categoryName && (
               <View style={styles.categoryBadge}>
@@ -717,6 +724,13 @@ const styles = StyleSheet.create({
   coverImage: {
     width: '100%',
     height: '100%',
+  },
+  realPhotoCover: {
+    opacity: 0.92,
+  },
+  mangaPhotoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(28, 20, 10, 0.22)',
   },
   badgesOverlay: {
     position: 'absolute',

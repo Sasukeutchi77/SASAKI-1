@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { VerifiedBadge } from '../components/VerifiedBadge';
 import { RankingsModal } from '../components/RankingsModal';
+import { getHarmonizedImageClass } from '../utils/imageHarmonizer';
 
 interface HomeProps {
   onOpenArticle: (article: Article) => void;
@@ -649,7 +650,10 @@ export const Home: React.FC<HomeProps> = ({
                   src={featuredArticle.coverImage}
                   alt={featuredArticle.title}
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover opacity-55 group-hover:scale-105 transition-transform duration-500"
+                  className={getHarmonizedImageClass(
+                    featuredArticle.coverImage,
+                    "w-full h-full object-cover opacity-55 group-hover:scale-105 transition-transform duration-500"
+                  )}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#07080f] via-[#07080f]/50 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 flex flex-col justify-end">
@@ -696,14 +700,41 @@ export const Home: React.FC<HomeProps> = ({
             {loading ? (
               <ArticleCardSkeleton count={4} />
             ) : articles.length === 0 ? (
-              <div className="p-10 text-center text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 transition-colors">
-                <Filter className="w-10 h-10 mx-auto mb-2 text-stone-300 dark:text-stone-600" />
-                <h3 className="font-bold text-stone-800 dark:text-stone-100 text-sm">Aucun article trouvé</h3>
-                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 max-w-sm mx-auto leading-relaxed">
+              <div className="p-8 sm:p-12 text-center bg-[#0a0f24] rounded-2xl border border-cyan-500/30 shadow-[0_0_30px_rgba(0,210,255,0.08)]">
+                <div className="w-14 h-14 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 mx-auto flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(0,210,255,0.2)]">
+                  <Sparkles className="w-7 h-7 text-cyan-400" />
+                </div>
+                <h3 className="font-black text-white text-base sm:text-lg font-mono">
                   {feedTab === 'following'
-                    ? "Vous n'êtes abonné à aucun journaliste ou média pour le moment. Abonnez-vous à vos sources d'information préférées ci-dessous pour composer votre fil personnalisé !"
-                    : 'Aucune publication ne correspond à vos critères de recherche.'}
+                    ? 'Aucune publication dans vos abonnements'
+                    : 'Aucun article publié pour le moment'}
+                </h3>
+                <p className="text-xs sm:text-sm text-blue-200/70 mt-2 max-w-md mx-auto leading-relaxed">
+                  {feedTab === 'following'
+                    ? "Vous n'êtes abonné à aucun journaliste ou média ayant publié récemment. Découvrez les correspondants certifiés ci-dessous pour composer votre fil d'actualités !"
+                    : 'La plateforme est prête pour les publications des journalistes et rédactions certifiées. Soyez le premier à publier une exclusivité citoyenne !'}
                 </p>
+
+                {user && ['journalist', 'admin'].includes(user.role) ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onOpenCreateArticle) onOpenCreateArticle();
+                    }}
+                    className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs font-mono shadow-[0_0_15px_rgba(0,210,255,0.4)] transition-all cursor-pointer active:scale-95"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Rédiger le premier article</span>
+                  </button>
+                ) : !user ? (
+                  <button
+                    type="button"
+                    onClick={onOpenAuth}
+                    className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-400/40 text-cyan-200 font-bold text-xs font-mono transition-all cursor-pointer active:scale-95"
+                  >
+                    <span>Se connecter pour publier</span>
+                  </button>
+                ) : null}
 
                 {feedTab === 'following' && topJournalists.length > 0 && (
                   <div className="mt-6 max-w-md mx-auto text-left border-t border-stone-100 dark:border-stone-800 pt-4">

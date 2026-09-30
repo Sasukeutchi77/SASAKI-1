@@ -24,6 +24,17 @@ interface SearchScreenProps {
   onUserUpdated?: (user: User) => void;
 }
 
+const SUGGESTED_SEARCH_TERMS = [
+  'Purgeur',
+  'Décret n°44',
+  'Arène Centrale',
+  'Sasuke Uchiha',
+  'Sasaki',
+  'Sanctuaires',
+  'Sommet des Clans',
+  'Duel',
+];
+
 export const SearchScreen: React.FC<SearchScreenProps> = ({
   onSelectArticle,
   currentUser,
@@ -547,26 +558,164 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               <Text style={styles.loadingText}>Recherche en cours...</Text>
             </View>
           ) : hasSearched && filteredResults.length === 0 ? (
-            <View style={styles.centerContainer}>
-              <Text style={styles.noResultsTitle}>Aucun résultat trouvé</Text>
-              <Text style={styles.noResultsSub}>
-                Essayez d'autres critères ou désactivez certains filtres avancés.
+            <ScrollView contentContainerStyle={styles.emptyResultsContainer} showsVerticalScrollIndicator={false}>
+              <View style={styles.emptyIconCircle}>
+                <AppIcon name="help-circle" size={28} color="#00d2ff" />
+              </View>
+
+              <Text style={styles.noResultsTitle}>
+                {selectedCategory || authorFilter || selectedHouseFilter || minTrustScore > 0
+                  ? 'Aucun contenu pour cette sélection de filtres'
+                  : query
+                  ? `Aucun résultat pour « ${query} »`
+                  : 'Aucun contenu trouvé'}
               </Text>
-              <TouchableOpacity
-                style={styles.resetSearchBtn}
-                onPress={() => {
-                  setQuery('');
-                  setSelectedCategory('');
-                  setAuthorFilter('');
-                  setSelectedHouseFilter('');
-                  setMinTrustScore(0);
-                  setResults([]);
-                  setHasSearched(false);
-                }}
-              >
-                <Text style={styles.resetSearchBtnText}>RÉINITIALISER LA RECHERCHE</Text>
-              </TouchableOpacity>
-            </View>
+
+              <Text style={styles.noResultsSub}>
+                {selectedCategory || authorFilter || selectedHouseFilter || minTrustScore > 0
+                  ? 'Vos filtres actuels restreignent fortement les articles disponibles. Retirez un critère ou essayez l’un des termes suggérés ci-dessous.'
+                  : 'Vérifiez l’orthographe de votre recherche ou touchez directement l’un des termes populaires ci-dessous.'}
+              </Text>
+
+              {/* Active criteria chips with 1-touch removal */}
+              {(query || selectedCategory || authorFilter || selectedHouseFilter) ? (
+                <View style={styles.activeCriteriaCard}>
+                  <Text style={styles.activeCriteriaLabel}>CRITÈRES APPLIQUÉS :</Text>
+                  <View style={styles.criteriaChipsRow}>
+                    {query ? (
+                      <View style={styles.criterionChip}>
+                        <Text style={styles.criterionChipText}>« {query} »</Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setQuery('');
+                            handleSearch('', selectedCategory);
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <AppIcon name="close" size={12} color="#00d2ff" style={{ marginLeft: 4 }} />
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+
+                    {selectedCategory ? (
+                      <View style={styles.criterionChip}>
+                        <Text style={styles.criterionChipText}>
+                          {categories.find((c) => c.slug === selectedCategory || c.id === selectedCategory)?.name || selectedCategory}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedCategory('');
+                            handleSearch(query, '');
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <AppIcon name="close" size={12} color="#00d2ff" style={{ marginLeft: 4 }} />
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+
+                    {authorFilter ? (
+                      <View style={styles.criterionChip}>
+                        <Text style={styles.criterionChipText}>Auteur : {authorFilter}</Text>
+                        <TouchableOpacity onPress={() => setAuthorFilter('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <AppIcon name="close" size={12} color="#00d2ff" style={{ marginLeft: 4 }} />
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+
+                    {selectedHouseFilter ? (
+                      <View style={styles.criterionChip}>
+                        <Text style={styles.criterionChipText}>Maison : {selectedHouseFilter}</Text>
+                        <TouchableOpacity onPress={() => setSelectedHouseFilter('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <AppIcon name="close" size={12} color="#00d2ff" style={{ marginLeft: 4 }} />
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Suggestions de termes */}
+              <View style={styles.suggestionsCard}>
+                <View style={styles.suggestionsHeader}>
+                  <AppIcon name="sparkles" size={13} color="#facc15" style={{ marginRight: 6 }} />
+                  <Text style={styles.suggestionsTitle}>TERMES RECOMMANDÉS :</Text>
+                </View>
+                <View style={styles.suggestionsPillsWrap}>
+                  {SUGGESTED_SEARCH_TERMS.map((term) => (
+                    <TouchableOpacity
+                      key={term}
+                      style={styles.suggestionPill}
+                      onPress={() => {
+                        setQuery(term);
+                        setSelectedCategory('');
+                        handleSearch(term, '');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <AppIcon name="search" size={11} color="#00d2ff" style={{ marginRight: 4 }} />
+                      <Text style={styles.suggestionPillText}>{term}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Suggestions de rubriques */}
+              {categories && categories.length > 0 && (
+                <View style={styles.categoriesSuggestionCard}>
+                  <Text style={styles.suggestionsTitle}>EXPLORER PAR RUBRIQUE :</Text>
+                  <View style={styles.suggestionsPillsWrap}>
+                    {categories.slice(0, 6).map((c) => (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={styles.categoryPill}
+                        onPress={() => {
+                          setSelectedCategory(c.slug || c.id);
+                          handleSearch(query, c.slug || c.id);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.categoryPillText}>{c.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Boutons d'action */}
+              <View style={styles.emptyActionsRow}>
+                {(selectedCategory || authorFilter || selectedHouseFilter || minTrustScore > 0) && (
+                  <TouchableOpacity
+                    style={styles.clearOnlyFiltersBtn}
+                    onPress={() => {
+                      setSelectedCategory('');
+                      setAuthorFilter('');
+                      setSelectedHouseFilter('');
+                      setMinTrustScore(0);
+                      handleSearch(query, '');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.clearOnlyFiltersBtnText}>EFFACER LES FILTRES</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.resetSearchBtn}
+                  onPress={() => {
+                    setQuery('');
+                    setSelectedCategory('');
+                    setAuthorFilter('');
+                    setSelectedHouseFilter('');
+                    setMinTrustScore(0);
+                    setResults([]);
+                    setHasSearched(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.resetSearchBtnText}>TOUT RÉINITIALISER</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           ) : (
             <FlatList
               data={filteredResults}
@@ -879,13 +1028,141 @@ const styles = StyleSheet.create({
   noResultsTitle: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 6,
+    textAlign: 'center',
   },
   noResultsSub: {
-    color: '#64748b',
-    fontSize: 13,
+    color: '#94a3b8',
+    fontSize: 12,
     textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  emptyResultsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  activeCriteriaCard: {
+    width: '100%',
+    backgroundColor: '#070d22',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.25)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  activeCriteriaLabel: {
+    color: '#00d2ff',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  criteriaChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  criterionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.4)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  criterionChipText: {
+    color: '#e2e8f0',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  suggestionsCard: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  suggestionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  suggestionsTitle: {
+    color: '#00d2ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  suggestionsPillsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  suggestionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0c1638',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  suggestionPillText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  categoriesSuggestionCard: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  categoryPill: {
+    backgroundColor: '#081128',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  categoryPillText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  emptyActionsRow: {
+    width: '100%',
+    gap: 10,
+    marginTop: 6,
+  },
+  clearOnlyFiltersBtn: {
+    width: '100%',
+    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.4)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearOnlyFiltersBtnText: {
+    color: '#00d2ff',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
   listContent: {
     paddingVertical: 16,

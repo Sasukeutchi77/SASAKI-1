@@ -621,12 +621,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           ListEmptyComponent={
             feedArticles.length === 0 && !heroArticle ? (
               <View style={styles.emptyContainer}>
-                <AppIcon name="newspaper" size={42} color="#64748b" style={{ marginBottom: 12 }} />
-                <Text style={styles.emptyTitle}>Aucune publication trouvée</Text>
+                <AppIcon name="sparkles" size={36} color="#00d2ff" style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyTitle}>
+                  {feedType === 'following'
+                    ? 'Aucune publication dans vos abonnements'
+                    : selectedCategoryId || timeFilter !== 'all'
+                    ? 'Aucune dépêche pour cette sélection'
+                    : 'Prêt pour les premières publications'}
+                </Text>
                 <Text style={styles.emptySub}>
                   {feedType === 'following'
                     ? "Vous n'êtes abonné à aucun journaliste ou maison de presse pour le moment. Découvrez les rédactions dans l'onglet 'Maisons' !"
-                    : "Aucune dépêche ne correspond à cette sélection de catégorie ou de période."}
+                    : selectedCategoryId || timeFilter !== 'all'
+                    ? 'Aucun article ne correspond à cette sélection de catégorie ou de période.'
+                    : 'La plateforme est prête pour les publications des journalistes et rédactions certifiées.'}
                 </Text>
                 {(selectedCategoryId || timeFilter !== 'all') && (
                   <TouchableOpacity

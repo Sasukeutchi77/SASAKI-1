@@ -20,6 +20,7 @@ import { ShareModal } from './ShareModal';
 import { bookmarksStorage } from '../services/bookmarksStorage';
 import { likesStorage } from '../services/likesStorage';
 import { sfx } from '../services/soundEffects';
+import { isRealPhotoImage, getHarmonizedImageClass, getHarmonizedFrameClass } from '../utils/imageHarmonizer';
 
 export interface ArticleCardProps {
   article: Article;
@@ -163,13 +164,16 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       >
         {/* Thumbnail on left */}
         {article.coverImage && (
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-blue-500/30">
+          <div className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-blue-500/30 ${getHarmonizedFrameClass(article.coverImage)}`}>
             <img
               src={article.coverImage}
               alt={article.title}
               loading="lazy"
               referrerPolicy="no-referrer"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className={getHarmonizedImageClass(
+                article.coverImage,
+                "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              )}
             />
           </div>
         )}
@@ -241,7 +245,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           src={article.coverImage}
           alt={article.title}
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-500"
+          className={getHarmonizedImageClass(
+            article.coverImage,
+            "w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-500"
+          )}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#040817] via-[#040817]/65 to-transparent" />
 
@@ -328,19 +335,22 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       >
         {/* Cover image */}
         {article.coverImage && (
-          <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden border-b border-blue-500/20">
+          <div className={`relative aspect-[16/9] w-full bg-slate-900 overflow-hidden border-b border-blue-500/20 ${getHarmonizedFrameClass(article.coverImage)}`}>
             <img
               src={article.coverImage}
               alt={article.title}
               loading="lazy"
               referrerPolicy="no-referrer"
-              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+              className={getHarmonizedImageClass(
+                article.coverImage,
+                "w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+              )}
             />
-            <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[11px] font-mono text-cyan-300 flex items-center gap-1">
+            <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[11px] font-mono text-cyan-300 flex items-center gap-1 z-10">
               <Clock className="w-3 h-3 text-cyan-400" />
               <span>{readingTimeMinutes} min</span>
             </div>
-            <div className="absolute top-3 left-3">
+            <div className="absolute top-3 left-3 z-10">
               <span className="text-[11px] font-bold font-mono px-3 py-1 rounded-full bg-blue-600/25 text-cyan-300 shadow-md border border-blue-400/40 backdrop-blur-md">
                 {article.categoryName}
               </span>
@@ -438,15 +448,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       >
         {/* Cover image on left (or top on small mobile) */}
         {article.coverImage && (
-          <div className="relative sm:w-2/5 aspect-[16/10] sm:aspect-auto bg-slate-900 overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-blue-500/20">
+          <div className={`relative sm:w-2/5 aspect-[16/10] sm:aspect-auto bg-slate-900 overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-blue-500/20 ${getHarmonizedFrameClass(article.coverImage)}`}>
             <img
               src={article.coverImage}
               alt={article.title}
               loading="lazy"
               referrerPolicy="no-referrer"
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+              className={getHarmonizedImageClass(
+                article.coverImage,
+                "w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+              )}
             />
-            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1">
+            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1 z-10">
               <Clock className="w-3 h-3 text-cyan-400" />
               <span>{readingTimeMinutes} min</span>
             </div>
@@ -605,21 +618,24 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
       {/* Main Cover Image */}
       {article.coverImage && (
-        <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden border-b border-blue-500/20">
+        <div className={`relative aspect-[16/9] w-full bg-slate-900 overflow-hidden border-b border-blue-500/20 ${getHarmonizedFrameClass(article.coverImage)}`}>
           <img
             src={article.coverImage}
             alt={article.title}
             loading="lazy"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+            className={getHarmonizedImageClass(
+              article.coverImage,
+              "w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+            )}
           />
           {article.videoUrl && (
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-red-600/90 text-white border border-red-400/60 backdrop-blur-xs text-[10px] font-mono font-bold flex items-center gap-1 shadow-lg">
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-red-600/90 text-white border border-red-400/60 backdrop-blur-xs text-[10px] font-mono font-bold flex items-center gap-1 shadow-lg z-10">
               <Play className="w-2.5 h-2.5 fill-current" />
               <span>REPORTAGE VIDÉO</span>
             </div>
           )}
-          <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1">
+          <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#040817]/85 border border-blue-500/40 backdrop-blur-xs text-[10px] font-mono text-cyan-300 flex items-center gap-1 z-10">
             <Clock className="w-3 h-3 text-cyan-400" />
             <span>{readingTimeMinutes} min</span>
           </div>
