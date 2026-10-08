@@ -49,7 +49,24 @@ function getClientIdentifier(req: Request): string {
   if (typeof forwarded === 'string') {
     return `ip:${forwarded.split(',')[0].trim()}`;
   }
-  return `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`;
+  const realIp = req.headers['x-real-ip'];
+  if (typeof realIp === 'string') {
+    return `ip:${realIp.trim()}`;
+  }
+  try {
+    if (req.socket && req.socket.remoteAddress) {
+      return `ip:${req.socket.remoteAddress}`;
+    }
+    if ((req as any).connection && (req as any).connection.remoteAddress) {
+      return `ip:${(req as any).connection.remoteAddress}`;
+    }
+    if (req.ip) {
+      return `ip:${req.ip}`;
+    }
+  } catch {
+    // In serverless environments, socket/ip may not be a standard net.Socket
+  }
+  return 'ip:unknown';
 }
 
 export interface RateLimitOptions {

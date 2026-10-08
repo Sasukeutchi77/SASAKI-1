@@ -36,7 +36,7 @@ export function createExpressApp() {
       name: 'PurgeInfo API',
       version: '1.0.0',
       timestamp: new Date().toISOString(),
-      platform: process.env.NETLIFY ? 'netlify-serverless' : 'node-server',
+      platform: process.env.VERCEL ? 'vercel-serverless' : (process.env.NETLIFY ? 'netlify-serverless' : 'node-server'),
     });
   });
 

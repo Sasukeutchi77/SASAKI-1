@@ -73,7 +73,7 @@ export interface DatabaseSchema {
   mediaRecords: MediaRecord[];
 }
 
-const isServerless = !!(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+const isServerless = !!(process.env.VERCEL || process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
 const DATA_DIR = isServerless ? path.join('/tmp', 'purge_info_data') : path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const SEED_FILE = path.join(process.cwd(), 'data', 'db.json');
