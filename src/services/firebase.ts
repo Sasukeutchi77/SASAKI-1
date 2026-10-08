@@ -106,6 +106,10 @@ export function mapFirebaseError(code: string): string {
       return 'Erreur de communication réseau. Veuillez vérifier votre connexion internet.';
     case 'auth/too-many-requests':
       return 'Trop de tentatives infructueuses. Veuillez patienter quelques instants avant de réessayer.';
+    case 'auth/unauthorized-domain': {
+      const host = typeof window !== 'undefined' ? window.location.hostname : 'votre domaine Vercel';
+      return `Le domaine "${host}" n’est pas encore autorisé pour Google. Ajoutez "${host}" dans Firebase Console (Authentication > Paramètres > Domaines autorisés).`;
+    }
     default:
       return 'Une erreur est survenue lors de l’authentification. Veuillez réessayer.';
   }

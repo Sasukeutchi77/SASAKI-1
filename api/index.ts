@@ -2,36 +2,39 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { createExpressApp } from '../server/app';
 import { db } from '../server/db';
 
-let initialized = false;
-let appInstance: any = null;
+// Non-blocking initialization on container cold start
+db.initCloudPersistence().catch((err) => {
+  console.warn('[Vercel Serverless] Cloud persistence initialization check:', err);
+});
 
-function getApp() {
-  if (!appInstance) {
-    appInstance = createExpressApp();
-  }
-  return appInstance;
-}
+const app = createExpressApp();
 
-export default async function handler(req: any, res: any) {
-  // Ensure Cloud Firestore persistence & seed data are initialized
-  if (!initialized) {
+export default function handler(req: any, res: any) {
+  // If Vercel pre-parsed or provided body as a string, parse it into an object for Express
+  if (req.body && typeof req.body === 'string') {
     try {
-      await db.initCloudPersistence();
-    } catch (err) {
-      console.warn('[Vercel Serverless] Cloud persistence initialization check:', err);
+      req.body = JSON.parse(req.body);
+    } catch {
+      // ignore
     }
-    initialized = true;
   }
-
-  const app = getApp();
 
   // Ensure socket and connection exist in serverless environments to prevent Express getter issues
   if (!req.socket) {
     req.socket = { remoteAddress: (req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || '127.0.0.1' };
   }
 
-  // Normalize path if Vercel strips the /api prefix or passes relative route
-  if (req.url && !req.url.startsWith('/api')) {
+  // Detect original path from Vercel headers if req.url was rewritten
+  const matchedPath =
+    (req.headers['x-matched-path'] as string) ||
+    (req.headers['x-vercel-matched-path'] as string) ||
+    (req.headers['x-forwarded-uri'] as string);
+
+  if (matchedPath && matchedPath.startsWith('/api')) {
+    const queryIndex = req.url ? req.url.indexOf('?') : -1;
+    const query = queryIndex !== -1 ? req.url.slice(queryIndex) : '';
+    req.url = matchedPath.split('?')[0] + query;
+  } else if (req.url && !req.url.startsWith('/api')) {
     req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
   }
 

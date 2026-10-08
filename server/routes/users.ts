@@ -9,6 +9,19 @@ import { realtimeHub } from '../realtime';
 
 export const usersRouter = Router();
 
+// Current User Profile alias (/api/users/me -> /api/auth/me equivalent)
+usersRouter.get('/me', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
+  const data = db.getData();
+  const reqUser = req.user;
+  const unreadNotifs = data.notifications.filter(
+    (n) => n.userId === reqUser.id && !n.read && !n.isRead
+  ).length;
+  const bookmarksCount = data.bookmarks.filter((b) => b.userId === reqUser.id).length;
+  const { passwordHash, passwordSalt, ...safeUser } = reqUser;
+  return res.json({ user: safeUser, unreadNotifs, bookmarksCount });
+});
+
 // 1. List verified or notable journalists & media
 usersRouter.get('/journalists', (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
