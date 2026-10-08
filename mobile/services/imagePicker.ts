@@ -21,7 +21,7 @@ export const AVATAR_PRESETS = [
   { id: 'av3', label: 'Itachi Uchiha (Maître des Ombres)', url: '/assets/images/anime_itachi_avatar.jpg' },
   { id: 'av4', label: 'Seigneur Purgeur (Cyberpunk)', url: '/assets/images/anime_lord_purgeur.jpg' },
   { id: 'av5', label: 'Purgeur d’Élite (Armure)', url: '/assets/images/anime_elite_purgeur_training.jpg' },
-  { id: 'av6', label: 'Correspondant SASAKI', url: '/assets/images/purge_app_logo_1789222395660.jpg' },
+  { id: 'av6', label: 'Correspondant Nexus-forger', url: '/assets/images/purge_app_logo_1789222395660.jpg' },
 ];
 
 export const ARTICLE_COVER_PRESETS = [

@@ -29,7 +29,7 @@ const SUGGESTED_SEARCH_TERMS = [
   'Décret n°44',
   'Arène Centrale',
   'Sasuke Uchiha',
-  'Sasaki',
+  'Nexus-forger',
   'Sanctuaires',
   'Sommet des Clans',
   'Duel',

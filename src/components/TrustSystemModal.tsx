@@ -519,7 +519,7 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
         {/* Modal Footer */}
         <div className="p-4 sm:p-5 border-t border-cyan-500/20 bg-[#070a16] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 text-xs text-cyan-400/70 font-mono">
-            <span>SASAKI COMPAGNIE</span>
+            <span>Nexus-forger</span>
             <span>•</span>
             <span>Garantie d'intégrité journalistique</span>
           </div>

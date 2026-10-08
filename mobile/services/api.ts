@@ -94,153 +94,8 @@ export const OFFICIAL_CATEGORIES: Category[] = [
   { id: 'cat_celebrites', name: 'CÉLÉBRITÉS', slug: 'celebrites', description: 'Figures publiques, icônes et personnalités', order: 6 },
 ];
 
-// Articles factuels de référence pour garantir qu'un nouveau téléphone affiche immédiatement un flux riche
-export const CURATED_FALLBACK_ARTICLES: Article[] = [
-  {
-    id: 'art_purgeur_elite_2026',
-    title: 'Révélations sur l’entraînement secret des Purgeurs d’Élite',
-    slug: 'revelations-entrainement-secret-purgeurs-elite',
-    summary: 'Enquête exclusive sur les protocoles militaires et les doctrines tactiques adoptées par les commandos de purgeurs avant l’ouverture de la saison.',
-    content: 'Une investigation minutieuse au cœur des bases d’entraînement révèle les nouveaux équipements balistiques et les tactiques de combat rapproché. Les purges de nouvelle génération s’annoncent plus méthodiques que jamais, encadrées par des décrets stricts mais impitoyables.\n\nSelon nos sources internes, trois unités distinctes ont complété les épreuves de qualification avec un taux de réussite sans précédent. Les observateurs indépendants saluent la rigueur factuelle des protocoles, tout en alertant sur l’élévation du niveau de dangerosité dans les périmètres urbains.',
-    coverImage: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=900&auto=format&fit=crop&q=80',
-    categoryId: 'cat_purgeur',
-    categoryName: 'PURGEUR',
-    categorySlug: 'purgeur',
-    authorId: 'usr_admin_naruto',
-    authorName: 'Naruto Uzumaki',
-    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    authorRole: 'admin',
-    authorIsVerified: true,
-    mediaName: 'PURGE OFFICIAL',
-    status: 'published',
-    viewsCount: 1420,
-    likesCount: 238,
-    commentsCount: 34,
-    tags: ['#purgeur', '#tactique', '#direct', '#enquete'],
-    readTime: 4,
-    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-  },
-  {
-    id: 'art_clans_sombre_pacte',
-    title: 'Le Sommet des Sept Clans : Pacte de Non-Agression Fragilisé',
-    slug: 'sommet-sept-clans-pacte-non-agression',
-    summary: 'Les délibérations nocturnes entre les chefs de faction n’ont pas permis d’apaiser les tensions territoriales à l’approche de la Purge.',
-    content: 'Les délégations des grands clans se sont réunies à huis clos dans le secteur neutre. Les négociations ont buté sur le partage des couloirs de ravitaillement et l’attribution des zones d’arbitrage.\n\nAlors que les émissaires du Clan du Nord réclamaient une révision des décrets frontaliers, les représentants de la plaine ont opposé un refus catégorique. Les observateurs craignent une reprise des hostilités dès le signal d’ouverture.',
-    coverImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=900&auto=format&fit=crop&q=80',
-    categoryId: 'cat_clans',
-    categoryName: 'CLANS',
-    categorySlug: 'clans',
-    authorId: 'usr_admin_itachi',
-    authorName: 'Itachi Uchiha',
-    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    authorRole: 'admin',
-    authorIsVerified: true,
-    mediaName: 'L’Écho des Factions',
-    status: 'published',
-    viewsCount: 980,
-    likesCount: 174,
-    commentsCount: 19,
-    tags: ['#clans', '#pacte', '#diplomatie', '#alerte'],
-    readTime: 5,
-    createdAt: new Date(Date.now() - 3600000 * 8).toISOString(),
-  },
-  {
-    id: 'art_competition_arene_finale',
-    title: 'Arène Centrale : Le Duel des Maîtres d’Armes Confirmé',
-    slug: 'arene-centrale-duel-maitres-armes-confirme',
-    summary: 'La commission des tournois a validé le tirage au sort des quarts de finale. Les affrontements débuteront sous haute surveillance arbitrale.',
-    content: 'C’est l’affiche la plus attendue de l’année. Les deux champions invaincus se retrouveront face à face dans l’enceinte principale. Les billets de loge se sont arrachés en moins de quatre minutes.\n\nLes règles de sécurité ont été renforcées avec déploiement de capteurs biométriques et arbitrage vidéo haute définition. L’enjeu : le titre suprême et le bouclier d’immunité pour la saison à venir.',
-    coverImage: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=900&auto=format&fit=crop&q=80',
-    categoryId: 'cat_competition',
-    categoryName: 'COMPÉTITION',
-    categorySlug: 'competition',
-    authorId: 'usr_admin_minato',
-    authorName: 'Minato Namikaze',
-    authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    authorRole: 'admin',
-    authorIsVerified: true,
-    mediaName: 'PURGE CHRONICLES',
-    status: 'published',
-    viewsCount: 2150,
-    likesCount: 412,
-    commentsCount: 56,
-    tags: ['#competition', '#arene', '#duels', '#champions'],
-    readTime: 3,
-    createdAt: new Date(Date.now() - 3600000 * 14).toISOString(),
-  },
-  {
-    id: 'art_purge_decret_securite',
-    title: 'Décret Officiel n°44 : Règles Sanctuaires et Zones Protégées',
-    slug: 'decret-officiel-44-regles-sanctuaires-zones-protegees',
-    summary: 'Publication intégrale du décret d’application régissant les périmètres hospitaliers et les refuges civils lors des 24 heures de Purge.',
-    content: 'Le conseil supérieur de régulation a promulgué le décret d’urgence n°44. Tout manquement aux périmètres sacrés des zones neutres entraînera une disqualification immédiate et des sanctions irrévocables.\n\nLes citoyens non combattants sont invités à rejoindre les abris homologués dès le retentissement de la première sirène d’alerte.',
-    coverImage: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=900&auto=format&fit=crop&q=80',
-    categoryId: 'cat_purge',
-    categoryName: 'PURGE',
-    categorySlug: 'purge',
-    authorId: 'usr_admin_naruto',
-    authorName: 'Naruto Uzumaki',
-    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    authorRole: 'admin',
-    authorIsVerified: true,
-    mediaName: 'PURGE OFFICIAL',
-    status: 'published',
-    viewsCount: 3100,
-    likesCount: 620,
-    commentsCount: 88,
-    tags: ['#decret', '#purge', '#securite', '#officiel'],
-    readTime: 6,
-    createdAt: new Date(Date.now() - 3600000 * 20).toISOString(),
-  },
-  {
-    id: 'art_familles_dynasties_pouvoir',
-    title: 'Les Grandes Dynasties Face aux Réformes Territoriales',
-    slug: 'grandes-dynasties-reformes-territoriales',
-    summary: 'Analyse approfondie des accords patrimoniaux et des arbitrages d’héritage conclus entre les trois lignées historiques de la cité.',
-    content: 'Les représentants des trois familles fondatrices ont ratifié les avenants du protocole de partage civil. Cet accord historique définit les périmètres résidentiels et la protection des biens ancestraux durant toute la saison.\n\nLes archives patrimoniales confirment la régularité des actes et le strict respect des quotas d’arbitrage définis par la charte centrale.',
-    coverImage: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=900&auto=format&fit=crop&q=80',
-    categoryId: 'cat_familles',
-    categoryName: 'FAMILLES',
-    categorySlug: 'familles',
-    authorId: 'usr_admin_sasuke',
-    authorName: 'Sasuke Uchiha',
-    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    authorRole: 'admin',
-    authorIsVerified: true,
-    mediaName: 'L’Écho des Factions',
-    status: 'published',
-    viewsCount: 1680,
-    likesCount: 310,
-    commentsCount: 42,
-    tags: ['#familles', '#dynastie', '#patrimoine', '#enquete'],
-    readTime: 5,
-    createdAt: new Date(Date.now() - 3600000 * 10).toISOString(),
-  },
-  {
-    id: 'art_celebrites_interview_exclusive',
-    title: 'Figure Publique : L’Entretien Exclusif avec la Nouvelle Prodige',
-    slug: 'figure-publique-entretien-exclusif-nouvelle-prodige',
-    summary: 'Révélation de la saison, elle revient sur sa préparation tactique, sa notoriété grandissante et ses ambitions dans l’arène centrale.',
-    content: 'À seulement vingt-deux ans, elle captive les regards des observateurs et bouscule la hiérarchie établie des maîtres d’armes. Dans cet entretien exclusif accordé à notre rédaction, elle dévoile les coulisses de sa rigueur quotidienne et son refus catégorique des compromis d’influence.\n\nUne prise de parole authentique saluée unanimement par la communauté citoyenne.',
-    coverImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900&auto=format&fit=crop&q=80',
-    categoryId: 'cat_celebrites',
-    categoryName: 'CÉLÉBRITÉS',
-    categorySlug: 'celebrites',
-    authorId: 'usr_admin_kakashi',
-    authorName: 'Kakashi Hatake',
-    authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    authorRole: 'admin',
-    authorIsVerified: true,
-    mediaName: 'PURGE CHRONICLES',
-    status: 'published',
-    viewsCount: 2890,
-    likesCount: 540,
-    commentsCount: 75,
-    tags: ['#celebrites', '#portrait', '#investigation', '#interview'],
-    readTime: 4,
-    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-  },
-];
+// Aucun article pré-rempli : seuls de vrais humains publient des articles sur la plateforme
+export const CURATED_FALLBACK_ARTICLES: Article[] = [];
 
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await getToken();
@@ -628,8 +483,25 @@ export const api = {
 
   async getComments(articleId: string) {
     try {
-      const res = await apiRequest<{ comments: Comment[]; total: number }>(`/api/articles/${articleId}/comments`);
-      if (res?.comments) return res;
+      const res = await apiRequest<{ comments: any[]; total: number }>(`/api/articles/${articleId}/comments`);
+      if (res?.comments) {
+        const normalized: Comment[] = res.comments.map((c: any) => ({
+          ...c,
+          id: c.id,
+          articleId: c.articleId || articleId,
+          authorId: c.authorId || c.userId || '',
+          authorName: c.authorName || c.userName || 'Citoyen',
+          authorAvatar: c.authorAvatar || c.userAvatar,
+          authorRole: c.authorRole || c.userRole || 'citoyen',
+          authorIsVerified: c.authorIsVerified !== undefined ? !!c.authorIsVerified : !!c.isUserVerified,
+          content: c.content || '',
+          likesCount: c.likesCount || 0,
+          isLiked: !!c.isLiked,
+          parentId: c.parentId,
+          createdAt: c.createdAt || new Date().toISOString(),
+        }));
+        return { comments: normalized, total: res.total || normalized.length };
+      }
     } catch {}
 
     const cloudComments = await fetchCommentsFromCloud(articleId);
@@ -1109,19 +981,21 @@ export const api = {
     };
   },
 
-  // Demande d'accréditation Journaliste (Workflow Citoyen -> Journaliste)
+  // Demande d'accréditation Journaliste ou Certification Citoyenne
   async requestVerification(data: {
+    category?: 'journalist' | 'citizen' | 'media';
     mediaName?: string;
-    pressCardNumber: string;
+    pressCardNumber?: string;
     motivation: string;
     documentUrl?: string;
+    links?: string[];
   }) {
     const user = await getUser();
     if (!user) throw new Error('Vous devez être connecté.');
 
     // 1. Tenter l'envoi REST
     try {
-      const res = await apiRequest<{ message: string; request: VerificationRequest }>(
+      const res = await apiRequest<{ message: string; request: VerificationRequest; user?: User }>(
         '/api/users/me/request-verification',
         {
           method: 'POST',
@@ -1130,7 +1004,7 @@ export const api = {
       );
       if (res?.message) {
         // Mettre à jour l'utilisateur en local
-        const updatedUser: User = { ...user, verificationStatus: 'pending' };
+        const updatedUser: User = res.user ? { ...user, ...res.user } : { ...user, verificationStatus: 'pending' };
         await setUser(updatedUser);
         return res;
       }
@@ -1144,15 +1018,16 @@ export const api = {
         userId: user.id,
         userName: user.name,
         userEmail: user.email,
-        mediaName: data.mediaName || user.mediaName || 'Média Indépendant',
-        pressCardNumber: data.pressCardNumber || 'Candidat Citoyen / Enquêteur',
+        category: data.category || 'journalist',
+        mediaName: data.mediaName || user.mediaName || (data.category === 'citizen' ? 'Citoyen Indépendant' : 'Média Indépendant'),
+        pressCardNumber: data.pressCardNumber || (data.category === 'citizen' ? 'Vérification d’Identité Citoyenne' : 'Candidat Citoyen / Enquêteur'),
         motivation: data.motivation,
         documentUrl: data.documentUrl ? data.documentUrl.trim() : '',
       });
       const updatedUser: User = { ...user, verificationStatus: 'pending' };
       await setUser(updatedUser);
       return {
-        message: 'Votre demande d’accréditation a bien été transmise aux administrateurs de PURGE.',
+        message: 'Votre dossier de certification a bien été transmis aux administrateurs de PURGE.',
         request: createdReq,
       };
     }

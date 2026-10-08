@@ -95,6 +95,8 @@ export interface User {
   mediaId?: string;
   phone?: string;
   verificationStatus?: VerificationStatus;
+  verificationCategory?: 'journalist' | 'citizen' | 'admin' | 'media';
+  verifiedAt?: string;
   followersCount?: number;
   followingCount?: number;
   isFollowing?: boolean;
@@ -317,10 +319,13 @@ export interface VerificationRequest {
   userId: string;
   userName: string;
   userEmail: string;
+  userAvatar?: string;
+  category?: 'journalist' | 'citizen' | 'media';
   mediaName: string;
   pressCardNumber: string;
   motivation: string;
   documentUrl?: string;
+  links?: string[];
   status: 'pending' | 'approved' | 'rejected';
   adminNotes?: string;
   createdAt: string;

@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
           </View>
           <View style={styles.devRow}>
             <Text style={styles.devLabel}>DEV: </Text>
-            <Text style={styles.devCompany}>SASAKI-COMPAGNIE</Text>
+            <Text style={styles.devCompany}>Nexus-forger</Text>
           </View>
         </View>
       </TouchableOpacity>

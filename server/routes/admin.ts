@@ -365,7 +365,7 @@ adminRouter.put('/users/:id/role', async (req: AuthenticatedRequest, res: Respon
 });
 
 // Toggle verification badge
-adminRouter.put('/users/:id/verify', (req: AuthenticatedRequest, res: Response) => {
+adminRouter.put('/users/:id/verify', async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = data.users.find((u) => u.id === req.params.id);
 
@@ -373,14 +373,36 @@ adminRouter.put('/users/:id/verify', (req: AuthenticatedRequest, res: Response) 
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
 
-  const { isVerified } = req.body;
+  const { isVerified, category, note } = req.body;
   user.isVerified = !!isVerified;
   user.verificationStatus = isVerified ? 'approved' : 'none';
+  if (category) {
+    user.verificationCategory = category;
+    if (isVerified && category === 'journalist' && user.role !== 'admin') {
+      user.role = 'journalist';
+      user.accountType = 'journalist';
+    }
+  } else if (isVerified && !user.verificationCategory) {
+    user.verificationCategory = user.role === 'admin' ? 'admin' : user.role === 'journalist' ? 'journalist' : 'citizen';
+  } else if (!isVerified) {
+    user.verificationCategory = undefined;
+  }
+  if (isVerified) {
+    user.verifiedAt = new Date().toISOString();
+  }
+  user.updatedAt = new Date().toISOString();
 
   // Also update articles author verification badge flag
   data.articles.forEach((a) => {
     if (a.authorId === user.id) {
       a.isAuthorVerified = user.isVerified;
+    }
+  });
+
+  // Also update comments verification flag
+  data.comments.forEach((c) => {
+    if (c.userId === user.id) {
+      c.isUserVerified = user.isVerified;
     }
   });
 
@@ -390,23 +412,43 @@ adminRouter.put('/users/:id/verify', (req: AuthenticatedRequest, res: Response) 
     'journalist',
     user.id,
     user.name,
-    `Badge officiel de vérification ${isVerified ? 'attribué' : 'révoqué'}`
+    `Badge officiel de vérification ${isVerified ? 'attribué' : 'révoqué'} (${user.verificationCategory || 'standard'})${note ? ` - Note: ${note}` : ''}`
   );
 
+  await db.persistUser(user);
   db.save();
+
+  // Send real-time notification to target user
+  const notifItem: Notification = {
+    id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    userId: user.id,
+    recipientEmail: user.email,
+    type: 'verification',
+    title: isVerified ? 'Certification Officielle Accordée !' : 'Certification Révoquée',
+    message: isVerified
+      ? `Félicitations ${user.name} ! L’administration a validé votre statut et vous a attribué le badge officiel de certification (${user.verificationCategory === 'citizen' ? 'Citoyen Vérifié' : 'Journaliste de Presse'}).`
+      : `Le badge officiel de certification de votre compte ${user.name} a été retiré par l’administration.${note ? ` Motif : ${note}` : ''}`,
+    link: 'profile',
+    read: false,
+    createdAt: new Date().toISOString(),
+  };
+  await db.persistNotification(notifItem);
+  realtimeHub.broadcastToUser(user.id, 'notification:new', notifItem);
+  realtimeHub.broadcastToUser(user.id, 'user:updated', sanitizeUser(user));
 
   // Async sync claims to Firebase
   setFirebaseCustomUserClaims(user.id, {
     role: user.role,
     status: user.status,
     isVerified: user.isVerified,
+    verificationStatus: user.verificationStatus,
   }).catch(() => {});
 
-  return res.json({ message: `Badge de vérification ${isVerified ? 'attribué' : 'retiré'}.`, user });
+  return res.json({ message: `Badge de vérification ${isVerified ? 'attribué' : 'retiré'}.`, user: sanitizeUser(user) });
 });
 
 // Explicit Revoke Journalist status (Demote to reader 'user' & remove from house)
-adminRouter.put('/users/:id/revoke-journalist', (req: AuthenticatedRequest, res: Response) => {
+adminRouter.put('/users/:id/revoke-journalist', async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = data.users.find((u) => u.id === req.params.id);
 
@@ -558,25 +600,36 @@ adminRouter.put('/verification-requests/:id', async (req: AuthenticatedRequest, 
     user.verificationStatus = status;
     if (status === 'approved') {
       user.isVerified = true;
-      user.role = 'journalist';
-      user.accountType = 'journalist';
-      if (request.mediaName) user.mediaName = request.mediaName;
+      user.verificationCategory = request.category || 'journalist';
+      user.verifiedAt = new Date().toISOString();
+      if (request.category === 'citizen') {
+        // Keep role as user/reader, but with official citizen verification
+      } else {
+        user.role = 'journalist';
+        user.accountType = 'journalist';
+        if (request.mediaName) user.mediaName = request.mediaName;
+      }
 
       // Update their articles author badge
       data.articles.forEach((a) => {
         if (a.authorId === user.id) a.isAuthorVerified = true;
       });
+
+      // Update comments verification flag
+      data.comments.forEach((c) => {
+        if (c.userId === user.id) c.isUserVerified = true;
+      });
     } else if (status === 'rejected') {
       user.isVerified = false;
-      user.role = 'user';
-      user.accountType = 'user';
+      user.verificationStatus = 'rejected';
     }
 
     user.updatedAt = new Date().toISOString();
     await db.persistUser(user);
+    await db.persistVerificationRequest(request);
 
     // Sync claims to Firebase Auth if user is linked
-    const targetClaimRole = status === 'approved' ? 'journaliste' : 'citoyen';
+    const targetClaimRole = status === 'approved' ? (request.category === 'citizen' ? 'citoyen' : 'journaliste') : 'citoyen';
     setFirebaseCustomUserClaims(user.id, {
       role: targetClaimRole,
       standardRole: user.role,
@@ -586,17 +639,18 @@ adminRouter.put('/verification-requests/:id', async (req: AuthenticatedRequest, 
     }).catch(() => {});
 
     // Send direct notification to user
+    const catTitle = request.category === 'citizen' ? 'Vérification Citoyenne' : 'Accréditation Journaliste';
     const userNotif: Notification = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: user.id,
       recipientEmail: user.email,
       type: 'verification',
-      title: status === 'approved' ? 'Accréditation Journaliste validée !' : 'Demande d’accréditation refusée',
+      title: status === 'approved' ? `${catTitle} validée !` : `Demande de ${catTitle} non retenue`,
       message:
         status === 'approved'
-          ? `Félicitations ${user.name} ! Votre demande d’accréditation en tant que Journaliste (${request.mediaName || 'Presse'}) a été approuvée par l’administration officielle.`
-          : `Votre demande d’accréditation Journaliste a été rejetée. Motif : ${adminNotes || 'Dossier incomplet ou non vérifiable'}.`,
-      link: status === 'approved' ? 'profile' : undefined,
+          ? `Félicitations ${user.name} ! Votre demande de ${catTitle} (${request.mediaName || 'Presse'}) a été approuvée par l’administration officielle. Le badge certifié est actif sur votre profil.`
+          : `Votre demande de ${catTitle} a été rejetée. Motif : ${adminNotes || 'Dossier incomplet ou non vérifiable'}. Vous pouvez soumettre un dossier révisé depuis vos paramètres de profil.`,
+      link: 'profile',
       read: false,
       isRead: false,
       createdAt: new Date().toISOString(),

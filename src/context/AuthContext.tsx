@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { User, CloudinaryMedia } from '../types';
+import { User, CloudinaryMedia, VerificationRequest } from '../types';
 import { api } from '../services/api';
 import {
   auth as firebaseAuth,
@@ -39,11 +39,13 @@ interface AuthContextType {
   removeAvatar: () => Promise<void>;
   removeCover: () => Promise<void>;
   requestJournalistVerification: (data: {
+    category?: 'journalist' | 'citizen' | 'media';
     mediaName?: string;
-    pressCardNumber: string;
+    pressCardNumber?: string;
     motivation: string;
     documentUrl?: string;
-  }) => Promise<void>;
+    links?: string[];
+  }) => Promise<{ message: string; request: VerificationRequest; user: User } | void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -541,15 +543,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(res.user);
   };
 
-  // 8. Request Journalist Verification (User -> Demande -> Admin)
+  // 8. Request Certification / Accreditation (User -> Demande -> Admin)
   const requestJournalistVerification = async (data: {
     mediaName?: string;
-    pressCardNumber: string;
+    pressCardNumber?: string;
     motivation: string;
     documentUrl?: string;
+    category?: 'journalist' | 'citizen' | 'media';
+    links?: string[];
   }) => {
-    await api.requestVerification(data);
-    await refreshUser();
+    const res = await api.requestVerification(data);
+    if (res?.user) {
+      setUser(res.user);
+    } else {
+      await refreshUser();
+    }
+    return res;
   };
 
   return (

@@ -43,6 +43,8 @@ export interface User {
   bio?: string;
   isVerified?: boolean;
   verificationStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  verificationCategory?: 'journalist' | 'citizen' | 'admin' | 'media';
+  verifiedAt?: string;
   pressCardNumber?: string;
   trustScore?: number;
   status: 'active' | 'suspended';
@@ -210,10 +212,13 @@ export interface VerificationRequest {
   userId: string;
   userName: string;
   userEmail: string;
+  userAvatar?: string;
+  category?: 'journalist' | 'citizen' | 'media';
   mediaName?: string;
   pressCardNumber?: string;
   motivation?: string;
   documentUrl?: string;
+  links?: string[];
   status: 'pending' | 'approved' | 'rejected';
   adminNotes?: string;
   reviewedAt?: string;

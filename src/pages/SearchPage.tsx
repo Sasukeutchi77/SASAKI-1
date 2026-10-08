@@ -64,7 +64,7 @@ const SUGGESTED_SEARCH_TERMS = [
   'Décret n°44',
   'Arène Centrale',
   'Sasuke Uchiha',
-  'Sasaki',
+  'Nexus-forger',
   'Sanctuaires',
   'Sommet des Clans',
   'Duel des Maîtres',
@@ -1639,7 +1639,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                     dateRange={dateRange}
                     categories={categories}
                     customTitle={`Aucune maison de presse trouvée pour « ${query || 'votre recherche'} »`}
-                    customDescription="Aucun organe ou collectif de presse ne correspond à cette recherche. Essayez avec « SASAKI » ou explorez les maisons certifiées de la communauté."
+                    customDescription="Aucun organe ou collectif de presse ne correspond à cette recherche. Essayez avec « Nexus-forger » ou explorez les maisons certifiées de la communauté."
                     onSelectTerm={(term) => {
                       setQuery(term);
                       setSelectedCategory('all');

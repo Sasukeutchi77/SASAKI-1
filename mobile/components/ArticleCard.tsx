@@ -142,7 +142,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               <Text style={styles.authorName} numberOfLines={1}>
                 {article.authorName}
               </Text>
-              {article.authorIsVerified && (
+              {(article.authorIsVerified || (article as any).isAuthorVerified) && (
                 <AppIcon name="checkmark-circle" size={13} color="#00d2ff" style={{ marginLeft: 4 }} />
               )}
             </View>

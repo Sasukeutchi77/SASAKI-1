@@ -56,6 +56,15 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
         borderColor: 'rgba(56, 189, 248, 0.4)',
       };
     }
+    if (currentUser.isVerified && (currentUser.verificationCategory === 'citizen' || currentUser.verificationStatus === 'approved')) {
+      return {
+        label: 'CITOYEN VÉRIFIÉ',
+        icon: 'checkmark-circle' as const,
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.15)',
+        borderColor: 'rgba(16, 185, 129, 0.4)',
+      };
+    }
     return {
       label: 'CITOYEN INVESTIGATEUR',
       icon: 'people' as const,
@@ -66,6 +75,9 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
   };
 
   const roleConfig = getRoleConfig();
+
+  const isCitizenVerified = currentUser.isVerified && currentUser.verificationCategory === 'citizen';
+  const badgeColor = isAdmin ? '#f59e0b' : isCitizenVerified ? '#10b981' : '#06b6d4';
 
   const handleShareProfile = async () => {
     try {
@@ -112,8 +124,8 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
               {currentUser.name || 'Citoyen Anonyme'}
             </Text>
             {(currentUser.isVerified || isAdmin || isJournalist) && (
-              <View style={styles.verifiedBadge}>
-                <AppIcon name="shield-checkmark" size={14} color="#06b6d4" />
+              <View style={[styles.verifiedBadge, { borderColor: badgeColor }]}>
+                <AppIcon name="shield-checkmark" size={14} color={badgeColor} />
               </View>
             )}
           </View>

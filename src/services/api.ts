@@ -678,17 +678,33 @@ export const api = {
 
   async requestVerification(data: {
     mediaName?: string;
-    pressCardNumber: string;
+    pressCardNumber?: string;
     motivation: string;
     documentUrl?: string;
+    category?: 'journalist' | 'citizen' | 'media';
+    links?: string[];
   }) {
-    return request<{ message: string; request: VerificationRequest }>(
+    return request<{ message: string; request: VerificationRequest; user: User }>(
       '/api/users/me/request-verification',
       {
         method: 'POST',
         body: JSON.stringify(data),
       }
     );
+  },
+
+  async getVerificationStatus() {
+    return request<{
+      isVerified: boolean;
+      verificationStatus: string;
+      verificationCategory: string;
+      verifiedAt?: string;
+      followersCount: number;
+      autoVerifyThreshold: number;
+      followersProgress: number;
+      latestRequest: VerificationRequest | null;
+      allRequests: VerificationRequest[];
+    }>('/api/users/me/verification-status');
   },
 
   async reportUser(userId: string, reason: string, details?: string) {
@@ -732,10 +748,10 @@ export const api = {
     });
   },
 
-  async toggleAdminUserVerification(id: string, isVerified: boolean) {
+  async toggleAdminUserVerification(id: string, isVerified: boolean, category?: string, note?: string) {
     return request<{ message: string; user: User }>(`/api/admin/users/${id}/verify`, {
       method: 'PUT',
-      body: JSON.stringify({ isVerified }),
+      body: JSON.stringify({ isVerified, category, note }),
     });
   },
 

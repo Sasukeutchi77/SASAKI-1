@@ -44,6 +44,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   const [targetUser, setTargetUser] = useState<User | null>(null);
   const [dialogType, setDialogType] = useState<'status' | 'role' | 'verify' | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserRole>('reader');
+  const [selectedVerifyCategory, setSelectedVerifyCategory] = useState<'journalist' | 'citizen'>('citizen');
   const [actionReason, setActionReason] = useState('');
   const [loadingAction, setLoadingAction] = useState(false);
 
@@ -81,6 +82,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   const handleOpenVerifyDialog = (user: User) => {
     setTargetUser(user);
     setDialogType('verify');
+    setSelectedVerifyCategory(user.role === 'journalist' ? 'journalist' : 'citizen');
     setActionReason('');
   };
 
@@ -97,8 +99,19 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
         onFlash(`Le rôle de ${targetUser.name} a été changé en "${selectedRole}".`);
       } else if (dialogType === 'verify') {
         const nextVerify = !targetUser.isVerified;
-        await api.toggleAdminUserVerification(targetUser.id, nextVerify);
-        onFlash(`Badge de vérification ${nextVerify ? 'attribué à' : 'retiré de'} ${targetUser.name}.`);
+        await api.toggleAdminUserVerification(
+          targetUser.id,
+          nextVerify,
+          nextVerify ? selectedVerifyCategory : undefined,
+          actionReason || undefined
+        );
+        onFlash(
+          `Badge de vérification ${
+            nextVerify
+              ? `(${selectedVerifyCategory === 'citizen' ? 'Citoyen' : 'Journaliste'}) attribué à`
+              : 'retiré de'
+          } ${targetUser.name}.`
+        );
       }
       onRefresh();
     } catch (err: any) {
@@ -420,8 +433,8 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             : dialogType === 'role'
             ? `Sélectionnez le niveau d’accès pour ${targetUser?.name}. Cette action sera consignée dans le journal d’audit.`
             : targetUser?.isVerified
-            ? `Êtes-vous sûr de vouloir retirer le badge de certification CSC pour ${targetUser?.name} ?`
-            : `Confirmez l'attribution du badge officiel de journaliste certifié pour ${targetUser?.name}.`
+            ? `Êtes-vous sûr de vouloir retirer le badge de certification pour ${targetUser?.name} ?`
+            : `Attribuer la certification officielle à ${targetUser?.name} ? Choisissez la catégorie (Journaliste ou Citoyen) ci-dessous.`
         }
         confirmLabel={loadingAction ? 'Traitement...' : 'Confirmer l’action'}
         isDestructive={
@@ -437,6 +450,62 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
           setDialogType(null);
         }}
       >
+        {dialogType === 'verify' && !targetUser?.isVerified && (
+          <div className="space-y-3 pt-2">
+            <label className="block text-xs font-bold text-gray-700">Type de certification à accorder :</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedVerifyCategory('journalist')}
+                className={`p-2.5 rounded-xl text-left border transition cursor-pointer ${
+                  selectedVerifyCategory === 'journalist'
+                    ? 'bg-blue-50 border-blue-500 text-blue-900 shadow-sm'
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <div className="text-xs font-bold">✍️ Journaliste Titulaire</div>
+                <p className="text-[10px] text-blue-600/80 mt-0.5">Badge Bleu • Droits de presse</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedVerifyCategory('citizen')}
+                className={`p-2.5 rounded-xl text-left border transition cursor-pointer ${
+                  selectedVerifyCategory === 'citizen'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-sm'
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <div className="text-xs font-bold">🛡️ Citoyen Vérifié</div>
+                <p className="text-[10px] text-emerald-600/80 mt-0.5">Badge Vert • Identité civique</p>
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Motif / Justification (optionnel) :</label>
+              <input
+                type="text"
+                placeholder="Ex: Vérification manuelle effectuée par l’administration"
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+
+        {dialogType === 'verify' && targetUser?.isVerified && (
+          <div className="pt-2">
+            <label className="block text-xs font-bold text-gray-700 mb-1">Motif de retrait du badge (optionnel) :</label>
+            <input
+              type="text"
+              placeholder="Ex: Non-respect de la charte ou dossier expiré"
+              value={actionReason}
+              onChange={(e) => setActionReason(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-red-500 focus:outline-none"
+            />
+          </div>
+        )}
         {dialogType === 'role' && (
           <div className="space-y-3 pt-2">
             <label className="block text-xs font-bold text-gray-700">Nouveau rôle :</label>

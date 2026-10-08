@@ -260,24 +260,32 @@ usersRouter.delete('/me/notifications', requireAuth, async (req: AuthenticatedRe
   return res.json({ success: true });
 });
 
-// 6. Request journalist verification badge with rate limiting & sanitization
+// 6. Request verification badge (journalist accreditation, citizen certification or media)
 usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const data = db.getData();
   const user = req.user!;
 
+  const { mediaName, pressCardNumber, motivation, documentUrl, category = 'journalist', links } = req.body;
+
+  // Prevent duplicate if already verified in same category
   if (user.isVerified) {
-    return res.status(400).json({ error: 'Votre profil est déjà vérifié avec badge officiel.' });
+    if (category === 'journalist' && (user.role === 'journalist' || user.role === 'admin')) {
+      return res.status(400).json({ error: 'Votre profil est déjà accrédité avec le badge officiel de Journaliste.' });
+    }
+    if (category === 'citizen' && user.verificationCategory === 'citizen') {
+      return res.status(400).json({ error: 'Votre profil citoyen est déjà officiellement vérifié.' });
+    }
   }
 
-  const { mediaName, pressCardNumber, motivation, documentUrl } = req.body;
-  if (!motivation) {
-    return res.status(400).json({ error: 'Votre motivation et vos thématiques d’enquête sont obligatoires.' });
+  if (!motivation || typeof motivation !== 'string' || motivation.trim().length === 0) {
+    return res.status(400).json({ error: 'Votre motivation et vos thématiques d’enquête/contribution sont obligatoires.' });
   }
 
-  const rawCardNumber = (pressCardNumber && String(pressCardNumber).trim()) || 'Candidat Citoyen / Enquêteur Indépendant';
-  const cleanCardNumber = sanitizeText(rawCardNumber, { maxLength: 50, allowNewlines: false }) || 'Candidat Citoyen / Enquêteur Indépendant';
-  const cleanMotivation = sanitizeText(motivation, { maxLength: 1000 });
-  const cleanMediaName = mediaName ? sanitizeText(mediaName, { maxLength: 100, allowNewlines: false }) : (user.mediaName || user.name);
+  const cleanCategory = (category === 'citizen' || category === 'media') ? category : 'journalist';
+  const rawCardNumber = (pressCardNumber && String(pressCardNumber).trim()) || (cleanCategory === 'citizen' ? 'Vérification d’Identité Citoyenne' : 'Candidat Journaliste / Enquêteur Indépendant');
+  const cleanCardNumber = sanitizeText(rawCardNumber, { maxLength: 60, allowNewlines: false }) || 'Dossier de certification';
+  const cleanMotivation = sanitizeText(motivation, { maxLength: 1200 });
+  const cleanMediaName = mediaName ? sanitizeText(mediaName, { maxLength: 100, allowNewlines: false }) : (user.mediaName || (cleanCategory === 'citizen' ? 'Citoyen Indépendant' : user.name));
 
   if (cleanMotivation.length < 15) {
     return res.status(400).json({ error: 'Veuillez rédiger une motivation plus détaillée (minimum 15 caractères).' });
@@ -293,10 +301,18 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, asy
     }
   }
 
+  let cleanLinks: string[] = [];
+  if (Array.isArray(links)) {
+    cleanLinks = links
+      .filter((l): l is string => typeof l === 'string' && isValidUrl(l.trim()))
+      .map((l) => l.trim())
+      .slice(0, 5);
+  }
+
   // Check if pending already exists
   const existingPending = data.verificationRequests.find((r) => r.userId === user.id && r.status === 'pending');
   if (existingPending) {
-    return res.status(400).json({ error: 'Une demande de vérification est déjà en cours d’examen.' });
+    return res.status(400).json({ error: 'Une demande de certification est déjà en cours d’examen par l’administration.' });
   }
 
   const now = new Date().toISOString();
@@ -305,17 +321,21 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, asy
     userId: user.id,
     userName: user.name,
     userEmail: user.email,
+    userAvatar: user.avatar,
+    category: cleanCategory,
     mediaName: cleanMediaName,
     pressCardNumber: cleanCardNumber,
     motivation: cleanMotivation,
     documentUrl: cleanDocUrl,
+    links: cleanLinks,
     status: 'pending',
     createdAt: now,
   };
 
   user.verificationStatus = 'pending';
+  user.updatedAt = now;
 
-  // Persist directly to Cloud Firestore
+  // Persist directly to Cloud Firestore & in-memory store
   await db.persistVerificationRequest(newRequest);
   await db.persistUser(user);
 
@@ -327,6 +347,7 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, asy
     }
   });
 
+  const categoryLabel = cleanCategory === 'citizen' ? 'Vérification Citoyen' : cleanCategory === 'media' ? 'Maison de Presse' : 'Journaliste de Presse';
   let notifCounter = 0;
   for (const adminEmail of targetAdminEmails) {
     const matchedAdmin = data.users.find((u) => u.email.toLowerCase() === adminEmail);
@@ -336,8 +357,8 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, asy
       recipientEmail: adminEmail,
       forAdmin: true,
       type: 'verification',
-      title: "Nouvelle demande d'accréditation Journaliste",
-      message: `${user.name} (${cleanMediaName}) a soumis une demande d'accréditation Journaliste (Carte: ${cleanCardNumber}). En attente de votre examen.`,
+      title: `Nouvelle demande de certification (${categoryLabel})`,
+      message: `${user.name} (${cleanMediaName}) a soumis une demande de certification ${categoryLabel} (${cleanCardNumber}). En attente de votre examen.`,
       link: 'admin:journalists',
       targetId: newRequest.id,
       read: false,
@@ -355,19 +376,41 @@ usersRouter.post('/me/request-verification', requireAuth, reportRateLimiter, asy
   realtimeHub.broadcastToAdmins('notification:new', {
     id: `notif_${Date.now()}`,
     type: 'verification',
-    title: "Nouvelle demande d'accréditation Journaliste",
-    message: `${user.name} (${cleanMediaName}) a soumis une demande d'accréditation Journaliste. En attente d'approbation.`,
+    title: `Nouvelle demande de certification (${categoryLabel})`,
+    message: `${user.name} (${cleanMediaName}) a soumis une demande de certification (${categoryLabel}). En attente d'approbation.`,
     link: 'admin:journalists',
-    targetId: newRequest.id,
-    createdAt: now,
   });
-  realtimeHub.broadcast('verification:created', newRequest);
-
-  db.save();
 
   return res.status(201).json({
-    message: 'Votre demande d’accréditation a bien été transmise aux administrateurs pour examen officiel.',
+    message: 'Votre dossier de certification a été transmis à l’administration officielle.',
     request: newRequest,
+    user,
+  });
+});
+
+// 6b. Get current user's certification dossier and detailed status
+usersRouter.get('/me/verification-status', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const data = db.getData();
+  const user = req.user!;
+  const userRequests = data.verificationRequests
+    .filter((r) => r.userId === user.id || (user.email && r.userEmail && r.userEmail.toLowerCase() === user.email.toLowerCase()))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const latestRequest = userRequests[0] || null;
+  const followersCount = user.followersCount || 0;
+  const autoVerifyThreshold = 50;
+  const followersProgress = Math.min(100, Math.round((followersCount / autoVerifyThreshold) * 100));
+
+  return res.json({
+    isVerified: !!user.isVerified,
+    verificationStatus: user.verificationStatus || (user.isVerified ? 'approved' : 'none'),
+    verificationCategory: user.verificationCategory || (user.role === 'admin' ? 'admin' : user.role === 'journalist' ? 'journalist' : 'citizen'),
+    verifiedAt: user.verifiedAt,
+    followersCount,
+    autoVerifyThreshold,
+    followersProgress,
+    latestRequest,
+    allRequests: userRequests,
   });
 });
 
@@ -486,28 +529,40 @@ usersRouter.post('/:id/follow', requireAuth, likesRateLimiter, async (req: Authe
   const dbFollowersCount = data.follows.filter((f) => f.targetId === targetUser.id).length;
   const effectiveFollowersCount = targetUser.followersCount ? Math.max(targetUser.followersCount, dbFollowersCount) : dbFollowersCount;
 
-  // Auto-verify journalist reaching 50 followers
+  // Auto-verify user reaching 50 followers
   let newlyVerified = false;
-  if ((targetUser.role === 'journalist' || targetUser.role === 'admin') && effectiveFollowersCount >= 50 && !targetUser.isVerified) {
+  if (effectiveFollowersCount >= 50 && !targetUser.isVerified) {
     targetUser.isVerified = true;
     targetUser.verificationStatus = 'approved';
+    targetUser.verificationCategory = targetUser.role === 'admin' ? 'admin' : targetUser.role === 'journalist' ? 'journalist' : 'citizen';
+    targetUser.verifiedAt = new Date().toISOString();
     newlyVerified = true;
     data.articles.forEach((a) => {
       if (a.authorId === targetUser.id) {
         a.isAuthorVerified = true;
       }
     });
+    data.comments.forEach((c) => {
+      if (c.userId === targetUser.id) {
+        c.isUserVerified = true;
+      }
+    });
 
-    data.notifications.unshift({
+    const autoNotif: Notification = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: targetUser.id,
       type: 'system',
-      title: 'Badge Bleu Obtenu (50 Abonnés) !',
-      message: 'Félicitations ! Vous venez d’atteindre le seuil de 50 abonnés. Votre profil est désormais officiellement certifié avec le badge bleu TikTok !',
+      title: 'Badge de Certification Obtenu (50 Abonnés) !',
+      message: 'Félicitations ! Vous venez d’atteindre le seuil de 50 abonnés. Votre profil est désormais officiellement certifié avec le badge vérifié !',
       link: `/profile/${targetUser.id}`,
       read: false,
       createdAt: new Date().toISOString(),
-    });
+    };
+    data.notifications.unshift(autoNotif);
+    await db.persistNotification(autoNotif);
+    await db.persistUser(targetUser);
+    realtimeHub.broadcastToUser(targetUser.id, 'user:updated', targetUser);
+    realtimeHub.broadcastToUser(targetUser.id, 'notification:new', autoNotif);
   }
 
   // Check media house affiliation auto-verification
@@ -518,8 +573,9 @@ usersRouter.post('/:id/follow', requireAuth, likesRateLimiter, async (req: Authe
       const membersCount = house.members ? house.members.length : (house.journalistsCount || 1);
       if ((houseFollowers >= 100 || membersCount >= 100) && !house.isVerified) {
         house.isVerified = true;
+        await db.persistMediaHouse(house);
         if (house.ownerId) {
-          data.notifications.unshift({
+          const houseNotif: Notification = {
             id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
             userId: house.ownerId,
             type: 'system',
@@ -528,7 +584,9 @@ usersRouter.post('/:id/follow', requireAuth, likesRateLimiter, async (req: Authe
             link: `/houses/${house.id}`,
             read: false,
             createdAt: new Date().toISOString(),
-          });
+          };
+          data.notifications.unshift(houseNotif);
+          await db.persistNotification(houseNotif);
         }
       }
     }
@@ -553,13 +611,19 @@ usersRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
   const isFollowing = req.user ? data.follows.some((f) => f.followerId === req.user!.id && (f.targetId === user.id || (user.mediaId && f.targetId === user.mediaId))) : false;
   const effectiveFollowersCount = user.followersCount ? Math.max(user.followersCount, dbFollowersCount) : dbFollowersCount;
 
-  // Auto-verify if journalist has >= 50 followers
-  if ((user.role === 'journalist' || user.role === 'admin') && effectiveFollowersCount >= 50 && !user.isVerified) {
+  // Auto-verify if user has >= 50 followers
+  if (effectiveFollowersCount >= 50 && !user.isVerified) {
     user.isVerified = true;
     user.verificationStatus = 'approved';
+    user.verificationCategory = user.role === 'admin' ? 'admin' : user.role === 'journalist' ? 'journalist' : 'citizen';
+    user.verifiedAt = new Date().toISOString();
     data.articles.forEach((a) => {
       if (a.authorId === user.id) a.isAuthorVerified = true;
     });
+    data.comments.forEach((c) => {
+      if (c.userId === user.id) c.isUserVerified = true;
+    });
+    db.persistUser(user).catch(() => {});
     db.save();
   }
 

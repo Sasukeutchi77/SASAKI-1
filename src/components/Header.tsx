@@ -128,7 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-blue-300/80 font-semibold font-mono whitespace-nowrap">
                   <span className="text-blue-300/60">DEV:</span>
                   <span className="text-cyan-400 font-extrabold tracking-tight drop-shadow-[0_0_8px_rgba(0,210,255,0.7)] whitespace-nowrap">
-                    SASAKI-COMPAGNIE
+                    Nexus-forger
                   </span>
                 </div>
               </div>
@@ -508,7 +508,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="border-t border-blue-500/20 my-1.5" />
 
                     <div className="px-4 py-1 text-[10px] text-blue-300/70 font-semibold font-mono">
-                      Développeur : <span className="text-cyan-400 font-bold">SASAKI-COMPAGNIE</span>
+                      Développeur : <span className="text-cyan-400 font-bold">Nexus-forger</span>
                     </div>
 
                     <button

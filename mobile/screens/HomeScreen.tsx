@@ -32,7 +32,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenTrustSystem,
   currentUser,
 }) => {
-  const [articles, setArticles] = useState<Article[]>(CURATED_FALLBACK_ARTICLES);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [feedType, setFeedType] = useState<'foryou' | 'trending' | 'latest' | 'following' | 'houses'>('foryou');
@@ -240,49 +240,44 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <Text style={styles.flashBadgeText}>FLASH DIRECT</Text>
         </View>
         <Text style={styles.flashText} numberOfLines={1}>
-          Décret officiel n°44 : Règles Sanctuaires et Délimitation des Arènes
+          {filteredArticles.length > 0
+            ? filteredArticles[0].title
+            : 'Fil d’information en direct • En attente des premières publications citoyennes et journalistiques'}
         </Text>
         <Text style={styles.flashArrow}>›</Text>
       </TouchableOpacity>
 
-      {/* 1.1 Bannière Alerte "Dernière Minute" (Breaking News) */}
-      <TouchableOpacity
-        style={styles.breakingBanner}
-        activeOpacity={0.88}
-        onPress={() => {
-          if (filteredArticles.length > 0) {
-            onSelectArticle(filteredArticles[0]);
-          }
-        }}
-      >
-        <View style={styles.breakingHeaderRow}>
-          <View style={styles.breakingBadge}>
-            <View style={styles.breakingPulseDot} />
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <AppIcon name="alert" size={13} color="#ffffff" style={{ marginRight: 4 }} />
-              <Text style={styles.breakingBadgeText}>DERNIÈRE MINUTE</Text>
+      {/* 1.1 Bannière Alerte "Dernière Minute" (Breaking News) - Uniquement si un article existe */}
+      {filteredArticles.length > 0 && (
+        <TouchableOpacity
+          style={styles.breakingBanner}
+          activeOpacity={0.88}
+          onPress={() => onSelectArticle(filteredArticles[0])}
+        >
+          <View style={styles.breakingHeaderRow}>
+            <View style={styles.breakingBadge}>
+              <View style={styles.breakingPulseDot} />
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <AppIcon name="alert" size={13} color="#ffffff" style={{ marginRight: 4 }} />
+                <Text style={styles.breakingBadgeText}>DERNIÈRE MINUTE</Text>
+              </View>
             </View>
+            <Text style={styles.breakingTimeText}>Enquête Prioritaire</Text>
           </View>
-          <Text style={styles.breakingTimeText}>Enquête Prioritaire</Text>
-        </View>
-        <Text style={styles.breakingHeadline} numberOfLines={2}>
-          {filteredArticles.length > 0
-            ? filteredArticles[0].title
-            : 'Décret d’application des sanctuaires civils et protocoles des zones neutres'}
-        </Text>
-        <View style={styles.breakingFooterRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <AppIcon name="shield" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
-            <Text style={styles.breakingSourceText}>
-              {filteredArticles.length > 0 && filteredArticles[0].mediaName
-                ? filteredArticles[0].mediaName
-                : 'PURGE RÉDACTION CENTRALE'}{' '}
-              • Fiabilité 98%
-            </Text>
+          <Text style={styles.breakingHeadline} numberOfLines={2}>
+            {filteredArticles[0].title}
+          </Text>
+          <View style={styles.breakingFooterRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="shield" size={12} color="#00d2ff" style={{ marginRight: 4 }} />
+              <Text style={styles.breakingSourceText}>
+                {filteredArticles[0].mediaName || 'RÉDACTION CENTRALE'} • Fiabilité {filteredArticles[0].trustScore || 98}%
+              </Text>
+            </View>
+            <Text style={styles.breakingActionText}>Consulter l’enquête ›</Text>
           </View>
-          <Text style={styles.breakingActionText}>Consulter l’enquête ›</Text>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      )}
 
       {/* 2. Article Vedette / Hero "À LA UNE" */}
       {heroArticle && (

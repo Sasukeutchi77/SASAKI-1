@@ -1153,7 +1153,7 @@ export const Home: React.FC<HomeProps> = ({
               <div className="p-2.5 rounded-xl bg-blue-950/60 border border-blue-500/40 flex items-center justify-between shadow-[0_0_12px_rgba(0,210,255,0.25)]">
                 <span className="text-[11px] font-bold text-slate-300 font-mono">DÉVELOPPEUR :</span>
                 <span className="text-xs font-black text-cyan-400 tracking-wider font-mono drop-shadow-[0_0_8px_rgba(0,210,255,0.8)]">
-                  SASAKI COMPAGNIE
+                  Nexus-forger
                 </span>
               </div>
               <div className="pt-2 border-t border-cyan-500/15 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-cyan-400/50 font-mono">

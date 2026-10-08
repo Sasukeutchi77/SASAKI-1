@@ -270,6 +270,11 @@ export const TrustSystemModal: React.FC<TrustSystemModalProps> = ({
 
           {/* Footer Action */}
           <View style={styles.footer}>
+            <View style={styles.devBanner}>
+              <Text style={styles.devBrand}>Nexus-forger</Text>
+              <Text style={styles.devDot}>•</Text>
+              <Text style={styles.devTagline}>Garantie d'intégrité journalistique</Text>
+            </View>
             <TouchableOpacity style={styles.gotItBtn} onPress={onClose} activeOpacity={0.6}>
               <Text style={styles.gotItBtnText}>RETOURNER À L'APPLICATION</Text>
             </TouchableOpacity>
@@ -576,6 +581,28 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.08)',
     backgroundColor: '#070b1e',
+  },
+  devBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  devBrand: {
+    color: '#06b6d4',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  devDot: {
+    color: '#475569',
+    fontSize: 11,
+  },
+  devTagline: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
   },
   gotItBtn: {
     backgroundColor: '#06b6d4',

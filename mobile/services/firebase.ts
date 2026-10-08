@@ -679,6 +679,7 @@ export async function submitVerificationRequestToFirestore(requestData: {
   userId: string;
   userName: string;
   userEmail: string;
+  category?: 'journalist' | 'citizen' | 'media';
   mediaName?: string;
   pressCardNumber?: string;
   motivation: string;
@@ -688,13 +689,15 @@ export async function submitVerificationRequestToFirestore(requestData: {
 
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const cleanDocUrl = requestData.documentUrl ? requestData.documentUrl.trim() : '';
+  const cleanCategory = requestData.category || 'journalist';
   const newRequest: VerificationRequest = {
     id: requestId,
     userId: requestData.userId,
     userName: requestData.userName || 'Citoyen',
     userEmail: requestData.userEmail || '',
-    mediaName: (requestData.mediaName && requestData.mediaName.trim()) || 'Média Indépendant',
-    pressCardNumber: (requestData.pressCardNumber && requestData.pressCardNumber.trim()) || 'Candidat Citoyen / Enquêteur',
+    category: cleanCategory,
+    mediaName: (requestData.mediaName && requestData.mediaName.trim()) || (cleanCategory === 'citizen' ? 'Citoyen Indépendant' : 'Média Indépendant'),
+    pressCardNumber: (requestData.pressCardNumber && requestData.pressCardNumber.trim()) || (cleanCategory === 'citizen' ? 'Vérification d’Identité Citoyenne' : 'Candidat Citoyen / Enquêteur'),
     motivation: (requestData.motivation && requestData.motivation.trim()) || '',
     documentUrl: cleanDocUrl,
     status: 'pending',
@@ -784,12 +787,14 @@ export async function reviewVerificationRequestInFirestore(
 
   // Mettre à jour l'utilisateur cible
   const targetUserId = reqData.userId;
+  const isCitizen = reqData.category === 'citizen';
   const targetUpdates: Partial<User> = {
     verificationStatus: decision,
     isVerified: decision === 'approved',
-    role: decision === 'approved' ? 'journalist' : 'citoyen',
-    accountType: decision === 'approved' ? 'journalist' : 'citoyen',
-    mediaName: decision === 'approved' ? (reqData.mediaName || 'Média Agréé') : '',
+    verificationCategory: decision === 'approved' ? (reqData.category || 'journalist') : undefined,
+    role: decision === 'approved' ? (isCitizen ? 'user' : 'journalist') : 'user',
+    accountType: decision === 'approved' ? (isCitizen ? 'user' : 'journalist') : 'user',
+    mediaName: decision === 'approved' && !isCitizen ? (reqData.mediaName || 'Média Agréé') : '',
     updatedAt: now,
   };
 

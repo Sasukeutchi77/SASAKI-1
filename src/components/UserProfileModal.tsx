@@ -67,10 +67,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
   // Cover Image State
   const [coverUploading, setCoverUploading] = useState(false);
 
-  // Journalist Accreditation Request Modal / Form
+  // Journalist & Citizen Certification Request Modal / Form
   const [showAccreditationForm, setShowAccreditationForm] = useState(false);
+  const [certCategory, setCertCategory] = useState<'journalist' | 'citizen'>('journalist');
   const [mediaName, setMediaName] = useState(user?.mediaName || '');
   const [pressCardNumber, setPressCardNumber] = useState('');
+  const [portfolioLink, setPortfolioLink] = useState('');
   const [motivation, setMotivation] = useState('');
   const [cardDocFile, setCardDocFile] = useState<File | null>(null);
   const [cardDocUploading, setCardDocUploading] = useState(false);
@@ -201,13 +203,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
     }
   };
 
-  // Submit Journalist Accreditation Request
+  // Submit Journalist Accreditation or Citizen Certification Request
   const handleSubmitAccreditation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pressCardNumber.trim() || !motivation.trim()) {
+    const isCitizen = certCategory === 'citizen';
+    if (!isCitizen && (!pressCardNumber.trim() || !motivation.trim())) {
       setFeedback({
         type: 'error',
-        message: 'Le numéro de carte de presse et votre motivation sont obligatoires.',
+        message: 'Le numéro de carte de presse (ou référence d’enquête) et votre motivation sont obligatoires.',
+      });
+      return;
+    }
+
+    if (isCitizen && (!motivation.trim() || motivation.trim().length < 15)) {
+      setFeedback({
+        type: 'error',
+        message: 'Veuillez détailler votre motivation pour la certification citoyenne (minimum 15 caractères).',
       });
       return;
     }
@@ -224,29 +235,32 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
         const { uploadMediaToCloudinary } = await import('../services/cloudinary');
         const media = await uploadMediaToCloudinary(cardDocFile, {
           type: 'image',
-          folder: 'purge_info/press_cards',
+          folder: isCitizen ? 'purge_info/citizen_ids' : 'purge_info/press_cards',
         });
         documentUrl = media.url;
         setCardDocUploading(false);
       }
 
       await requestJournalistVerification({
-        mediaName: mediaName.trim(),
-        pressCardNumber: pressCardNumber.trim(),
+        category: certCategory,
+        mediaName: mediaName.trim() || (isCitizen ? 'Citoyen Indépendant' : 'Média Indépendant'),
+        pressCardNumber: pressCardNumber.trim() || (isCitizen ? 'Vérification d’Identité Citoyenne' : 'Candidat Journaliste'),
         motivation: motivation.trim(),
         documentUrl,
+        links: portfolioLink.trim() ? [portfolioLink.trim()] : undefined,
       });
 
       setShowAccreditationForm(false);
       setFeedback({
         type: 'success',
-        message:
-          'Votre dossier d’accréditation a bien été transmis aux administrateurs pour vérification officielle.',
+        message: isCitizen
+          ? 'Votre dossier de certification citoyenne a bien été transmis aux administrateurs pour authentification.'
+          : 'Votre dossier d’accréditation journaliste a bien été transmis aux administrateurs pour vérification officielle.',
       });
     } catch (err: any) {
       setFeedback({
         type: 'error',
-        message: err.message || 'Erreur lors de la soumission de l’accréditation.',
+        message: err.message || 'Erreur lors de la soumission du dossier de certification.',
       });
     } finally {
       setAccreditationLoading(false);
@@ -404,8 +418,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
                 <div className="flex-1 text-center sm:text-left space-y-1">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                     <h3 className="text-lg font-bold text-white">{user.name}</h3>
-                    {user.isVerified && (user.role === 'admin' || user.role === 'journalist') && (
-                      <VerifiedBadge size="sm" type={user.role === 'admin' ? 'admin' : 'journalist'} isVerified={true} role={user.role} />
+                    {user.isVerified && (
+                      <VerifiedBadge
+                        size="sm"
+                        type={user.verificationCategory || (user.role === 'admin' ? 'admin' : user.role === 'journalist' ? 'journalist' : 'citizen')}
+                        isVerified={true}
+                        role={user.role}
+                      />
                     )}
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${roleBadgeColor}`}>
                       {roleLabel}
@@ -614,194 +633,318 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ onClose }) =
             )}
           </div>
 
-          {/* Section Statut Badge Bleu & Certification (Journalistes & Administrateurs) */}
-          {(user.role === 'journalist' || user.role === 'admin') && (
-            <div className="border border-cyan-500/30 bg-[#101428] rounded-2xl p-5 space-y-3 shadow-[0_0_20px_rgba(0,243,255,0.05)]">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
-                  <VerifiedBadge size="md" type={user.role === 'admin' ? 'admin' : 'journalist'} />
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
-                      <span>Certification Officielle (Badge Bleu)</span>
-                      {user.isVerified && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
-                          Actif
-                        </span>
-                      )}
-                    </h4>
-                    <p className="text-xs text-cyan-400/70 mt-0.5">
-                      {user.role === 'admin'
-                        ? 'Votre compte dispose du badge bleu officiel attestant de votre statut d’Administrateur de la plateforme.'
-                        : user.isVerified
-                        ? 'Votre compte dispose du badge bleu officiel de certification. Ce badge vous distingue auprès des lecteurs et médias.'
-                        : 'Atteignez 50 abonnés pour être certifié automatiquement avec le badge bleu (style TikTok), ou recevez une accréditation directe par l’administration.'}
-                    </p>
-                  </div>
+          {/* Section Statut & Système de Certification Officielle */}
+          <div className="border border-cyan-500/30 bg-[#101428] rounded-2xl p-5 space-y-4 shadow-[0_0_20px_rgba(0,243,255,0.05)]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <VerifiedBadge
+                  size="md"
+                  type={user.verificationCategory || (user.role === 'admin' ? 'admin' : user.role === 'journalist' ? 'journalist' : 'citizen')}
+                  isVerified={true}
+                  role={user.role}
+                />
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                    <span>Système de Certification & Accréditations</span>
+                    {user.isVerified ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
+                        {user.role === 'admin' ? 'Admin Certifié' : user.role === 'journalist' ? 'Journaliste Agréé' : 'Citoyen Certifié'}
+                      </span>
+                    ) : user.verificationStatus === 'pending' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 animate-pulse">
+                        En examen
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                        Non certifié
+                      </span>
+                    )}
+                  </h4>
+                  <p className="text-xs text-cyan-400/70 mt-0.5">
+                    {user.isVerified
+                      ? user.role === 'admin'
+                        ? 'Votre compte dispose du badge officiel Or & Cyan attestant de vos privilèges de Haute Administration.'
+                        : user.role === 'journalist'
+                        ? 'Votre compte dispose du badge bleu officiel de Journaliste Titulaire. Vous êtes autorisé à publier des enquêtes et fonder une Maison.'
+                        : 'Votre compte dispose du badge de vérification citoyenne attestant de l’authenticité de votre profil civique.'
+                      : 'Obtenez la certification officielle pour authentifier votre identité (badge citoyen) ou accéder au droit de publication d’enquêtes (badge journaliste).'}
+                  </p>
                 </div>
               </div>
+            </div>
 
-              <div className="p-3 bg-[#141933] border border-cyan-500/20 rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-stone-300">Audience abonnés :</span>
-                  <span className="text-cyan-300 font-bold">
-                    {user.followersCount || 0} / 50 abonnés
-                  </span>
+            {/* Audience Milestone: 50 Followers auto-verify */}
+            <div className="p-3 bg-[#141933] border border-cyan-500/20 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-stone-300">Audience & Notoriété :</span>
+                <span className="text-cyan-300 font-bold">
+                  {user.followersCount || 0} / 50 abonnés
+                </span>
+              </div>
+              <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, Math.round(((user.followersCount || 0) / 50) * 100))}%`,
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-stone-400">
+                <span className="flex items-center gap-1">
+                  {user.isVerified ? (
+                    <>
+                      <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                      <span>Certification active</span>
+                    </>
+                  ) : (user.followersCount || 0) >= 50 ? (
+                    <>
+                      <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                      <span>Seuil de 50 abonnés atteint (éligible)</span>
+                    </>
+                  ) : (
+                    `Encore ${Math.max(0, 50 - (user.followersCount || 0))} abonnés pour la certification d'audience`
+                  )}
+                </span>
+                <span className="text-cyan-400/70 text-[10px]">
+                  Validation sur dossier par l’administration possible à tout moment
+                </span>
+              </div>
+            </div>
+
+            {/* Status Messages */}
+            {user.verificationStatus === 'pending' && (
+              <div className="p-3.5 bg-amber-950/40 border border-amber-500/40 rounded-xl flex items-start gap-3 text-xs text-amber-200">
+                <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-amber-300">Dossier en cours d’examen officiel</p>
+                  <p className="text-[11px] text-amber-200/80 mt-0.5">
+                    Votre candidature a été transmise aux administrateurs. Vos références déontologiques sont en cours de validation.
+                  </p>
                 </div>
-                <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, Math.round(((user.followersCount || 0) / 50) * 100))}%`,
-                    }}
-                  />
+              </div>
+            )}
+
+            {user.verificationStatus === 'rejected' && (
+              <div className="p-3.5 bg-red-950/40 border border-red-500/40 rounded-xl flex items-start gap-3 text-xs text-red-200">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-red-300">Dossier précédent non retenu</p>
+                  <p className="text-[11px] text-red-200/80 mt-0.5">
+                    Votre précédente demande n'a pas pu être validée. Vous pouvez soumettre un dossier révisé avec des pièces justificatives complémentaires.
+                  </p>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-stone-400">
-                  <span className="flex items-center gap-1">
-                    {user.isVerified ? (
+              </div>
+            )}
+
+            {/* Action Button to Open / Close Application Form */}
+            {(!user.isVerified || user.role === 'user' || user.role === 'reader') && user.verificationStatus !== 'pending' && (
+              <div>
+                {!showAccreditationForm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAccreditationForm(true)}
+                    className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <FileCheck className="w-4 h-4" />
+                    <span>
+                      {user.verificationStatus === 'rejected'
+                        ? 'Déposer un nouveau dossier révisé'
+                        : 'Déposer une demande de certification / accréditation'}
+                    </span>
+                  </button>
+                ) : (
+                  <form onSubmit={handleSubmitAccreditation} className="p-4 bg-[#141933] rounded-xl border border-cyan-500/40 space-y-3.5">
+                    <div className="flex items-center justify-between pb-2 border-b border-cyan-500/20">
+                      <h5 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                        Dossier Officiel de Certification
+                      </h5>
+                      <span className="text-[10px] text-cyan-400/60 font-mono">Conforme charte PURGE</span>
+                    </div>
+
+                    {/* Choix du type de certification */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1.5">
+                        Type de certification souhaitée *
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCertCategory('journalist')}
+                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            certCategory === 'journalist'
+                              ? 'bg-blue-900/40 border-cyan-400 text-white shadow-[0_0_12px_rgba(0,243,255,0.2)]'
+                              : 'bg-[#101428] border-cyan-500/20 text-slate-400 hover:border-cyan-500/40'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <VerifiedBadge size="xs" type="journalist" />
+                            <span className="text-xs font-bold">Presse / Journaliste Titulaire</span>
+                          </div>
+                          <p className="text-[10px] text-cyan-400/70 mt-1">
+                            Badge Bleu • Droit d’enquêter, publier des articles et fonder une Maison
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setCertCategory('citizen')}
+                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            certCategory === 'citizen'
+                              ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+                              : 'bg-[#101428] border-cyan-500/20 text-slate-400 hover:border-cyan-500/40'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <VerifiedBadge size="xs" type="citizen" />
+                            <span className="text-xs font-bold">Citoyen Débatteur Vérifié</span>
+                          </div>
+                          <p className="text-[10px] text-emerald-400/70 mt-1">
+                            Badge Vert/Cyan • Authentification anti-usurpation pour scrutins et débats
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+
+                    {certCategory === 'journalist' ? (
                       <>
-                        <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" />
-                        <span>Compte certifié</span>
-                      </>
-                    ) : (user.followersCount || 0) >= 50 ? (
-                      <>
-                        <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" />
-                        <span>Seuil de 50 abonnés atteint</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
+                              Organe de presse / Rédaction de rattachement *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={mediaName}
+                              onChange={(e) => setMediaName(e.target.value)}
+                              placeholder="Ex: Le Quotidien Libre, Indépendant"
+                              className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
+                              Numéro de Carte de Presse ou Réf. Enquête *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={pressCardNumber}
+                              onChange={(e) => setPressCardNumber(e.target.value)}
+                              placeholder="Ex: CP-2026-8942 ou Enquêteur Titulaire"
+                              className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
+                            Lien vers articles / portfolio journalistique (optionnel)
+                          </label>
+                          <input
+                            type="url"
+                            value={portfolioLink}
+                            onChange={(e) => setPortfolioLink(e.target.value)}
+                            placeholder="https://mon-portfolio.fr ou lien d’archive"
+                            className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
                       </>
                     ) : (
-                      `Encore ${Math.max(0, 50 - (user.followersCount || 0))} abonnés requis`
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
+                            Titre ou Activité Civique (optionnel)
+                          </label>
+                          <input
+                            type="text"
+                            value={mediaName}
+                            onChange={(e) => setMediaName(e.target.value)}
+                            placeholder="Ex: Juriste, Observateur Indépendant, Débatteur Civique"
+                            className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
+                            Lien de profil public ou référence civile (optionnel)
+                          </label>
+                          <input
+                            type="url"
+                            value={portfolioLink}
+                            onChange={(e) => setPortfolioLink(e.target.value)}
+                            placeholder="https://linkedin.com/in/... ou profil public"
+                            className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+                      </div>
                     )}
-                  </span>
-                  <span className="text-cyan-400/70 text-[10px]">
-                    Validation manuelle admin possible à tout moment
-                  </span>
-                </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
+                        Motivation & Démarche déontologique *
+                      </label>
+                      <textarea
+                        rows={2}
+                        required
+                        value={motivation}
+                        onChange={(e) => setMotivation(e.target.value)}
+                        placeholder={
+                          certCategory === 'citizen'
+                            ? "Expliquez votre démarche pour faire authentifier votre compte citoyen, vos centres d'intérêt civiques et votre engagement pour des débats constructifs..."
+                            : "Décrivez brièvement votre expérience journalistique, vos méthodes de recoupement des sources et les rubriques que vous souhaitez couvrir..."
+                        }
+                        className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 resize-none shadow-[0_0_10px_rgba(0,243,255,0.1)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
+                        {certCategory === 'citizen'
+                          ? 'Justificatif ou document civique (optionnel - Cloudinary)'
+                          : 'Photo / Scan de la Carte de Presse (Cloudinary)'}
+                      </label>
+                      <input
+                        ref={cardDocInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => setCardDocFile(e.target.files?.[0] || null)}
+                        className="text-xs text-cyan-400/70 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#101428] file:border file:border-cyan-500/40 file:text-cyan-300 hover:file:bg-[#182042] cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-cyan-500/20">
+                      <button
+                        type="button"
+                        onClick={() => setShowAccreditationForm(false)}
+                        className="px-3 py-1.5 text-cyan-400/70 hover:text-cyan-200 text-xs font-semibold cursor-pointer"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={accreditationLoading || cardDocUploading}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        {accreditationLoading ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Transmission...</span>
+                          </>
+                        ) : (
+                          <span>
+                            {certCategory === 'citizen'
+                              ? 'Soumettre ma certification citoyenne'
+                              : 'Soumettre mon accréditation presse'}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* Section Demande d'Accréditation Journaliste (si Lecteur / USER) */}
-          {user.role === 'user' || user.role === 'reader' ? (
-            <div className="border border-cyan-500/30 bg-[#101428] rounded-2xl p-5 space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
-                  <FileCheck className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
-                      Devenir Journaliste Professionnel / Organe de Presse
-                    </h4>
-                    <p className="text-xs text-cyan-400/70 mt-0.5">
-                      purge-info offre un espace de publication exclusif aux journalistes titulaires d'une carte de presse professionnelle reconnue.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {user.verificationStatus === 'pending' ? (
-                <div className="p-3 bg-blue-950/60 border border-blue-500/40 rounded-xl flex items-center gap-2 text-xs text-cyan-200 font-bold">
-                  <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span>Votre dossier d’accréditation est actuellement en cours d’examen par l’administration.</span>
-                </div>
-              ) : user.verificationStatus === 'approved' ? (
-                <div className="p-3 bg-cyan-950/60 border border-cyan-500/40 rounded-xl flex items-center gap-2 text-xs text-cyan-200 font-bold">
-                  <VerifiedBadge size="xs" type="journalist" />
-                  <span>Votre compte a été vérifié avec succès par l'administration.</span>
-                </div>
-              ) : !showAccreditationForm ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAccreditationForm(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all cursor-pointer"
-                >
-                  Déposer une demande d’accréditation
-                </button>
-              ) : (
-                <form onSubmit={handleSubmitAccreditation} className="p-4 bg-[#141933] rounded-xl border border-cyan-500/40 space-y-3">
-                  <h5 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                    Formulaire d’accréditation presse
-                  </h5>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
-                      Nom de votre Organe de presse / Rédaction *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={mediaName}
-                      onChange={(e) => setMediaName(e.target.value)}
-                      placeholder="Ex: Le Quotidien Indépendant"
-                      className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.1)]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
-                      Numéro officiel de Carte de Presse *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={pressCardNumber}
-                      onChange={(e) => setPressCardNumber(e.target.value)}
-                      placeholder="Ex: PRESS-ID-2026-9042"
-                      className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 shadow-[0_0_10px_rgba(0,243,255,0.1)]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
-                      Motivation & Sujets couverts *
-                    </label>
-                    <textarea
-                      rows={2}
-                      required
-                      value={motivation}
-                      onChange={(e) => setMotivation(e.target.value)}
-                      placeholder="Décrivez brièvement votre expérience journalistique et les rubriques que vous souhaitez couvrir sur purge-info..."
-                      className="w-full px-3 py-2 text-xs bg-[#101428] border border-cyan-500/40 text-white rounded-lg focus:outline-none focus:border-cyan-400 resize-none shadow-[0_0_10px_rgba(0,243,255,0.1)]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-cyan-400 uppercase mb-1">
-                      Photo ou scan de la carte de presse (Cloudinary)
-                    </label>
-                    <input
-                      ref={cardDocInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => setCardDocFile(e.target.files?.[0] || null)}
-                      className="text-xs text-cyan-400/70 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#101428] file:border file:border-cyan-500/40 file:text-cyan-300 hover:file:bg-[#182042] cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-cyan-500/20">
-                    <button
-                      type="button"
-                      onClick={() => setShowAccreditationForm(false)}
-                      className="px-3 py-1.5 text-cyan-400/70 hover:text-cyan-200 text-xs font-semibold cursor-pointer"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={accreditationLoading || cardDocUploading}
-                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      {accreditationLoading ? (
-                        <>
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          <span>Transmission...</span>
-                        </>
-                      ) : (
-                        <span>Soumettre ma demande d’accréditation</span>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          ) : null}
+            )}
+          </div>
 
           {/* Logout Action */}
           <div className="pt-2 flex justify-end">

@@ -43,6 +43,7 @@ export const PressAccreditationSection: React.FC<PressAccreditationSectionProps>
   const isPending = currentUser.verificationStatus === 'pending';
   const isApproved = currentUser.verificationStatus === 'approved' || isJournalist;
   const isRejected = currentUser.verificationStatus === 'rejected';
+  const isCitizenVerified = currentUser.isVerified && (currentUser.verificationCategory === 'citizen' || !isJournalist);
 
   return (
     <View style={styles.container}>
@@ -111,6 +112,58 @@ export const PressAccreditationSection: React.FC<PressAccreditationSectionProps>
               </TouchableOpacity>
             )}
           </View>
+        </View>
+      ) : isCitizenVerified ? (
+        /* 2. SECTION CITOYEN VÉRIFIÉ : CARTE D'AUTHENTICITÉ OFFICIELLE */
+        <View style={styles.citizenCardContainer}>
+          <View style={styles.citizenCardBadgeHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppIcon name="shield-checkmark" size={16} color="#10b981" style={{ marginRight: 6 }} />
+              <Text style={styles.citizenCardTitle}>CARTE DE CITOYEN VÉRIFIÉ</Text>
+            </View>
+            <View style={styles.citizenHologramPill}>
+              <Text style={styles.citizenHologramText}>AUTHENTIFIÉ</Text>
+            </View>
+          </View>
+
+          <View style={styles.citizenCardBody}>
+            <View style={styles.pressCardRow}>
+              <Text style={styles.pressCardLabel}>Titulaire :</Text>
+              <Text style={styles.pressCardValue}>{currentUser.name}</Text>
+            </View>
+
+            <View style={styles.pressCardRow}>
+              <Text style={styles.pressCardLabel}>ID Citoyen :</Text>
+              <Text style={[styles.pressCardValueId, { color: '#10b981' }]}>
+                {currentUser.pressCardNumber || `CIT-PURGE-${currentUser.id.slice(-6).toUpperCase()}`}
+              </Text>
+            </View>
+
+            <View style={styles.pressCardRow}>
+              <Text style={styles.pressCardLabel}>Statut Civique :</Text>
+              <Text style={[styles.pressCardValueMedia, { color: '#10b981' }]}>
+                {currentUser.mediaName || 'Citoyen Indépendant Authentifié'}
+              </Text>
+            </View>
+
+            <View style={styles.pressCardRow}>
+              <Text style={styles.pressCardLabel}>Privilèges Actifs :</Text>
+              <Text style={[styles.pressCardValue, { color: '#34d399', fontSize: 11 }]}>
+                Badge vert officiel • Débats & scrutins certifiés
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.upgradeToJournalistBtn}
+            onPress={onOpenApplyModal}
+            activeOpacity={0.8}
+          >
+            <AppIcon name="newspaper" size={13} color="#06b6d4" style={{ marginRight: 6 }} />
+            <Text style={styles.upgradeToJournalistBtnText}>
+              Évoluer vers l’Accréditation Journaliste de Presse
+            </Text>
+          </TouchableOpacity>
         </View>
       ) : (
         /* 2. SECTION CITOYEN : PARCOURS D'ACCRÉDITATION */
@@ -250,7 +303,29 @@ export const PressAccreditationSection: React.FC<PressAccreditationSectionProps>
               <View key={req.id} style={styles.requestCard}>
                 <View style={styles.requestHeader}>
                   <View style={styles.requestApplicantCol}>
-                    <Text style={styles.requestName}>{req.userName || 'Candidat Citoyen'}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Text style={styles.requestName}>{req.userName || 'Candidat'}</Text>
+                      <View
+                        style={[
+                          styles.reqCategoryPill,
+                          {
+                            backgroundColor:
+                              req.category === 'citizen' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(6, 182, 212, 0.15)',
+                            borderColor: req.category === 'citizen' ? '#10b981' : '#06b6d4',
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={{
+                            color: req.category === 'citizen' ? '#10b981' : '#06b6d4',
+                            fontSize: 9,
+                            fontWeight: '800',
+                          }}
+                        >
+                          {req.category === 'citizen' ? '🛡️ CITOYEN' : '✍️ PRESSE'}
+                        </Text>
+                      </View>
+                    </View>
                     <Text style={styles.requestEmail}>{req.userEmail}</Text>
                   </View>
 
@@ -263,12 +338,18 @@ export const PressAccreditationSection: React.FC<PressAccreditationSectionProps>
 
                 <View style={styles.requestDetailsBox}>
                   <Text style={styles.requestDetailRow}>
-                    <Text style={styles.requestDetailLabel}>Média visé : </Text>
-                    <Text style={styles.requestDetailVal}>{req.mediaName || 'Indépendant'}</Text>
+                    <Text style={styles.requestDetailLabel}>
+                      {req.category === 'citizen' ? 'Statut civique : ' : 'Média visé : '}
+                    </Text>
+                    <Text style={styles.requestDetailVal}>
+                      {req.mediaName || (req.category === 'citizen' ? 'Citoyen Indépendant' : 'Indépendant')}
+                    </Text>
                   </Text>
                   <Text style={styles.requestDetailRow}>
-                    <Text style={styles.requestDetailLabel}>Référence CP : </Text>
-                    <Text style={styles.requestDetailVal}>{req.pressCardNumber || 'Investigation citoyenne'}</Text>
+                    <Text style={styles.requestDetailLabel}>
+                      {req.category === 'citizen' ? 'Référence : ' : 'Référence CP : '}
+                    </Text>
+                    <Text style={styles.requestDetailVal}>{req.pressCardNumber || 'Dossier certifié'}</Text>
                   </Text>
                   <Text style={styles.requestDetailRow}>
                     <Text style={styles.requestDetailLabel}>Motivation : </Text>
@@ -276,7 +357,7 @@ export const PressAccreditationSection: React.FC<PressAccreditationSectionProps>
                   </Text>
                   {req.documentUrl ? (
                     <Text style={styles.requestDetailRow}>
-                      <Text style={styles.requestDetailLabel}>Portfolio : </Text>
+                      <Text style={styles.requestDetailLabel}>Justificatif : </Text>
                       <Text style={styles.requestLinkVal}>{req.documentUrl}</Text>
                     </Text>
                   ) : null}
@@ -301,7 +382,9 @@ export const PressAccreditationSection: React.FC<PressAccreditationSectionProps>
                     activeOpacity={0.8}
                   >
                     <AppIcon name="checkmark" size={13} color="#10b981" style={{ marginRight: 4 }} />
-                    <Text style={styles.approveBtnText}>Valider & Accréditer</Text>
+                    <Text style={styles.approveBtnText}>
+                      {req.category === 'citizen' ? 'Valider la Certification' : 'Valider & Accréditer'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -728,5 +811,71 @@ const styles = StyleSheet.create({
   },
   disabledBtn: {
     opacity: 0.5,
+  },
+  citizenCardContainer: {
+    backgroundColor: '#071618',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#10b981',
+    gap: 12,
+  },
+  citizenCardBadgeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  citizenCardTitle: {
+    color: '#10b981',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  citizenHologramPill: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: '#10b981',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  citizenHologramText: {
+    color: '#34d399',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  citizenCardBody: {
+    backgroundColor: 'rgba(2, 5, 18, 0.7)',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    gap: 6,
+  },
+  upgradeToJournalistBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: '#06b6d4',
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  upgradeToJournalistBtnText: {
+    color: '#06b6d4',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  reqCategoryPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    borderWidth: 1,
   },
 });
