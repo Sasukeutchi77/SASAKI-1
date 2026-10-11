@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { Article, User, MediaRecord, MediaHouse, Poll } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { safeConfirm } from '../utils/safeConfirm';
 import { api } from '../services/api';
 import { MediaUploader } from './media/MediaUploader';
 import { getThumbnailUrl } from '../services/cloudinary';
@@ -46,6 +48,7 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
   onOpenArticle,
   onOpenMediaHouses,
 }) => {
+  const toast = useToast();
   const { user, refreshUser } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,15 +89,16 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
   };
 
   const handleDeletePoll = async (articleId: string) => {
-    if (!window.confirm('Voulez-vous vraiment clôturer et retirer ce sondage citoyen ?')) {
+    if (!safeConfirm('Voulez-vous vraiment clôturer et retirer ce sondage citoyen ?')) {
       return;
     }
     setDeletingPollId(articleId);
     try {
       await api.deleteArticlePoll(articleId);
+      toast.success('Sondage retiré avec succès.');
       await loadJournalistArticles();
     } catch (err: any) {
-      alert(err.message || 'Impossible de retirer le sondage.');
+      toast.error(err.message || 'Impossible de retirer le sondage.');
     } finally {
       setDeletingPollId(null);
     }
@@ -145,27 +149,30 @@ export const JournalistDashboardModal: React.FC<JournalistDashboardModalProps> =
   };
 
   const handleDeleteMedia = async (record: MediaRecord) => {
-    if (!confirm(`Supprimer le média "${record.altText || record.publicId}" ? Le serveur vérifiera qu'aucun article actif ne l'utilise.`)) {
+    if (!safeConfirm(`Supprimer le média "${record.altText || record.publicId}" ? Le serveur vérifiera qu'aucun article actif ne l'utilise.`)) {
       return;
     }
     try {
       await api.deleteMediaRecord(record.publicId);
+      toast.success('Média supprimé avec succès.');
       setMediaFeedback('Média supprimé avec succès.');
       setTimeout(() => setMediaFeedback(null), 3000);
       loadMediaList();
     } catch (err: any) {
+      toast.error(err.message || 'Impossible de supprimer le média.');
       setMediaFeedback(`Erreur : ${err.message}`);
       setTimeout(() => setMediaFeedback(null), 4000);
     }
   };
 
   const handleDeleteArticle = async (id: string) => {
-    if (!confirm('Supprimer définitivement cet article ?')) return;
+    if (!safeConfirm('Supprimer définitivement cet article ?')) return;
     try {
       await api.deleteArticle(id);
+      toast.success('Article supprimé avec succès.');
       loadJournalistArticles();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Impossible de supprimer cet article.');
     }
   };
 

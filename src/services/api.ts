@@ -226,6 +226,28 @@ export const api = {
     });
   },
 
+  async resetPassword(email: string, newPassword: string) {
+    return request<{ success: boolean; message: string }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, newPassword }),
+    });
+  },
+
+  async loginGoogle(idToken: string) {
+    const data = await request<{ message: string; token: string; user: User }>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+    if (data?.token) {
+      setToken(data.token);
+    }
+    if (data?.user) {
+      setUser(data.user);
+    }
+    return data;
+  },
+
+
   // Categories
   async getCategories() {
     return request<{ categories: Category[] }>('/api/categories');

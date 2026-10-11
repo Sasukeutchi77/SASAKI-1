@@ -7,6 +7,7 @@ import {
   registerWithFirebaseEmail,
   loginWithFirebaseEmail,
   loginWithFirebaseGoogle,
+  getFirebaseRedirectResult,
   sendFirebasePasswordReset,
   logoutFirebase,
   getFirebaseIdToken,
@@ -189,9 +190,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return refreshPromiseRef.current;
   };
 
-  // Sync Firebase Auth state listener
+  // Sync Firebase Auth state listener and check redirect result
   useEffect(() => {
     if (isFirebaseActive && firebaseAuth) {
+      // Check if user just returned from Google redirect login
+      getFirebaseRedirectResult()
+        .then(async (res) => {
+          if (res?.idToken) {
+            try {
+              const googleRes = await api.loginGoogle(res.idToken).catch(() => null);
+              if (googleRes?.token) {
+                api.setToken(googleRes.token);
+                setToken(googleRes.token);
+                if (googleRes.user) setUser(googleRes.user);
+              } else {
+                api.setToken(res.idToken);
+                setToken(res.idToken);
+              }
+              await refreshUser();
+            } catch (e) {
+              console.warn('Error processing Google redirect:', e);
+            }
+          }
+        })
+        .catch(() => {});
+
       const unsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser: FirebaseUser | null) => {
         if (fbUser) {
           try {
@@ -375,8 +398,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error('Impossible d’obtenir le jeton d’authentification Google.');
         }
 
-        api.setToken(idToken);
-        setToken(idToken);
+        // Try direct backend session sync
+        try {
+          const googleRes = await api.loginGoogle(idToken);
+          if (googleRes?.token) {
+            api.setToken(googleRes.token);
+            setToken(googleRes.token);
+          }
+          if (googleRes?.user) {
+            setUser(googleRes.user);
+          }
+        } catch (apiErr) {
+          console.warn('[Google Auth] Backend direct sync fallback to idToken:', apiErr);
+          api.setToken(idToken);
+          setToken(idToken);
+        }
 
         // Load or verify user profile
         await refreshUser();

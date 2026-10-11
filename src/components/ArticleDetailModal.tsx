@@ -20,6 +20,7 @@ import {
   ArrowUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
 import { ShareModal } from './ShareModal';
 import { getCoverUrl } from '../services/cloudinary';
@@ -59,6 +60,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   onOpenArticle,
   onOpenTrustSystem,
 }) => {
+  const toast = useToast();
   const { user, isAuthenticated, refreshUser } = useAuth();
   const [article, setArticle] = useState<Article | null>(() => (initialArticle && initialArticle.id === articleId ? initialArticle : null));
   const [loading, setLoading] = useState<boolean>(() => !(initialArticle && initialArticle.id === articleId));
@@ -437,14 +439,16 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
       setIsSubmittingComment(true);
       await api.addComment(articleId, newComment.trim());
       setNewComment('');
+      toast.success('Commentaire publié avec succès !');
       // Reload comments
       const commRes = await api.getComments(articleId);
       setComments(commRes.comments);
       if (article) {
         setArticle({ ...article, commentsCount: article.commentsCount + 1 });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Add comment failed:', err);
+      toast.error(err.message || 'Impossible de publier votre commentaire.');
     } finally {
       setIsSubmittingComment(false);
     }
@@ -458,13 +462,15 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
       await api.addComment(articleId, replyContent.trim(), parentId);
       setReplyContent('');
       setReplyingToId(null);
+      toast.success('Réponse publiée avec succès !');
       const commRes = await api.getComments(articleId);
       setComments(commRes.comments);
       if (article) {
         setArticle({ ...article, commentsCount: article.commentsCount + 1 });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Add reply failed:', err);
+      toast.error(err.message || 'Impossible de publier votre réponse.');
     }
   };
 
@@ -546,10 +552,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     try {
       await api.updateComment(articleId, commentId, editCommentContent.trim());
       setEditingCommentId(null);
+      toast.success('Commentaire mis à jour.');
       const commRes = await api.getComments(articleId);
       setComments(commRes.comments);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Edit comment failed:', err);
+      toast.error(err.message || 'Impossible de modifier le commentaire.');
     }
   };
 
@@ -557,13 +565,15 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const handleDeleteComment = async (commentId: string) => {
     try {
       const res = await api.deleteComment(articleId, commentId);
+      toast.success('Commentaire supprimé.');
       const commRes = await api.getComments(articleId);
       setComments(commRes.comments);
       if (article && typeof res.commentsCount === 'number') {
         setArticle({ ...article, commentsCount: res.commentsCount });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete comment failed:', err);
+      toast.error(err.message || 'Impossible de supprimer le commentaire.');
     } finally {
       setCommentToDeleteId(null);
     }
@@ -576,12 +586,14 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     try {
       await api.reportArticle(articleId, reportReason, reportDetails);
       setReportSuccess(true);
+      toast.success('Signalement transmis aux modérateurs.');
       setTimeout(() => {
         setReportSuccess(false);
         setShowReportModal(false);
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || 'Échec de l’envoi du signalement.');
     }
   };
 
@@ -594,22 +606,26 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     try {
       await api.reportComment(articleId, reportingComment.id, commentReportReason, commentReportDetails);
       setCommentReportSuccess(true);
+      toast.success('Signalement enregistré par la modération.');
       setTimeout(() => {
         setCommentReportSuccess(false);
         setReportingComment(null);
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || 'Échec du signalement.');
     }
   };
 
   const handleDeleteArticle = async () => {
     try {
       await api.deleteArticle(articleId);
+      toast.success('Article supprimé avec succès.');
       if (onArticleDeleted) onArticleDeleted();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || 'Impossible de supprimer cet article.');
     } finally {
       setConfirmDeleteArticle(false);
     }

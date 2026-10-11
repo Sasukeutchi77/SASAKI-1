@@ -66,11 +66,42 @@ mediaRouter.get('/files/:filename', (req: Request, res: Response) => {
   return res.sendFile(filePath);
 });
 
-// Lazy Cloudinary configuration
+// Lazy Cloudinary configuration with support for all environment variable conventions
 function initCloudinary() {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  // 1. Check CLOUDINARY_URL format (cloudinary://apiKey:apiSecret@cloudName)
+  const cloudinaryUrl =
+    process.env.CLOUDINARY_URL ||
+    process.env.VITE_CLOUDINARY_URL ||
+    process.env.EXPO_PUBLIC_CLOUDINARY_URL;
+  if (cloudinaryUrl && cloudinaryUrl.startsWith('cloudinary://')) {
+    try {
+      const match = cloudinaryUrl.match(/cloudinary:\/\/([^:]+):([^@]+)@(.+)/);
+      if (match) {
+        cloudinary.config({
+          api_key: match[1],
+          api_secret: match[2],
+          cloud_name: match[3],
+          secure: true,
+        });
+        return true;
+      }
+    } catch {}
+  }
+
+  // 2. Individual environment variables (with VITE_, EXPO_PUBLIC_, or direct)
+  const cloudName =
+    process.env.CLOUDINARY_CLOUD_NAME ||
+    process.env.VITE_CLOUDINARY_CLOUD_NAME ||
+    process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+    process.env.CLOUDINARY_NAME;
+  const apiKey =
+    process.env.CLOUDINARY_API_KEY ||
+    process.env.VITE_CLOUDINARY_API_KEY ||
+    process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY;
+  const apiSecret =
+    process.env.CLOUDINARY_API_SECRET ||
+    process.env.VITE_CLOUDINARY_API_SECRET ||
+    process.env.EXPO_PUBLIC_CLOUDINARY_API_SECRET;
 
   if (cloudName && apiKey && apiSecret) {
     cloudinary.config({

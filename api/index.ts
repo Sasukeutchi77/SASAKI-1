@@ -10,33 +10,59 @@ db.initCloudPersistence().catch((err) => {
 const app = createExpressApp();
 
 export default function handler(req: any, res: any) {
-  // If Vercel pre-parsed or provided body as a string, parse it into an object for Express
-  if (req.body && typeof req.body === 'string') {
-    try {
-      req.body = JSON.parse(req.body);
-    } catch {
-      // ignore
+  // 1. CORS headers and OPTIONS preflight handler for Vercel
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  // 2. Protect Express body-parser: if Vercel already consumed or provided req.body
+  if (req.body !== undefined && req.body !== null) {
+    if (typeof req.body === 'string') {
+      try {
+        req.body = JSON.parse(req.body);
+      } catch {
+        // preserve original string
+      }
+    }
+    // Flag _body = true so express.json() doesn't attempt to read from the ended stream
+    req._body = true;
+  }
+
+  // 3. Ensure socket and remoteAddress exist in serverless runtime
+  if (!req.socket) {
+    req.socket = {
+      remoteAddress:
+        (req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || '127.0.0.1',
+    };
+  }
+
+  // 4. Robust URL reconstruction for Vercel Serverless Functions
+  let resolvedUrl = req.url || '/';
+
+  // If Vercel passed path parameters from dynamic route [...path] or rewrite query (?path=...)
+  if (req.query && req.query.path) {
+    const subpath = Array.isArray(req.query.path) ? req.query.path.join('/') : String(req.query.path);
+    const queryIdx = resolvedUrl.indexOf('?');
+    const queryString = queryIdx !== -1 ? resolvedUrl.slice(queryIdx) : '';
+    resolvedUrl = `/api/${subpath.replace(/^\/+/, '')}${queryString}`;
+    // Clean up internal query param so it doesn't pollute endpoint queries
+    delete req.query.path;
+  } else {
+    // Check if original requested URI is stored in Vercel headers
+    const forwardedUri = req.headers && (req.headers['x-forwarded-uri'] || req.headers['x-vercel-forwarded-for-path']);
+    if (forwardedUri && typeof forwardedUri === 'string' && forwardedUri.startsWith('/api')) {
+      resolvedUrl = forwardedUri;
+    } else if (!resolvedUrl.startsWith('/api')) {
+      resolvedUrl = `/api${resolvedUrl.startsWith('/') ? '' : '/'}${resolvedUrl}`;
     }
   }
 
-  // Ensure socket and connection exist in serverless environments to prevent Express getter issues
-  if (!req.socket) {
-    req.socket = { remoteAddress: (req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || '127.0.0.1' };
-  }
-
-  // Detect original path from Vercel headers if req.url was rewritten
-  const matchedPath =
-    (req.headers['x-matched-path'] as string) ||
-    (req.headers['x-vercel-matched-path'] as string) ||
-    (req.headers['x-forwarded-uri'] as string);
-
-  if (matchedPath && matchedPath.startsWith('/api')) {
-    const queryIndex = req.url ? req.url.indexOf('?') : -1;
-    const query = queryIndex !== -1 ? req.url.slice(queryIndex) : '';
-    req.url = matchedPath.split('?')[0] + query;
-  } else if (req.url && !req.url.startsWith('/api')) {
-    req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
-  }
+  req.url = resolvedUrl;
 
   return app(req, res);
 }

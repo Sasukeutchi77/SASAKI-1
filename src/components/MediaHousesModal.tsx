@@ -23,6 +23,7 @@ import {
 import { MediaHouse, User, Article } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { safeConfirm } from '../utils/safeConfirm';
 import { realtime } from '../services/realtime';
 import { VerifiedBadge } from './VerifiedBadge';
 import { MyHouseDashboard } from './MyHouseDashboard';
@@ -315,7 +316,7 @@ export const MediaHousesModal: React.FC<MediaHousesModalProps> = ({
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     if (!myHouse) return;
-    if (!window.confirm(`Voulez-vous retirer le journaliste "${memberName}" de cette maison ?`)) return;
+    if (!safeConfirm(`Voulez-vous retirer le journaliste "${memberName}" de cette maison ?`)) return;
 
     try {
       const res = await api.removeMediaHouseMember(myHouse.id, memberId);

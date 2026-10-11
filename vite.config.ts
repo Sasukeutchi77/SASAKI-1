@@ -27,6 +27,7 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    envPrefix: ['VITE_', 'FIREBASE_', 'CLOUDINARY_'],
     server: {
       host: '0.0.0.0',
       port: 3000,

@@ -5,33 +5,86 @@ import { StatusBar } from 'expo-status-bar';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
+  autoReload?: boolean;
+  autoReloadDelay?: number;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  countdown: number;
+  autoReloadPaused: boolean;
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  private timer: any = null;
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    const delay = props.autoReloadDelay !== undefined ? props.autoReloadDelay : 6;
+    this.state = {
+      hasError: false,
+      error: null,
+      countdown: delay,
+      autoReloadPaused: false,
+    };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[PURGE Crash Guard]', error, errorInfo);
+    if (this.props.autoReload !== false) {
+      this.startAutoReloadCountdown();
+    }
   }
 
+  componentWillUnmount() {
+    this.clearAutoReloadTimer();
+  }
+
+  private clearAutoReloadTimer = () => {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  };
+
+  private startAutoReloadCountdown = () => {
+    this.clearAutoReloadTimer();
+    const delay = this.props.autoReloadDelay !== undefined ? this.props.autoReloadDelay : 6;
+    this.setState({ countdown: delay, autoReloadPaused: false });
+
+    this.timer = setInterval(() => {
+      this.setState((prev) => {
+        if (prev.autoReloadPaused) return null;
+        if (prev.countdown <= 1) {
+          this.clearAutoReloadTimer();
+          this.handleReset();
+          return { countdown: 0 } as Pick<ErrorBoundaryState, 'countdown'>;
+        }
+        return { countdown: prev.countdown - 1 } as Pick<ErrorBoundaryState, 'countdown'>;
+      });
+    }, 1000);
+  };
+
   handleReset = () => {
-    this.setState({ hasError: false, error: null });
+    this.clearAutoReloadTimer();
+    this.setState({ hasError: false, error: null, autoReloadPaused: false });
+  };
+
+  handlePauseAutoReload = () => {
+    this.clearAutoReloadTimer();
+    this.setState({ autoReloadPaused: true });
   };
 
   render() {
     if (this.state.hasError) {
+      const { countdown, autoReloadPaused } = this.state;
+      const { autoReload = true } = this.props;
+
       return (
         <SafeAreaView style={styles.errorContainer}>
           <StatusBar style="light" backgroundColor="#020512" />
@@ -41,13 +94,34 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             <Text style={styles.errorDescription}>
               L'application a rencontré un imprévu mais vos données sont protégées.
             </Text>
-            <TouchableOpacity
-              style={styles.errorButton}
-              onPress={this.handleReset}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.errorButtonText}>Relancer PURGE</Text>
-            </TouchableOpacity>
+
+            {autoReload && !autoReloadPaused && countdown > 0 && (
+              <View style={styles.countdownBox}>
+                <Text style={styles.countdownText}>
+                  Relance automatique dans <Text style={styles.countdownHighlight}>{countdown}s</Text>
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.errorActions}>
+              <TouchableOpacity
+                style={styles.errorButton}
+                onPress={this.handleReset}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.errorButtonText}>Relancer PURGE</Text>
+              </TouchableOpacity>
+
+              {autoReload && !autoReloadPaused && countdown > 0 && (
+                <TouchableOpacity
+                  style={styles.errorSecondaryButton}
+                  onPress={this.handlePauseAutoReload}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.errorSecondaryButtonText}>Suspendre le compte à rebours</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </SafeAreaView>
       );
@@ -187,7 +261,7 @@ export default function App() {
   }, []);
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary autoReload={true} autoReloadDelay={6}>
       <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <StatusBar style="light" backgroundColor="#020512" />
@@ -381,10 +455,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
   },
   errorButtonText: {
     color: '#020512',
     fontSize: 15,
     fontWeight: '700',
+  },
+  countdownBox: {
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  countdownText: {
+    color: '#94a3b8',
+    fontSize: 13,
+  },
+  countdownHighlight: {
+    color: '#06b6d4',
+    fontWeight: '700',
+  },
+  errorActions: {
+    width: '100%',
+    gap: 10,
+    alignItems: 'center',
+  },
+  errorSecondaryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  errorSecondaryButtonText: {
+    color: '#64748b',
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
 });

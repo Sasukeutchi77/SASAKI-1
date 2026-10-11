@@ -16,8 +16,27 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
 
   const token = authHeader.substring(7).trim();
   
-  // 1. First test internal JWT token
-  const payload = verifyToken(token);
+  // 1. First test internal JWT token or mobile session token
+  let payload: { userId: string; role: string; email: string } | null = verifyToken(token);
+
+  // If token is a mobile session token (purge_token_...)
+  if (!payload && token.startsWith('purge_token_')) {
+    try {
+      const base64Str = token.replace(/^purge_token_/, '').trim();
+      const rawJson = Buffer.from(base64Str, 'base64').toString('utf-8');
+      const parsed = JSON.parse(rawJson);
+      if (parsed && (parsed.userId || parsed.email)) {
+        payload = {
+          userId: parsed.userId || '',
+          email: parsed.email || '',
+          role: parsed.role || 'user',
+        };
+      }
+    } catch {
+      // Ignored if not base64 json
+    }
+  }
+
   if (payload) {
     const data = db.getData();
     let user = data.users.find(

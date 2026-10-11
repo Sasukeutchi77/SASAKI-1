@@ -3,6 +3,7 @@ import { X, Bell, CheckCheck, Heart, MessageSquare, Shield, CheckCircle2, Trash2
 import { Notification } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { safeConfirm } from '../utils/safeConfirm';
 
 interface NotificationsModalProps {
   onClose: () => void;
@@ -58,7 +59,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   const handleClearAll = async () => {
-    if (!window.confirm('Voulez-vous supprimer toutes vos notifications ?')) return;
+    if (!safeConfirm('Voulez-vous supprimer toutes vos notifications ?')) return;
     setNotifications([]);
     try {
       await api.clearAllNotifications();

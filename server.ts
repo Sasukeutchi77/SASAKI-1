@@ -5,13 +5,6 @@ import { realtimeHub } from './server/realtime';
 import { db } from './server/db';
 
 async function startServer() {
-  // Initialize Cloud Firestore synchronization before accepting incoming traffic
-  try {
-    await db.initCloudPersistence();
-  } catch (err) {
-    console.warn('[Server] Cloud Firestore initialization deferred:', err);
-  }
-
   const app = createExpressApp();
   // AI Studio requires dev server on port 3000 and host 0.0.0.0
   const PORT = 3000;
@@ -43,6 +36,11 @@ async function startServer() {
 
   // Attach WebSocket server for real-time synchronization
   realtimeHub.attachServer(server);
+
+  // Initialize Cloud Firestore synchronization in the background without delaying server startup
+  db.initCloudPersistence().catch((err) => {
+    console.warn('[Server] Cloud Firestore background synchronization deferred:', err);
+  });
 
   server.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {

@@ -152,7 +152,35 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     } catch (err: any) {
       const msg = err.message || "Échec de l'opération d'authentification.";
       setErrorMessage(msg);
-      Alert.alert(authMode === 'login' ? 'Erreur de connexion' : 'Erreur d’inscription', msg);
+      
+      const lower = msg.toLowerCase();
+      if (lower.includes('aucun compte') || lower.includes('créer un compte') || lower.includes('user-not-found')) {
+        Alert.alert(
+          'Compte introuvable',
+          msg,
+          [
+            { text: 'Annuler', style: 'cancel' },
+            {
+              text: 'Créer un compte',
+              onPress: () => setAuthMode('register'),
+            },
+          ]
+        );
+      } else if (lower.includes('mot de passe incorrect') || lower.includes('wrong-password') || lower.includes('invalid-credential')) {
+        Alert.alert(
+          'Mot de passe incorrect',
+          msg,
+          [
+            { text: 'Réessayer', style: 'cancel' },
+            {
+              text: 'Mot de passe oublié ?',
+              onPress: () => setShowPasswordResetModal(true),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(authMode === 'login' ? 'Erreur de connexion' : 'Erreur d’inscription', msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -167,22 +195,28 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   // Soumission de la demande d'accréditation Journaliste par un Citoyen
   const handleApplySubmit = async (data: {
+    category?: 'journalist' | 'citizen' | 'media';
     mediaName: string;
     pressCardNumber: string;
     motivation: string;
     documentUrl: string;
   }) => {
     if (!currentUser) return;
-    await api.requestVerification(data);
-    const updatedUser: User = {
-      ...currentUser,
-      verificationStatus: 'pending',
-    };
-    onUserUpdated(updatedUser);
-    Alert.alert(
-      'Demande transmise',
-      'Votre candidature au statut Journaliste a été enregistrée avec succès. Les administrateurs examineront votre dossier sous peu.'
-    );
+    try {
+      const res = await api.requestVerification(data);
+      const updatedUser: User = {
+        ...currentUser,
+        verificationStatus: 'pending',
+      };
+      onUserUpdated(updatedUser);
+      Alert.alert(
+        'Demande transmise',
+        res?.message ||
+          'Votre candidature a été enregistrée avec succès. Les administrateurs examineront votre dossier sous peu.'
+      );
+    } catch (err: any) {
+      Alert.alert('Erreur de transmission', err.message || 'Impossible d’enregistrer votre demande d’accréditation.');
+    }
   };
 
   // Décision administrative sur une demande (Approuver / Rejeter)
@@ -343,11 +377,36 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Message d'erreur */}
+          {/* Message d'erreur avec actions rapides */}
           {errorMessage && (
             <View style={styles.errorContainer}>
-              <AppIcon name="alert-circle" size={14} color="#ef4444" style={{ marginRight: 6 }} />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <AppIcon name="alert-circle" size={14} color="#ef4444" style={{ marginRight: 6, marginTop: 2 }} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+              {errorMessage.includes('Créer un compte') && authMode === 'login' && (
+                <TouchableOpacity
+                  style={{ marginTop: 8, paddingVertical: 4, alignSelf: 'flex-start' }}
+                  onPress={() => {
+                    setAuthMode('register');
+                    setErrorMessage(null);
+                  }}
+                >
+                  <Text style={{ color: '#eab308', fontSize: 11, fontWeight: '700', textDecorationLine: 'underline' }}>
+                    → Créer mon compte citoyen maintenant
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {errorMessage.includes('Mot de passe incorrect') && authMode === 'login' && (
+                <TouchableOpacity
+                  style={{ marginTop: 8, paddingVertical: 4, alignSelf: 'flex-start' }}
+                  onPress={() => setShowPasswordResetModal(true)}
+                >
+                  <Text style={{ color: '#eab308', fontSize: 11, fontWeight: '700', textDecorationLine: 'underline' }}>
+                    → Réinitialiser mon mot de passe
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -413,6 +472,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </Text>
               )}
             </TouchableOpacity>
+
+            {authMode === 'login' && (
+              <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 12, lineHeight: 16 }}>
+                💡 <Text style={{ color: '#cbd5e1', fontWeight: '600' }}>Compte créé via Google sur le Web ?</Text> Utilisez le lien « Oublié ? » ci-dessus pour renseigner votre mot de passe mobile en quelques secondes.
+              </Text>
+            )}
           </View>
 
           {/* Raccourcis comptes de test */}

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { X, Lock, Mail, User as UserIcon, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, KeyRound, Eye, EyeOff, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { formatAuthErrorMessage } from '../services/authErrors';
 
 interface AuthModalProps {
   onClose: () => void;
-  initialMode?: 'login' | 'register';
+  initialMode?: 'login' | 'register' | 'forgot';
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' }) => {
   const { loginWithEmail, registerWithEmail, loginWithGoogle, resetPassword } = useAuth();
+  const { toast } = useToast();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,15 +38,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
 
     if (mode === 'forgot') {
       if (!email.trim()) {
-        setError('Veuillez renseigner votre adresse email.');
+        const msg = 'Veuillez renseigner votre adresse email.';
+        setError(msg);
+        toast.warning(msg);
         return;
       }
       setLoading(true);
       try {
         await resetPassword(email.trim());
-        setSuccessMessage('Un email de réinitialisation a été envoyé à votre adresse. Veuillez consulter votre boîte de réception.');
+        const successMsg = 'Un email de réinitialisation a été envoyé à votre adresse. Veuillez consulter votre boîte de réception.';
+        setSuccessMessage(successMsg);
+        toast.success('Email de réinitialisation envoyé avec succès !');
       } catch (err: any) {
-        setError(formatAuthErrorMessage(err));
+        const formattedErr = formatAuthErrorMessage(err);
+        setError(formattedErr);
+        toast.authError(err, { title: 'Réinitialisation impossible' });
       } finally {
         setLoading(false);
       }
@@ -53,27 +61,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
 
     if (mode === 'register') {
       if (!name.trim()) {
-        setError('Veuillez renseigner votre nom complet ou pseudonyme.');
+        const msg = 'Veuillez renseigner votre nom complet ou pseudonyme.';
+        setError(msg);
+        toast.warning(msg);
         return;
       }
       if (!email.trim()) {
-        setError('Veuillez renseigner votre adresse email.');
+        const msg = 'Veuillez renseigner votre adresse email.';
+        setError(msg);
+        toast.warning(msg);
         return;
       }
       if (password.length < 6) {
-        setError('Le mot de passe doit comporter au moins 6 caractères.');
+        const msg = 'Le mot de passe doit comporter au moins 6 caractères.';
+        setError(msg);
+        toast.warning(msg);
         return;
       }
       if (password !== confirmPassword) {
-        setError('Les deux mots de passe ne correspondent pas.');
+        const msg = 'Les deux mots de passe ne correspondent pas.';
+        setError(msg);
+        toast.warning(msg);
         return;
       }
       setLoading(true);
       try {
         await registerWithEmail(name.trim(), email.trim(), password);
+        toast.success('Compte citoyen créé avec succès ! Bienvenue sur PURGE-INFO.');
         onClose();
       } catch (err: any) {
-        setError(formatAuthErrorMessage(err));
+        const formattedErr = formatAuthErrorMessage(err);
+        setError(formattedErr);
+        toast.authError(err, { title: 'Échec de l’inscription' });
       } finally {
         setLoading(false);
       }
@@ -82,17 +101,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
 
     if (mode === 'login') {
       if (!email.trim() || !password) {
-        setError('Veuillez renseigner votre adresse email et votre mot de passe.');
+        const msg = 'Veuillez renseigner votre adresse email et votre mot de passe.';
+        setError(msg);
+        toast.warning(msg);
         return;
       }
       setLoading(true);
       try {
         await loginWithEmail(email.trim(), password);
+        toast.success('Connexion réussie ! Heureux de vous revoir sur PURGE-INFO.');
         onClose();
       } catch (err: any) {
         // Retain user strictly on the login modal without auto-navigation
         const formattedErr = formatAuthErrorMessage(err);
         setError(formattedErr);
+        toast.authError(err, { title: 'Échec de connexion' });
         // Clear password immediately so password managers do not capture invalid credentials
         setPassword('');
         try {
@@ -114,9 +137,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'lo
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
+      toast.success('Connexion Google réussie !');
       onClose();
     } catch (err: any) {
-      setError(formatAuthErrorMessage(err));
+      const formattedErr = formatAuthErrorMessage(err);
+      setError(formattedErr);
+      toast.authError(err, { title: 'Connexion Google interrompue' });
     } finally {
       setGoogleLoading(false);
     }

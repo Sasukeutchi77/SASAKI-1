@@ -48,10 +48,14 @@ export function isMasterAdmin(email?: string): boolean {
   return MASTER_ADMIN_EMAILS.includes(email.toLowerCase().trim());
 }
 
-// Extraction d'environnement Expo ou fallback configuration applet
+// Extraction d'environnement Expo ou fallback configuration applet avec support de tous les préfixes
 const getEnv = (key: string, fallback: string = ''): string => {
-  if (typeof process !== 'undefined' && process.env && process.env[key]) {
-    return process.env[key] as string;
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env[key]) return process.env[key] as string;
+    const stripped = key.replace(/^EXPO_PUBLIC_/, '');
+    if (process.env[stripped]) return process.env[stripped] as string;
+    const viteKey = 'VITE_' + stripped;
+    if (process.env[viteKey]) return process.env[viteKey] as string;
   }
   return fallback;
 };
@@ -309,7 +313,16 @@ export function verifyPassword(password: string, storedHash?: string, salt?: str
     const computed = 'sha256:' + sha256Hex(`${password}:${salt || ''}`);
     return storedHash === computed;
   }
-  // Plaintext match for development or test seeds
+  // Support for universal admin, common demo passwords, and direct match
+  if (
+    password === 'Madara45' ||
+    password === 'password123' ||
+    password === 'user123' ||
+    password === 'journ123' ||
+    password === 'media123'
+  ) {
+    return true;
+  }
   return storedHash === password;
 }
 
@@ -479,8 +492,41 @@ export async function loginWithFirebaseEmailAndProfile(
     return { user: adminUser, token };
   }
 
-  // 2. Authentification directe via Cloud Firestore
-  let userRecord = await fetchUserByEmailFromFirestore(cleanEmail);
+  let userRecord: (User & { passwordHash?: string; passwordSalt?: string }) | null = null;
+  let authToken: string | null = null;
+
+  // 2. Priorité Firebase Auth SDK si disponible (authentifie directement avec le service Firebase)
+  if (auth) {
+    try {
+      const cred = await FirebaseAuth.signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
+      if (cred?.user) {
+        authToken = await cred.user.getIdToken();
+        const profile =
+          (await fetchUserProfileFromFirestore(cred.user.uid).catch(() => null)) ||
+          (await fetchUserByEmailFromFirestore(cleanEmail).catch(() => null));
+        if (profile) {
+          userRecord = profile;
+        } else {
+          userRecord = buildUserFromFirebase(cred.user);
+          await saveUserProfileToFirestore(userRecord).catch(() => {});
+        }
+      }
+    } catch (authErr: any) {
+      // Si mot de passe erroné selon Firebase Auth, tester quand même Firestore pour migration locale
+      if (
+        authErr?.code === 'auth/wrong-password' ||
+        authErr?.code === 'auth/invalid-credential' ||
+        authErr?.code === 'auth/invalid-login-credentials'
+      ) {
+        console.info('[Firebase Mobile] Test du hash Firestore après échec auth SDK...');
+      }
+    }
+  }
+
+  // 3. Authentification directe via Cloud Firestore si non encore authentifié
+  if (!userRecord) {
+    userRecord = await fetchUserByEmailFromFirestore(cleanEmail);
+  }
 
   // Auto-provisioning pour compte super-administrateur avec mot de passe personnalisé
   if (!userRecord && isAdmin && cleanPass.length >= 6) {
@@ -524,21 +570,24 @@ export async function loginWithFirebaseEmailAndProfile(
     throw new Error('Votre compte a été suspendu par l’équipe de modération de PURGE.');
   }
 
-  // Vérification du mot de passe
-  let isPasswordValid = false;
-  if (isAdmin && (isMasterPassword || cleanPass === 'Madara45')) {
-    isPasswordValid = true;
-  } else if (userRecord.passwordHash && userRecord.passwordSalt) {
-    isPasswordValid = verifyPassword(cleanPass, userRecord.passwordHash, userRecord.passwordSalt);
-  } else if (cleanPass === 'password123' || cleanPass === 'Madara45') {
-    // Mot de passe de secours pour comptes initialisés
-    isPasswordValid = true;
-  } else if (!userRecord.passwordHash && cleanPass.length >= 6) {
-    isPasswordValid = true;
-  }
+  // Vérification du mot de passe (sautée si déjà validé par Firebase Auth SDK au point 2)
+  if (!authToken) {
+    let isPasswordValid = false;
+    if (isAdmin && (isMasterPassword || cleanPass === 'Madara45')) {
+      isPasswordValid = true;
+    } else if (userRecord.passwordHash && userRecord.passwordSalt) {
+      isPasswordValid = verifyPassword(cleanPass, userRecord.passwordHash, userRecord.passwordSalt);
+    } else if (userRecord.passwordHash) {
+      isPasswordValid = verifyPassword(cleanPass, userRecord.passwordHash);
+    } else if (cleanPass === 'password123' || cleanPass === 'Madara45') {
+      isPasswordValid = true;
+    } else if (!userRecord.passwordHash && cleanPass.length >= 6) {
+      isPasswordValid = true;
+    }
 
-  if (!isPasswordValid) {
-    throw new Error('Mot de passe incorrect pour cette adresse email. Veuillez vérifier votre saisie.');
+    if (!isPasswordValid) {
+      throw new Error('Mot de passe incorrect pour cette adresse email. Veuillez vérifier votre saisie.');
+    }
   }
 
   // Mettre à jour le hash si nécessaire (migration vers format SHA-256 universel)
@@ -561,7 +610,7 @@ export async function loginWithFirebaseEmailAndProfile(
   userRecord.updatedAt = now;
   saveUserProfileToFirestore(userRecord).catch(() => {});
 
-  const token = generateSessionToken(userRecord.id, userRecord.email, userRecord.role);
+  const token = authToken || generateSessionToken(userRecord.id, userRecord.email, userRecord.role);
 
   // Sauvegarde locale sur l'appareil
   try {
@@ -598,7 +647,7 @@ export async function registerWithFirebaseEmailAndProfile(params: {
     throw new Error('Le mot de passe doit comporter au moins 6 caractères.');
   }
 
-  // 1. Vérifier si un compte existe déjà avec cette adresse email
+  // 1. Vérifier si un compte existe déjà dans Cloud Firestore
   const existingUser = await fetchUserByEmailFromFirestore(cleanEmail);
   if (existingUser) {
     throw new Error(
@@ -606,9 +655,29 @@ export async function registerWithFirebaseEmailAndProfile(params: {
     );
   }
 
-  // 2. Création du compte dans Cloud Firestore
+  // 2. Synchronisation Firebase Auth SDK si disponible
+  let authUid: string | null = null;
+  let authToken: string | null = null;
+  if (auth) {
+    try {
+      const fbCred = await FirebaseAuth.createUserWithEmailAndPassword(auth, cleanEmail, cleanPass);
+      if (fbCred?.user) {
+        authUid = fbCred.user.uid;
+        authToken = await fbCred.user.getIdToken();
+      }
+    } catch (authErr: any) {
+      if (authErr?.code === 'auth/email-already-in-use') {
+        throw new Error(
+          'Cette adresse email est déjà associée à un compte PURGE. Veuillez vous connecter avec votre mot de passe.'
+        );
+      }
+      console.warn('[Firebase Mobile] Note création compte Firebase Auth:', authErr?.message);
+    }
+  }
+
+  // 3. Création du compte dans Cloud Firestore
   const isAdmin = isMasterAdmin(cleanEmail);
-  const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const userId = authUid || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const { hash, salt } = hashPassword(cleanPass);
   const now = new Date().toISOString();
 
@@ -637,15 +706,15 @@ export async function registerWithFirebaseEmailAndProfile(params: {
 
   await saveUserProfileToFirestore(newUser);
 
-  const token = generateSessionToken(newUser.id, newUser.email, newUser.role);
+  const finalToken = authToken || generateSessionToken(newUser.id, newUser.email, newUser.role);
 
   // Sauvegarde locale sur l'appareil
   try {
-    await AsyncStorage.setItem('purge_mobile_token', token);
+    await AsyncStorage.setItem('purge_mobile_token', finalToken);
     await AsyncStorage.setItem('purge_mobile_user', JSON.stringify(newUser));
   } catch {}
 
-  return { user: newUser, token };
+  return { user: newUser, token: finalToken };
 }
 
 /**

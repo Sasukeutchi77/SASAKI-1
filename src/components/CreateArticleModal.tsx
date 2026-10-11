@@ -27,6 +27,7 @@ import {
 import { Category, Article, CloudinaryMedia, ArticleMediaItem } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { MediaUploader } from './media/MediaUploader';
 import { VideoPlayer } from './media/VideoPlayer';
 import { getHarmonizedImageClass } from '../utils/imageHarmonizer';
@@ -56,6 +57,7 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
   articleToEdit,
   onOpenMyHouse,
 }) => {
+  const toast = useToast();
   const { user } = useAuth();
 
   // Basic article fields
@@ -276,14 +278,18 @@ export const CreateArticleModal: React.FC<CreateArticleModalProps> = ({
 
       if (articleToEdit) {
         const res = await api.updateArticle(articleToEdit.id, payload);
+        toast.success('Article modifié avec succès !');
         onArticleCreated(res.article);
       } else {
         const res = await api.createArticle(payload);
+        toast.success('Article publié avec succès sur PURGE-INFO !');
         onArticleCreated(res.article);
       }
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors de l’enregistrement de l’article.');
+      const msg = err.message || 'Une erreur est survenue lors de l’enregistrement de l’article.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

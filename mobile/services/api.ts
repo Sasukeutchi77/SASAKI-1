@@ -38,12 +38,23 @@ import {
 const TOKEN_KEY = 'purge_mobile_token';
 const USER_KEY = 'purge_mobile_user';
 
-// Définition de l'URL de base API - Priorité à la variable d'environnement Expo
-const DEFAULT_FALLBACK_URL = 'https://ais-dev-zhsd7l5y3xfrth647bh6oi-155891801467.europe-west2.run.app';
+const DEFAULT_FALLBACK_URL = 'https://ais-dev-ami4jjf75rqbn6am4qweex-414334626522.europe-west1.run.app';
 
+// Définition de l'URL de base API - Priorité à la variable d'environnement Expo et ses variantes
 export function getApiBaseUrl(): string {
-  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, '');
+  if (typeof process !== 'undefined' && process.env) {
+    const candidate =
+      process.env.EXPO_PUBLIC_API_URL ||
+      process.env.API_URL ||
+      process.env.VITE_API_URL ||
+      process.env.REACT_APP_API_URL;
+    if (candidate) {
+      return candidate.replace(/\/+$/, '');
+    }
+  }
+  // En mode Expo Web ou navigateur, utiliser l'origine courante
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    return window.location.origin;
   }
   return DEFAULT_FALLBACK_URL;
 }
@@ -109,6 +120,9 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
   }
 
   const baseUrl = getApiBaseUrl();
+  if (!baseUrl && !endpoint.startsWith('http')) {
+    throw new Error('BACKEND_URL_NOT_CONFIGURED');
+  }
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
 
   let response: Response;
@@ -171,36 +185,56 @@ export const api = {
     const cleanEmail = credentials.email.trim().toLowerCase();
     const cleanPass = credentials.password;
 
+    let primaryError: any = null;
+
     // 1. Authentification directe Cloud Firestore / Firebase (Connexion directe sans restriction de proxy)
     if (isFirebaseConfigured()) {
       try {
         const { user, token } = await loginWithFirebaseEmailAndProfile(cleanEmail, cleanPass);
         await setToken(token);
         await setUser(user);
+
+        // Synchronisation opportune avec le backend REST en arrière-plan
+        apiRequest<{ token: string; user: User }>('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email: cleanEmail, password: cleanPass }),
+        }).catch(() => {});
+
         return { user, token, message: 'Connexion réussie.' };
       } catch (fbErr: any) {
-        console.warn('[API Mobile] Erreur connexion:', fbErr.message);
-        throw fbErr;
+        console.warn('[API Mobile] Erreur connexion Firebase directe, tentative via backend REST:', fbErr.message);
+        primaryError = fbErr;
       }
     }
 
-    // 2. Fallback REST si Firebase n'est pas configuré
-    const res = await apiRequest<{ token: string; user: User; message: string }>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: cleanEmail, password: cleanPass }),
-    });
-    if (res?.token && res?.user) {
-      await setToken(res.token);
-      await setUser(res.user);
-      return res;
+    // 2. Fallback REST si Firebase direct échoue ou n'est pas configuré
+    try {
+      const res = await apiRequest<{ token: string; user: User; message: string }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: cleanEmail, password: cleanPass }),
+      });
+      if (res?.token && res?.user) {
+        await setToken(res.token);
+        await setUser(res.user);
+        return res;
+      }
+    } catch (restErr: any) {
+      // Prioriser l'erreur métier explicite
+      if (primaryError && (!restErr.message || restErr.message.includes('fetch') || restErr.message.includes('50'))) {
+        throw primaryError;
+      }
+      throw restErr;
     }
-    throw new Error('Identifiants invalides ou service indisponible.');
+
+    throw primaryError || new Error('Identifiants invalides ou service indisponible.');
   },
 
   async register(formData: { name: string; email: string; password: string }) {
     const cleanName = formData.name.trim();
     const cleanEmail = formData.email.trim().toLowerCase();
     const cleanPass = formData.password;
+
+    let primaryError: any = null;
 
     // 1. Inscription directe Cloud Firestore / Firebase (rôle citoyen par défaut)
     if (isFirebaseConfigured()) {
@@ -212,29 +246,49 @@ export const api = {
         });
         await setToken(token);
         await setUser(user);
+
+        // Synchronisation opportune avec le backend REST
+        apiRequest<{ token: string; user: User }>('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: cleanName,
+            email: cleanEmail,
+            password: cleanPass,
+            accountType: 'citoyen',
+          }),
+        }).catch(() => {});
+
         return { user, token, message: 'Compte citoyen créé avec succès.' };
       } catch (fbErr: any) {
-        console.warn('[API Mobile] Erreur inscription:', fbErr.message);
-        throw fbErr;
+        console.warn('[API Mobile] Erreur inscription Firebase directe, tentative via REST:', fbErr.message);
+        primaryError = fbErr;
       }
     }
 
-    // 2. Fallback REST si Firebase n'est pas configuré
-    const res = await apiRequest<{ token: string; user: User; message: string }>('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: cleanName,
-        email: cleanEmail,
-        password: cleanPass,
-        accountType: 'citoyen',
-      }),
-    });
-    if (res?.token && res?.user) {
-      await setToken(res.token);
-      await setUser(res.user);
-      return res;
+    // 2. Fallback REST si Firebase direct a échoué ou n'est pas configuré
+    try {
+      const res = await apiRequest<{ token: string; user: User; message: string }>('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          password: cleanPass,
+          accountType: 'citoyen',
+        }),
+      });
+      if (res?.token && res?.user) {
+        await setToken(res.token);
+        await setUser(res.user);
+        return res;
+      }
+    } catch (restErr: any) {
+      if (primaryError && (!restErr.message || restErr.message.includes('fetch') || restErr.message.includes('50'))) {
+        throw primaryError;
+      }
+      throw restErr;
     }
-    throw new Error('Échec de l’inscription. Veuillez réessayer.');
+
+    throw primaryError || new Error('Échec de l’inscription. Veuillez réessayer.');
   },
 
   async resetPassword(email: string, newPass: string) {

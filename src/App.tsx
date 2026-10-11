@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ShieldAlert, Building2, ArrowRight, X } from 'lucide-react';
 import { realtime } from './services/realtime';
 import { sfx } from './services/soundEffects';
@@ -57,7 +59,7 @@ export function AppContent() {
   const [showTrustSystemModal, setShowTrustSystemModal] = useState<boolean>(false);
   const [showRankingsModal, setShowRankingsModal] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'forgot'>('login');
 
   const handleOpenMyHouse = () => {
     setMediaHousesTab('my-house');
@@ -211,7 +213,28 @@ export function AppContent() {
     return () => window.removeEventListener('hashchange', checkHash);
   }, []);
 
-  const handleOpenAuth = (mode: 'login' | 'register' = 'login') => {
+  // Listen for global auth modal events triggered by actionable toast feedback buttons
+  useEffect(() => {
+    const handleGlobalOpenAuth = (e: any) => {
+      const mode = e.detail?.mode || 'login';
+      setAuthModalMode(mode === 'forgot' ? 'forgot' : mode === 'register' ? 'register' : 'login');
+      setShowAuthModal(true);
+    };
+
+    const handleGlobalCloseAuth = () => {
+      setShowAuthModal(false);
+    };
+
+    window.addEventListener('purge:open-auth-modal', handleGlobalOpenAuth);
+    window.addEventListener('purge:close-auth-modal', handleGlobalCloseAuth);
+
+    return () => {
+      window.removeEventListener('purge:open-auth-modal', handleGlobalOpenAuth);
+      window.removeEventListener('purge:close-auth-modal', handleGlobalCloseAuth);
+    };
+  }, []);
+
+  const handleOpenAuth = (mode: 'login' | 'register' | 'forgot' = 'login') => {
     setAuthModalMode(mode);
     setShowAuthModal(true);
   };
@@ -699,9 +722,13 @@ export function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <ErrorBoundary name="AppContent" autoReload={true} autoReloadDelay={6}>
+            <AppContent />
+          </ErrorBoundary>
+        </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

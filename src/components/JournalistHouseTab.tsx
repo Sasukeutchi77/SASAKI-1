@@ -16,6 +16,7 @@ import {
 import { MediaHouse, User, Article } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { safeConfirm } from '../utils/safeConfirm';
 import { MyHouseDashboard } from './MyHouseDashboard';
 import { uploadMediaToCloudinary } from '../services/cloudinary';
 
@@ -201,7 +202,7 @@ export const JournalistHouseTab: React.FC<JournalistHouseTabProps> = ({
 
   const handleDeleteHouse = async (houseId: string, houseName: string) => {
     if (
-      !window.confirm(
+      !safeConfirm(
         `Êtes-vous certain de vouloir dissoudre définitivement la Maison de Presse « ${houseName} » ? Cette action est irréversible.`
       )
     ) {

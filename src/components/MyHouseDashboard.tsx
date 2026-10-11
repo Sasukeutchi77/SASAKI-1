@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { MediaHouse, User, Article, Category } from '../types';
 import { api } from '../services/api';
+import { safeConfirm } from '../utils/safeConfirm';
 
 const SPECIALTY_OPTIONS = [
   'PURGEUR',
@@ -257,7 +258,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
       ? `Confirmez-vous vouloir quitter la maison "${myHouse.name}" ?`
       : `Confirmez-vous le retrait de "${memberName}" de l'équipe de rédaction ?`;
 
-    if (!window.confirm(confirmPrompt)) return;
+    if (!safeConfirm(confirmPrompt)) return;
 
     try {
       const res = await api.removeMediaHouseMember(myHouse.id, memberId);
@@ -287,7 +288,7 @@ export const MyHouseDashboard: React.FC<MyHouseDashboardProps> = ({
 
   // Delete note from editorial desk
   const handleDeleteEditorialNote = async (noteId: string) => {
-    if (!window.confirm('Voulez-vous supprimer cette note de service ?')) return;
+    if (!safeConfirm('Voulez-vous supprimer cette note de service ?')) return;
     try {
       await api.deleteEditorialNote(myHouse.id, noteId);
       showMsg('success', 'Note supprimée du carnet de bord.');

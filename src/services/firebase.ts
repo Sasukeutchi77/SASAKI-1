@@ -5,6 +5,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   sendPasswordResetEmail,
@@ -23,28 +25,30 @@ import {
 import { User, UserRole } from '../types';
 import firebaseAppletConfig from '../../firebase-applet-config.json';
 
-const getClientEnv = (key: string): string => {
-  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
-    return (import.meta as any).env[key];
-  }
-  if (typeof process !== 'undefined' && process.env && process.env[key]) {
-    return process.env[key] as string;
+const getClientEnv = (...keys: string[]): string => {
+  for (const key of keys) {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
+      return (import.meta as any).env[key];
+    }
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key] as string;
+    }
   }
   return '';
 };
 
 // Environment variables for Firebase Client SDK with automatic fallback to firebase-applet-config.json
 const firebaseConfig = {
-  apiKey: getClientEnv('VITE_FIREBASE_API_KEY') || firebaseAppletConfig.apiKey || '',
-  authDomain: getClientEnv('VITE_FIREBASE_AUTH_DOMAIN') || firebaseAppletConfig.authDomain || '',
-  projectId: getClientEnv('VITE_FIREBASE_PROJECT_ID') || firebaseAppletConfig.projectId || '',
-  storageBucket: getClientEnv('VITE_FIREBASE_STORAGE_BUCKET') || firebaseAppletConfig.storageBucket || '',
-  messagingSenderId: getClientEnv('VITE_FIREBASE_MESSAGING_SENDER_ID') || firebaseAppletConfig.messagingSenderId || '',
-  appId: getClientEnv('VITE_FIREBASE_APP_ID') || firebaseAppletConfig.appId || '',
+  apiKey: getClientEnv('VITE_FIREBASE_API_KEY', 'FIREBASE_API_KEY') || firebaseAppletConfig.apiKey || '',
+  authDomain: getClientEnv('VITE_FIREBASE_AUTH_DOMAIN', 'FIREBASE_AUTH_DOMAIN') || firebaseAppletConfig.authDomain || '',
+  projectId: getClientEnv('VITE_FIREBASE_PROJECT_ID', 'FIREBASE_PROJECT_ID') || firebaseAppletConfig.projectId || '',
+  storageBucket: getClientEnv('VITE_FIREBASE_STORAGE_BUCKET', 'FIREBASE_STORAGE_BUCKET') || firebaseAppletConfig.storageBucket || '',
+  messagingSenderId: getClientEnv('VITE_FIREBASE_MESSAGING_SENDER_ID', 'FIREBASE_MESSAGING_SENDER_ID') || firebaseAppletConfig.messagingSenderId || '',
+  appId: getClientEnv('VITE_FIREBASE_APP_ID', 'FIREBASE_APP_ID') || firebaseAppletConfig.appId || '',
 };
 
 const firestoreDatabaseId =
-  getClientEnv('VITE_FIREBASE_DATABASE_ID') || firebaseAppletConfig.firestoreDatabaseId || undefined;
+  getClientEnv('VITE_FIREBASE_DATABASE_ID', 'FIREBASE_DATABASE_ID') || firebaseAppletConfig.firestoreDatabaseId || undefined;
 
 export const isFirebaseConfigured = (): boolean => {
   return Boolean(
@@ -162,14 +166,51 @@ export async function loginWithFirebaseGoogle(): Promise<{
     throw new Error('Firebase Auth n’est pas configuré.');
   }
 
-  const credential = await signInWithPopup(auth, googleProvider);
-  const idToken = await credential.user.getIdToken();
+  try {
+    const credential = await signInWithPopup(auth, googleProvider);
+    const idToken = await credential.user.getIdToken();
 
-  // Create or sync Firestore profile
-  await syncFirestoreUserProfile(credential.user);
+    // Create or sync Firestore profile
+    await syncFirestoreUserProfile(credential.user).catch((err) => {
+      console.warn('Firestore profile sync after Google login warning:', err);
+    });
 
-  return { firebaseUser: credential.user, idToken };
+    return { firebaseUser: credential.user, idToken };
+  } catch (popupErr: any) {
+    const code = popupErr?.code || '';
+    // If popup is blocked by browser or on mobile, fallback to redirect
+    if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request') {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        // Will redirect the browser to Google
+        throw new Error('Redirection vers Google en cours...');
+      } catch (redirectErr: any) {
+        throw popupErr;
+      }
+    }
+    throw popupErr;
+  }
 }
+
+// 3b. Check result after redirect-based Google sign-in
+export async function getFirebaseRedirectResult(): Promise<{
+  firebaseUser: FirebaseUser;
+  idToken: string;
+} | null> {
+  if (!auth) return null;
+  try {
+    const credential = await getRedirectResult(auth);
+    if (credential && credential.user) {
+      const idToken = await credential.user.getIdToken();
+      await syncFirestoreUserProfile(credential.user).catch(() => {});
+      return { firebaseUser: credential.user, idToken };
+    }
+  } catch (err) {
+    console.warn('[Firebase] Erreur lecture redirect Google:', err);
+  }
+  return null;
+}
+
 
 // 4. Send Password Reset Email
 export async function sendFirebasePasswordReset(email: string): Promise<void> {

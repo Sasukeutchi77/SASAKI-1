@@ -563,3 +563,129 @@ authRouter.post('/forgot-password', authRateLimiter, (req, res) => {
   });
 });
 
+// Password reset endpoint (called by mobile app or web recovery)
+authRouter.post('/reset-password', authRateLimiter, async (req, res) => {
+  const { email, newPassword, password } = req.body;
+  const passToSet = newPassword || password;
+
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ error: 'Adresse email valide requise.' });
+  }
+
+  if (!passToSet || typeof passToSet !== 'string' || passToSet.length < 6) {
+    return res.status(400).json({ error: 'Le nouveau mot de passe doit comporter au moins 6 caractères.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  let user = db.getData().users.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (!user) {
+    user = await db.findUser(cleanEmail);
+  }
+
+  if (!user) {
+    return res.status(404).json({ error: `Aucun compte associé à « ${cleanEmail} » n’a été trouvé.` });
+  }
+
+  const { hash, salt } = hashPassword(passToSet);
+  user.passwordHash = hash;
+  user.passwordSalt = salt;
+  user.updatedAt = new Date().toISOString();
+
+  await db.persistUser(user);
+  db.save();
+
+  return res.json({
+    success: true,
+    message: 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.',
+  });
+});
+
+// Direct Google Authentication endpoint
+authRouter.post('/google', authRateLimiter, async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) {
+    return res.status(400).json({ error: 'Jeton d’authentification Google requis.' });
+  }
+
+  try {
+    const { verifyFirebaseToken } = await import('../firebaseAdmin');
+    const decoded = await verifyFirebaseToken(idToken);
+    if (!decoded || (!decoded.uid && !decoded.email)) {
+      return res.status(401).json({ error: 'Jeton Google invalide ou expiré.' });
+    }
+
+    const cleanEmail = (decoded.email || '').toLowerCase().trim();
+    const data = db.getData();
+    let user = data.users.find(
+      (u) =>
+        (decoded.uid && u.id === decoded.uid) ||
+        (cleanEmail && u.email.toLowerCase() === cleanEmail)
+    );
+
+    if (!user && decoded.uid) {
+      user = (await db.findUserById(decoded.uid)) || undefined;
+    }
+    if (!user && cleanEmail) {
+      user = (await db.findUser(cleanEmail)) || undefined;
+    }
+
+    const isMaster = cleanEmail ? isMasterAdmin(cleanEmail) : false;
+    const now = new Date().toISOString();
+
+    if (!user) {
+      // Auto-provision Google user
+      const defaultPass = hashPassword(isMaster ? MASTER_ADMIN_DEFAULT_PASSWORD : `google_user_${Date.now()}`);
+      user = {
+        id: decoded.uid || `usr_google_${Date.now()}`,
+        email: cleanEmail || `google_${decoded.uid}@purge.info`,
+        name: decoded.name || (cleanEmail ? cleanEmail.split('@')[0] : 'Citoyen Google'),
+        passwordHash: defaultPass.hash,
+        passwordSalt: defaultPass.salt,
+        role: isMaster ? 'admin' : 'user',
+        avatar:
+          decoded.picture ||
+          `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+        bio: isMaster ? 'Compte Principal PURGE-INFO' : 'Citoyen et lecteur sur PURGE-INFO.',
+        isVerified: isMaster,
+        verificationStatus: isMaster ? 'approved' : 'none',
+        status: 'active',
+        followersCount: 0,
+        followingCount: 0,
+        createdAt: now,
+        lastLoginAt: now,
+        updatedAt: now,
+      };
+      data.users.push(user);
+    } else {
+      user.lastLoginAt = now;
+      if (decoded.picture && (!user.avatar || user.avatar.includes('photo-1534528741775-53994a69daeb'))) {
+        user.avatar = decoded.picture;
+      }
+      if (isMaster && user.role !== 'admin') {
+        user.role = 'admin';
+        user.isVerified = true;
+        user.verificationStatus = 'approved';
+      }
+    }
+
+    await db.persistUser(user);
+    db.save();
+
+    const token = generateToken({
+      userId: user.id,
+      role: user.role,
+      email: user.email,
+    });
+
+    return res.json({
+      message: 'Connexion Google réussie !',
+      token,
+      user: sanitizeUser(user),
+    });
+  } catch (err: any) {
+    console.error('[Google Auth Error]:', err);
+    return res.status(500).json({ error: 'Échec de la validation de connexion Google.' });
+  }
+});
+
+

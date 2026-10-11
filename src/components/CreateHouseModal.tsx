@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { MediaHouse, User } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
 import { uploadMediaToCloudinary } from '../services/cloudinary';
 
@@ -72,6 +73,7 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
   onSuccess,
   onOpenAuth,
 }) => {
+  const toast = useToast();
   const { user, refreshUser } = useAuth();
 
   const [name, setName] = useState<string>('');
@@ -231,6 +233,7 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
 
       // Refresh current user session so mediaId, mediaName and journalist role apply immediately
       await refreshUser();
+      toast.success(`Maison de presse « ${res.house.name} » fondée avec succès !`);
 
       if (onSuccess) {
         onSuccess(res.house);
@@ -238,7 +241,9 @@ export const CreateHouseModal: React.FC<CreateHouseModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Error creating media house:', err);
-      setErrorMessage(err.message || 'Une erreur est survenue lors de la fondation de la maison.');
+      const msg = err.message || 'Une erreur est survenue lors de la fondation de la maison.';
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

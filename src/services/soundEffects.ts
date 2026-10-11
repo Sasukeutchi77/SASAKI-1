@@ -287,4 +287,29 @@ export const sfx = {
       osc.stop(ctx.currentTime + 0.13);
     } catch {}
   },
+
+  // Subtle alert / error tone for authentication failures and validation warnings
+  playError() {
+    if (!this.isEnabled()) return;
+    try {
+      const ctx = getAudioContext(true);
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(220, ctx.currentTime + 0.14);
+
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.16);
+    } catch {}
+  },
 };
