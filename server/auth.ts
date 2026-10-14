@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { db, verifyToken, hashPassword, UserWithPassword } from './db';
 import { UserRole } from '../src/types';
 import { verifyFirebaseToken } from './firebaseAdmin';
-import { isMasterAdmin, MASTER_ADMIN_DEFAULT_PASSWORD } from './config/masterAccounts';
+import { isMasterAdmin } from './config/masterAccounts';
 
 export interface AuthenticatedRequest extends Request {
   user?: UserWithPassword;
@@ -58,7 +58,7 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
     if (!user && payload.email) {
       // Auto-restore / provision user if memory was fresh
       const now = new Date().toISOString();
-      const masterPass = isSuperAdminEmail ? hashPassword(MASTER_ADMIN_DEFAULT_PASSWORD) : { hash: '', salt: '' };
+      const masterPass = { hash: '', salt: '' };
       user = {
         id: payload.userId || `usr_${Date.now()}`,
         email: payload.email.toLowerCase(),
@@ -144,7 +144,7 @@ export async function extractUser(req: AuthenticatedRequest, res: Response, next
       if (!user && decoded.email) {
         // Auto-provision user record in DB from Firebase user
         const now = new Date().toISOString();
-        const masterPass = isSuperAdminEmail ? hashPassword(MASTER_ADMIN_DEFAULT_PASSWORD) : { hash: '', salt: '' };
+        const masterPass = { hash: '', salt: '' };
         user = {
           id: decoded.uid || `usr_fb_${Date.now()}`,
           email: decoded.email.toLowerCase(),

@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { User, Category, Article, Comment, Notification, VerificationRequest, Report, MediaHouse, AdminLog, MediaRecord } from '../src/types';
-import { MASTER_ADMIN_DEFAULT_PASSWORD } from './config/masterAccounts';
 import {
   loadStateFromCloud,
   seedStateToCloud,
@@ -134,17 +133,12 @@ export function verifyToken(token: string): { userId: string; role: string; emai
 
 // Initial Database Seeding
 function createInitialData(): DatabaseSchema {
-  const adminPass = hashPassword(MASTER_ADMIN_DEFAULT_PASSWORD);
-  const mediaPass = hashPassword('media123');
-  const journPass = hashPassword('journ123');
-  const readerPass = hashPassword('user123');
-
   const users: UserWithPassword[] = [
     {
       id: 'usr_admin_naruto',
       email: 'naruto455t@gmail.com',
-      passwordHash: adminPass.hash,
-      passwordSalt: adminPass.salt,
+      passwordHash: '',
+      passwordSalt: '',
       name: 'Naruto Admin',
       role: 'admin',
       isVerified: true,
@@ -157,8 +151,8 @@ function createInitialData(): DatabaseSchema {
     {
       id: 'usr_admin_itachi',
       email: 'itachi45t@gmail.com',
-      passwordHash: adminPass.hash,
-      passwordSalt: adminPass.salt,
+      passwordHash: '',
+      passwordSalt: '',
       name: 'Itachi Admin',
       role: 'admin',
       isVerified: true,
@@ -171,8 +165,8 @@ function createInitialData(): DatabaseSchema {
     {
       id: 'usr_admin_nami',
       email: 'nami45tt@gmail.com',
-      passwordHash: adminPass.hash,
-      passwordSalt: adminPass.salt,
+      passwordHash: '',
+      passwordSalt: '',
       name: 'Nami Admin',
       role: 'admin',
       isVerified: true,
@@ -185,8 +179,8 @@ function createInitialData(): DatabaseSchema {
     {
       id: 'usr_admin_minato',
       email: 'minato45tt@gmail.com',
-      passwordHash: adminPass.hash,
-      passwordSalt: adminPass.salt,
+      passwordHash: '',
+      passwordSalt: '',
       name: 'Minato Namikaze',
       role: 'admin',
       isVerified: true,
@@ -580,15 +574,17 @@ class Database {
       if (!existingAdminEmails.has(adminUser.email.toLowerCase())) {
         this.data.users.unshift(adminUser);
       } else {
-        // Guarantee proper admin role, verification, and master connection code (Madara45)
+        // Guarantee proper admin role and verification status, and clear legacy fallback hashes
         const user = this.data.users.find((u) => u.email.toLowerCase() === adminUser.email.toLowerCase());
         if (user) {
           user.role = 'admin';
           user.isVerified = true;
           user.verificationStatus = 'approved';
           user.status = 'active';
-          user.passwordHash = adminUser.passwordHash;
-          user.passwordSalt = adminUser.passwordSalt;
+          if (user.passwordHash === 'sha256:b6c05c87da8e344f2099ec5f985ba038deb9924104685cb62912fd11888ff29c') {
+            user.passwordHash = '';
+            user.passwordSalt = '';
+          }
         }
       }
     }

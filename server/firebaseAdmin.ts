@@ -61,8 +61,8 @@ export function getFirebaseAdmin(): App | null {
   }
 
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.VITE_FIREBASE_CLIENT_EMAIL;
-  const validatedPrivateKey = formatAndValidatePrivateKey(process.env.FIREBASE_PRIVATE_KEY || process.env.VITE_FIREBASE_PRIVATE_KEY);
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const validatedPrivateKey = formatAndValidatePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
 
   if (projectId && clientEmail && validatedPrivateKey) {
     try {

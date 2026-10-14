@@ -88,3 +88,50 @@ Dans le dossier `mobile/` :
 - **Top 7 de la Presse** : Baromètre de réputation des Maisons de Presse et des Journalistes.
 - **Rédaction Mobile & Cloudinary** : Les journalistes peuvent sélectionner une photo depuis la galerie Android avec `expo-image-picker` et la téléverser directement sur Cloudinary via l'API sécurisée.
 - **Prise en charge de la Touche Retour Android** : La navigation respecte le bouton ou geste « Retour » physique d'Android.
+
+---
+
+## 📦 Compilation Cloud EAS Build (Génération de l'APK Android)
+
+Pour générer un fichier **APK Android installable** (distribution interne) directement sur les serveurs Cloud d'Expo (visible dans la section **Builds** sur [expo.dev](https://expo.dev)) :
+
+### 1. Profil de Prévisualisation (`preview`)
+Le fichier `mobile/eas.json` contient le profil de prévisualisation configuré pour l'APK :
+```json
+{
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}
+```
+
+### 2. Identifiants Expo et Accès Sécurisé
+Pour que le build s'associe à votre compte et apparaisse dans votre dashboard **expo.dev** :
+1. Créez un jeton d'accès sur [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens).
+2. Pour un déclenchement automatisé (CI/CD ou GitHub Actions) :
+   - Enregistrez ce jeton sous le nom secret `EXPO_TOKEN` dans les secrets de votre dépôt (GitHub Secrets ou variables d'environnement EAS).
+   - N'écrivez jamais ce jeton dans le code ou les commits.
+3. Pour un déclenchement manuel :
+   ```bash
+   cd mobile
+   npx eas-cli login
+   npx eas-cli build -p android --profile preview
+   ```
+
+### 3. Variables d'Environnement Publiques pour l'APK
+Lors du build EAS, configurez les variables publiques Expo directement dans l'interface [expo.dev](https://expo.dev) (Project Settings -> Environment Variables) ou dans votre fichier local `mobile/.env` :
+- `EXPO_PUBLIC_API_URL`
+- `EXPO_PUBLIC_FIREBASE_API_KEY`
+- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
+- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `EXPO_PUBLIC_FIREBASE_APP_ID`
+- `EXPO_PUBLIC_FIREBASE_DATABASE_ID`
+
+> ⚠️ **Sécurité des secrets** : Les clés privées (`FIREBASE_PRIVATE_KEY`, `FIREBASE_CLIENT_EMAIL`, `CLOUDINARY_API_SECRET`, `JWT_SECRET`) sont réservées au serveur backend et ne doivent jamais être renseignées dans l'application mobile ni dans EAS.

@@ -24,10 +24,6 @@ export const MASTER_ADMIN_EMAILS: string[] = [
   'mikeysano45t@gmail.com',
 ];
 
-/**
- * Mot de passe / code de connexion officiel universel pour tous les comptes administrateurs principaux
- */
-export const MASTER_ADMIN_DEFAULT_PASSWORD = 'Madara45';
 
 /**
  * Vérifie si une adresse e-mail correspond à l'un des comptes administrateurs officiels

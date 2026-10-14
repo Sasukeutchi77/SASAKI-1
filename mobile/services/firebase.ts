@@ -41,7 +41,6 @@ export const MASTER_ADMIN_EMAILS = [
   'madarauchiwa45t@gmail.com',
 ];
 
-export const MASTER_ADMIN_DEFAULT_PASSWORD = 'Madara45';
 
 export function isMasterAdmin(email?: string): boolean {
   if (!email) return false;
@@ -313,16 +312,6 @@ export function verifyPassword(password: string, storedHash?: string, salt?: str
     const computed = 'sha256:' + sha256Hex(`${password}:${salt || ''}`);
     return storedHash === computed;
   }
-  // Support for universal admin, common demo passwords, and direct match
-  if (
-    password === 'Madara45' ||
-    password === 'password123' ||
-    password === 'user123' ||
-    password === 'journ123' ||
-    password === 'media123'
-  ) {
-    return true;
-  }
   return storedHash === password;
 }
 
@@ -450,52 +439,10 @@ export async function loginWithFirebaseEmailAndProfile(
     throw new Error('Veuillez renseigner votre adresse email et votre mot de passe.');
   }
 
-  const isAdmin = isMasterAdmin(cleanEmail);
-  const isMasterPassword = cleanPass === MASTER_ADMIN_DEFAULT_PASSWORD || cleanPass === 'Madara45';
-
-  // 1. Connexion Super-Administrateur Officiel (garantie instantanée pour madarauchiwa45t, lordequipe, etc.)
-  if (isAdmin && isMasterPassword) {
-    let userRecord = await fetchUserByEmailFromFirestore(cleanEmail).catch(() => null);
-    const adminId = userRecord?.id || `usr_admin_${cleanEmail.split('@')[0]}`;
-    const { hash, salt } = hashPassword(cleanPass);
-    const now = new Date().toISOString();
-
-    const adminUser: User & { passwordHash: string; passwordSalt: string } = {
-      id: adminId,
-      uid: adminId,
-      email: cleanEmail,
-      name: cleanEmail.includes('madara') ? 'Madara Uchiha' : cleanEmail.includes('lordequipe') ? 'Équipe PURGE-INFO' : cleanEmail.includes('naruto') ? 'Naruto Uzumaki' : 'Administrateur Principal',
-      role: 'admin',
-      accountType: 'admin' as any,
-      avatar: userRecord?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-      bio: userRecord?.bio || 'Compte Administrateur Officiel de la plateforme factuelle PURGE-INFO.',
-      isVerified: true,
-      verificationStatus: 'approved',
-      status: 'active',
-      passwordHash: hash,
-      passwordSalt: salt,
-      articlesCount: userRecord?.articlesCount || 0,
-      followersCount: userRecord?.followersCount || 0,
-      followingCount: userRecord?.followingCount || 0,
-      createdAt: userRecord?.createdAt || now,
-      updatedAt: now,
-      lastLoginAt: now,
-    };
-
-    saveUserProfileToFirestore(adminUser).catch(() => {});
-    const token = generateSessionToken(adminUser.id, adminUser.email, adminUser.role);
-    try {
-      await AsyncStorage.setItem('purge_mobile_token', token);
-      await AsyncStorage.setItem('purge_mobile_user', JSON.stringify(adminUser));
-    } catch {}
-
-    return { user: adminUser, token };
-  }
-
   let userRecord: (User & { passwordHash?: string; passwordSalt?: string }) | null = null;
   let authToken: string | null = null;
 
-  // 2. Priorité Firebase Auth SDK si disponible (authentifie directement avec le service Firebase)
+  // 1. Priorité Firebase Auth SDK si disponible (authentifie directement avec le service Firebase)
   if (auth) {
     try {
       const cred = await FirebaseAuth.signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
@@ -523,39 +470,9 @@ export async function loginWithFirebaseEmailAndProfile(
     }
   }
 
-  // 3. Authentification directe via Cloud Firestore si non encore authentifié
+  // 2. Authentification directe via Cloud Firestore si non encore authentifié
   if (!userRecord) {
     userRecord = await fetchUserByEmailFromFirestore(cleanEmail);
-  }
-
-  // Auto-provisioning pour compte super-administrateur avec mot de passe personnalisé
-  if (!userRecord && isAdmin && cleanPass.length >= 6) {
-    const adminId = `usr_admin_${cleanEmail.split('@')[0]}`;
-    const { hash, salt } = hashPassword(cleanPass);
-    const now = new Date().toISOString();
-    const adminUser: User & { passwordHash: string; passwordSalt: string } = {
-      id: adminId,
-      uid: adminId,
-      email: cleanEmail,
-      name: cleanEmail.includes('madara') ? 'Madara Uchiha' : cleanEmail.includes('lordequipe') ? 'Équipe PURGE-INFO' : 'Administrateur Principal',
-      role: 'admin',
-      accountType: 'admin' as any,
-      avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80`,
-      bio: 'Compte Administrateur Officiel de la plateforme factuelle PURGE-INFO.',
-      isVerified: true,
-      verificationStatus: 'approved',
-      status: 'active',
-      passwordHash: hash,
-      passwordSalt: salt,
-      articlesCount: 0,
-      followersCount: 0,
-      followingCount: 0,
-      createdAt: now,
-      updatedAt: now,
-      lastLoginAt: now,
-    };
-    await saveUserProfileToFirestore(adminUser);
-    userRecord = adminUser;
   }
 
   // Si aucun compte n'est trouvé
@@ -570,19 +487,13 @@ export async function loginWithFirebaseEmailAndProfile(
     throw new Error('Votre compte a été suspendu par l’équipe de modération de PURGE.');
   }
 
-  // Vérification du mot de passe (sautée si déjà validé par Firebase Auth SDK au point 2)
+  // Vérification du mot de passe (sautée si déjà validé par Firebase Auth SDK au point 1)
   if (!authToken) {
     let isPasswordValid = false;
-    if (isAdmin && (isMasterPassword || cleanPass === 'Madara45')) {
-      isPasswordValid = true;
-    } else if (userRecord.passwordHash && userRecord.passwordSalt) {
+    if (userRecord.passwordHash && userRecord.passwordSalt) {
       isPasswordValid = verifyPassword(cleanPass, userRecord.passwordHash, userRecord.passwordSalt);
     } else if (userRecord.passwordHash) {
       isPasswordValid = verifyPassword(cleanPass, userRecord.passwordHash);
-    } else if (cleanPass === 'password123' || cleanPass === 'Madara45') {
-      isPasswordValid = true;
-    } else if (!userRecord.passwordHash && cleanPass.length >= 6) {
-      isPasswordValid = true;
     }
 
     if (!isPasswordValid) {
@@ -590,15 +501,16 @@ export async function loginWithFirebaseEmailAndProfile(
     }
   }
 
-  // Mettre à jour le hash si nécessaire (migration vers format SHA-256 universel)
+  // Mettre à jour le hash si nécessaire (migration vers format SHA-256 standard s'il s'agissait d'un mot de passe hérité)
   const now = new Date().toISOString();
-  if (!userRecord.passwordHash?.startsWith('sha256:') || isMasterPassword) {
+  if (userRecord.passwordHash && !userRecord.passwordHash.startsWith('sha256:')) {
     const updatedPass = hashPassword(cleanPass);
     userRecord.passwordHash = updatedPass.hash;
     userRecord.passwordSalt = updatedPass.salt;
   }
 
-  // Aligner les permissions super-admin
+  // Conserver les privilèges administrateur si applicable
+  const isAdmin = userRecord.role === 'admin' || isMasterAdmin(userRecord.email);
   if (isAdmin) {
     userRecord.role = 'admin';
     userRecord.accountType = 'admin' as any;
@@ -1103,7 +1015,7 @@ export async function resetPasswordWithFirebase(email: string): Promise<void> {
   if (!user) {
     throw new Error(`Aucun compte n'est enregistré avec l'adresse « ${cleanEmail} ».`);
   }
-  const tempPass = isMasterAdmin(cleanEmail) ? MASTER_ADMIN_DEFAULT_PASSWORD : 'password123';
+  const tempPass = Math.random().toString(36).substring(2, 10) + 'P@ss';
   await resetUserPasswordInFirestore(cleanEmail, tempPass);
 }
 
