@@ -36,7 +36,7 @@ export function createExpressApp() {
       name: 'PurgeInfo API',
       version: '1.0.0',
       timestamp: new Date().toISOString(),
-      platform: process.env.VERCEL ? 'vercel-serverless' : (process.env.NETLIFY ? 'netlify-serverless' : 'node-server'),
+      platform: process.env.RENDER ? 'render-web-service' : (process.env.NETLIFY ? 'netlify-serverless' : 'node-server'),
     });
   });
 
@@ -56,6 +56,11 @@ export function createExpressApp() {
 
   // Real-time synchronization routes (SSE stream and catch-up buffer)
   realtimeHub.registerRoutes(app);
+
+  // 404 handler for unknown API endpoints
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: 'Endpoint API introuvable.', path: req.path });
+  });
 
   // Global safe error handler for API exceptions
   app.use('/api', safeErrorHandler);

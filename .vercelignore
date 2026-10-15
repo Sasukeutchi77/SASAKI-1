@@ -1,7 +1,0 @@
-# Ignore Mobile Expo folder during Vercel Web Deployment
-mobile/
-.git/
-.github/
-.vscode/
-test_suite.ts
-*.log

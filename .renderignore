@@ -1,0 +1,8 @@
+# Ignorer le dossier de l'application mobile Expo lors du déploiement Web sur Render
+mobile/
+.git/
+.github/
+.vscode/
+test_suite.ts
+test_security.ts
+*.log

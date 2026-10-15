@@ -111,7 +111,7 @@ export function mapFirebaseError(code: string): string {
     case 'auth/too-many-requests':
       return 'Trop de tentatives infructueuses. Veuillez patienter quelques instants avant de réessayer.';
     case 'auth/unauthorized-domain': {
-      const host = typeof window !== 'undefined' ? window.location.hostname : 'votre domaine Vercel';
+      const host = typeof window !== 'undefined' ? window.location.hostname : 'votre domaine Render (ex: onrender.com)';
       return `Le domaine "${host}" n’est pas encore autorisé pour Google. Ajoutez "${host}" dans Firebase Console (Authentication > Paramètres > Domaines autorisés).`;
     }
     default:

@@ -7,7 +7,7 @@ import { db } from './server/db';
 async function startServer() {
   const app = createExpressApp();
   // AI Studio requires dev server on port 3000 and host 0.0.0.0
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // Vite Middleware or Static Production Serving
   if (process.env.NODE_ENV !== 'production') {

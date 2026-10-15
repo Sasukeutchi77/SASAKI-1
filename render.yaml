@@ -1,26 +1,45 @@
 services:
   - type: web
     name: purge-info
-    env: node
+    runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm install --include=dev && npm run build
-    startCommand: npm run start
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.cjs
+    healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
       - key: JWT_SECRET
         generateValue: true
-      - key: FIREBASE_PROJECT_ID
+      # Configuration Firebase Client (Web App)
+      - key: VITE_FIREBASE_API_KEY
         sync: false
-      - key: FIREBASE_DATABASE_ID
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: VITE_FIREBASE_PROJECT_ID
+        sync: false
+      - key: VITE_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: VITE_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: VITE_FIREBASE_APP_ID
+        sync: false
+      - key: VITE_FIREBASE_DATABASE_ID
+        sync: false
+      # Clés secrètes serveur Firebase Admin (Firestore autoritaire)
+      - key: FIREBASE_PROJECT_ID
         sync: false
       - key: FIREBASE_CLIENT_EMAIL
         sync: false
       - key: FIREBASE_PRIVATE_KEY
         sync: false
+      # Hébergement Cloudinary pour photos & vidéos jusqu'à 90 Mo
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
